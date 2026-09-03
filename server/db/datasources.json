@@ -1,0 +1,57 @@
+[
+  {
+    "id": "SRC-DATAGOV",
+    "name": "Open Government Data Platform (Data.gov.in)",
+    "category": "National Open Data",
+    "status": "Connected",
+    "last_synced": "2026-03-01 04:30 IST",
+    "datasets_count": 142,
+    "records_imported": 124500,
+    "endpoint_url": "https://api.data.gov.in/resource",
+    "adapter_type": "dataGovAdapter"
+  },
+  {
+    "id": "SRC-MOAFW",
+    "name": "Ministry of Agriculture & Farmers Welfare (DES)",
+    "category": "Agricultural Statistics",
+    "status": "Connected",
+    "last_synced": "2026-02-28 22:15 IST",
+    "datasets_count": 68,
+    "records_imported": 89300,
+    "endpoint_url": "https://desagri.gov.in/api/v2",
+    "adapter_type": "moaAdapter"
+  },
+  {
+    "id": "SRC-NRSC",
+    "name": "ISRO Bhuvan Spatial Geoportal",
+    "category": "Remote Sensing / GIS",
+    "status": "Connected",
+    "last_synced": "2026-03-02 12:00 IST",
+    "datasets_count": 34,
+    "records_imported": 452000,
+    "endpoint_url": "https://bhuvan-app1.nrsc.gov.in/api/wms",
+    "adapter_type": "bhuvanAdapter"
+  },
+  {
+    "id": "SRC-FSI",
+    "name": "Forest Survey of India (FSI Data Hub)",
+    "category": "Forest Inventory",
+    "status": "Connected",
+    "last_synced": "2026-02-20 18:45 IST",
+    "datasets_count": 18,
+    "records_imported": 24100,
+    "endpoint_url": "https://fsi.nic.in/geoportal/rest",
+    "adapter_type": "fsiAdapter"
+  },
+  {
+    "id": "SRC-DILRMP",
+    "name": "DoLR Digital Land Records Gateway",
+    "category": "Cadastral & Records of Rights",
+    "status": "Pending Configuration",
+    "last_synced": "2026-01-15 09:00 IST",
+    "datasets_count": 12,
+    "records_imported": 58000,
+    "endpoint_url": "https://dilrmp.nic.in/api/v1",
+    "adapter_type": "dilrmpAdapter"
+  }
+]

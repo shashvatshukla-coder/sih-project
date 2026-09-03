@@ -1,0 +1,193 @@
+import React, { useState } from 'react';
+import { useApp } from '../context/AppContext';
+import {
+  Landmark,
+  Sparkles,
+  BarChart3,
+  MapPin,
+  Database,
+  FileCheck2,
+  BookOpen,
+  ArrowRight,
+  ShieldCheck,
+  Search,
+  CheckCircle2,
+  TrendingUp,
+  Scale
+} from 'lucide-react';
+
+export const HomePage: React.FC = () => {
+  const { setActivePage, runAIQuery } = useApp();
+  const [heroPrompt, setHeroPrompt] = useState('');
+
+  const handlePromptSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (heroPrompt.trim()) {
+      runAIQuery(heroPrompt.trim());
+    } else {
+      setActivePage('dashboard');
+    }
+  };
+
+  const featureCards = [
+    {
+      page: 'statistics' as const,
+      title: 'Land Statistics',
+      desc: 'Explore state and district-level land indicators across 9-fold classifications.',
+      icon: BarChart3,
+      tag: '9-Fold Schema'
+    },
+    {
+      page: 'map' as const,
+      title: 'Interactive Maps',
+      desc: 'Visualize geographic patterns, choropleth gradients, and multi-year land transitions.',
+      icon: MapPin,
+      tag: '2005–2025 Timeline'
+    },
+    {
+      page: 'datasets' as const,
+      title: 'Dataset Explorer',
+      desc: 'Search government, satellite, and agricultural datasets with verifiable provenance.',
+      icon: Database,
+      tag: 'GODL India'
+    },
+    {
+      page: 'ai-query' as const,
+      title: 'AI Intelligence',
+      desc: 'Ask questions in English, Hindi, or Hinglish with evidence-backed structured answers.',
+      icon: Sparkles,
+      tag: 'NLP Assistant'
+    },
+    {
+      page: 'policy' as const,
+      title: 'Policy Analysis',
+      desc: 'Study indicator changes before and after PMKSY, DILRMP, and Green India Mission.',
+      icon: FileCheck2,
+      tag: 'Interrupted Series'
+    },
+    {
+      page: 'research' as const,
+      title: 'Research Library',
+      desc: 'Discover relevant empirical studies, journal papers, reports, and APA citations.',
+      icon: BookOpen,
+      tag: 'Peer-Reviewed'
+    }
+  ];
+
+  return (
+    <div className="space-y-12 text-left pb-12">
+      {/* Hero Section */}
+      <section className="relative p-8 md:p-14 rounded-3xl bg-gradient-to-br from-slate-900 via-brand-950 to-slate-900 text-white shadow-2xl overflow-hidden">
+        <div className="relative z-10 max-w-3xl space-y-6">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-brand-500/20 border border-brand-500/30 text-brand-300 text-xs font-semibold">
+            <Landmark className="w-3.5 h-3.5" />
+            <span>National Land Records & Geospatial Intelligence Platform</span>
+          </div>
+
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight leading-tight">
+            India&apos;s Land Data, <br className="hidden sm:inline" />
+            <span className="bg-gradient-to-r from-blue-300 via-emerald-300 to-teal-200 bg-clip-text text-transparent">
+              Made Understandable.
+            </span>
+          </h1>
+
+          <p className="text-sm md:text-base text-slate-300 leading-relaxed max-w-2xl">
+            Explore land-use trends, government datasets, research papers, and policy insights across 700+ districts in India through one unified, evidence-backed intelligence platform.
+          </p>
+
+          {/* Quick AI Search Form */}
+          <form onSubmit={handlePromptSubmit} className="pt-2 flex flex-col sm:flex-row gap-3 max-w-2xl">
+            <div className="relative flex-1">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+              <input
+                type="text"
+                value={heroPrompt}
+                onChange={e => setHeroPrompt(e.target.value)}
+                placeholder="Ask e.g. 'UP mein agricultural land-use ka trend kya hai?'..."
+                className="w-full pl-10 pr-4 py-3 text-xs md:text-sm font-medium rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 backdrop-blur-md focus:outline-hidden focus:ring-2 focus:ring-brand-400"
+              />
+            </div>
+            <button
+              type="submit"
+              className="flex items-center justify-center gap-2 px-6 py-3 rounded-xl bg-brand-600 hover:bg-brand-500 text-white font-bold text-xs md:text-sm transition-all shadow-md shrink-0"
+            >
+              <span>Explore Dashboard</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </form>
+
+          {/* Key Metric Ticker */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-6 border-t border-slate-800 text-xs">
+            <div>
+              <div className="text-lg md:text-xl font-bold font-mono text-emerald-400">3.28M km²</div>
+              <div className="text-slate-400 text-[11px]">Geographic Scope</div>
+            </div>
+            <div>
+              <div className="text-lg md:text-xl font-bold font-mono text-blue-400">20 Years</div>
+              <div className="text-slate-400 text-[11px]">Longitudinal Series</div>
+            </div>
+            <div>
+              <div className="text-lg md:text-xl font-bold font-mono text-purple-400">5 Gateways</div>
+              <div className="text-slate-400 text-[11px]">Govt Connectors</div>
+            </div>
+            <div>
+              <div className="text-lg md:text-xl font-bold font-mono text-amber-400">100% Provenance</div>
+              <div className="text-slate-400 text-[11px]">Verifiable Citations</div>
+            </div>
+          </div>
+        </div>
+
+        {/* Decorative background glow */}
+        <div className="absolute right-0 top-0 w-96 h-96 bg-brand-500/20 rounded-full blur-3xl pointer-events-none" />
+      </section>
+
+      {/* Six Key Capabilities Grid */}
+      <section className="space-y-4">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
+              Platform Core Capabilities
+            </h2>
+            <p className="text-xs text-slate-500">
+              Designed for Researchers, Urban Planners, Policy Makers, and Academic Institutions.
+            </p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {featureCards.map(c => {
+            const Icon = c.icon;
+            return (
+              <div
+                key={c.page}
+                onClick={() => setActivePage(c.page)}
+                className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs hover:shadow-lg hover:border-brand-500/50 cursor-pointer transition-all space-y-3 group"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-brand-600 dark:text-brand-400 group-hover:bg-brand-600 group-hover:text-white transition-colors">
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  <span className="text-[10px] font-bold font-mono px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-500">
+                    {c.tag}
+                  </span>
+                </div>
+
+                <h3 className="text-base font-bold text-slate-900 dark:text-white group-hover:text-brand-600 dark:group-hover:text-brand-400 transition-colors">
+                  {c.title}
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {c.desc}
+                </p>
+
+                <div className="pt-2 flex items-center text-xs font-semibold text-brand-600 dark:text-brand-400 gap-1 group-hover:translate-x-1 transition-transform">
+                  <span>Open module</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+    </div>
+  );
+};

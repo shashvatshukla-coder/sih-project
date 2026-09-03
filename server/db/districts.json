@@ -1,0 +1,277 @@
+[
+  {
+    "district_code": "UP-GKP",
+    "district_name": "Gorakhpur",
+    "state_code": "IN-UP",
+    "state_name": "Uttar Pradesh",
+    "total_area_sqkm": 3321,
+    "center_coords": [
+      26.7606,
+      83.3732
+    ]
+  },
+  {
+    "district_code": "UP-LKO",
+    "district_name": "Lucknow",
+    "state_code": "IN-UP",
+    "state_name": "Uttar Pradesh",
+    "total_area_sqkm": 2528,
+    "center_coords": [
+      26.8467,
+      80.9462
+    ]
+  },
+  {
+    "district_code": "UP-VNS",
+    "district_name": "Varanasi",
+    "state_code": "IN-UP",
+    "state_name": "Uttar Pradesh",
+    "total_area_sqkm": 1535,
+    "center_coords": [
+      25.3176,
+      82.9739
+    ]
+  },
+  {
+    "district_code": "UP-KNP",
+    "district_name": "Kanpur Nagar",
+    "state_code": "IN-UP",
+    "state_name": "Uttar Pradesh",
+    "total_area_sqkm": 3155,
+    "center_coords": [
+      26.4499,
+      80.3319
+    ]
+  },
+  {
+    "district_code": "UP-GBN",
+    "district_name": "Gautam Buddha Nagar",
+    "state_code": "IN-UP",
+    "state_name": "Uttar Pradesh",
+    "total_area_sqkm": 1442,
+    "center_coords": [
+      28.5355,
+      77.391
+    ]
+  },
+  {
+    "district_code": "UP-AGR",
+    "district_name": "Agra",
+    "state_code": "IN-UP",
+    "state_name": "Uttar Pradesh",
+    "total_area_sqkm": 4041,
+    "center_coords": [
+      27.1767,
+      78.0081
+    ]
+  },
+  {
+    "district_code": "UP-PRY",
+    "district_name": "Prayagraj",
+    "state_code": "IN-UP",
+    "state_name": "Uttar Pradesh",
+    "total_area_sqkm": 5482,
+    "center_coords": [
+      25.4358,
+      81.8463
+    ]
+  },
+  {
+    "district_code": "UP-JHS",
+    "district_name": "Jhansi",
+    "state_code": "IN-UP",
+    "state_name": "Uttar Pradesh",
+    "total_area_sqkm": 5024,
+    "center_coords": [
+      25.4484,
+      78.5685
+    ]
+  },
+  {
+    "district_code": "BR-PAT",
+    "district_name": "Patna",
+    "state_code": "IN-BR",
+    "state_name": "Bihar",
+    "total_area_sqkm": 3202,
+    "center_coords": [
+      25.5941,
+      85.1376
+    ]
+  },
+  {
+    "district_code": "BR-GAY",
+    "district_name": "Gaya",
+    "state_code": "IN-BR",
+    "state_name": "Bihar",
+    "total_area_sqkm": 4976,
+    "center_coords": [
+      24.7914,
+      85.0002
+    ]
+  },
+  {
+    "district_code": "BR-MUZ",
+    "district_name": "Muzaffarpur",
+    "state_code": "IN-BR",
+    "state_name": "Bihar",
+    "total_area_sqkm": 3172,
+    "center_coords": [
+      26.1209,
+      85.3647
+    ]
+  },
+  {
+    "district_code": "BR-BGP",
+    "district_name": "Bhagalpur",
+    "state_code": "IN-BR",
+    "state_name": "Bihar",
+    "total_area_sqkm": 2569,
+    "center_coords": [
+      25.2425,
+      87.0142
+    ]
+  },
+  {
+    "district_code": "MP-IND",
+    "district_name": "Indore",
+    "state_code": "IN-MP",
+    "state_name": "Madhya Pradesh",
+    "total_area_sqkm": 3898,
+    "center_coords": [
+      22.7196,
+      75.8577
+    ]
+  },
+  {
+    "district_code": "MP-BHO",
+    "district_name": "Bhopal",
+    "state_code": "IN-MP",
+    "state_name": "Madhya Pradesh",
+    "total_area_sqkm": 2772,
+    "center_coords": [
+      23.2599,
+      77.4126
+    ]
+  },
+  {
+    "district_code": "MP-JAB",
+    "district_name": "Jabalpur",
+    "state_code": "IN-MP",
+    "state_name": "Madhya Pradesh",
+    "total_area_sqkm": 5211,
+    "center_coords": [
+      23.1815,
+      79.9864
+    ]
+  },
+  {
+    "district_code": "MH-PUN",
+    "district_name": "Pune",
+    "state_code": "IN-MH",
+    "state_name": "Maharashtra",
+    "total_area_sqkm": 15643,
+    "center_coords": [
+      18.5204,
+      73.8567
+    ]
+  },
+  {
+    "district_code": "MH-NAG",
+    "district_name": "Nagpur",
+    "state_code": "IN-MH",
+    "state_name": "Maharashtra",
+    "total_area_sqkm": 9892,
+    "center_coords": [
+      21.1458,
+      79.0882
+    ]
+  },
+  {
+    "district_code": "MH-NSK",
+    "district_name": "Nashik",
+    "state_code": "IN-MH",
+    "state_name": "Maharashtra",
+    "total_area_sqkm": 15530,
+    "center_coords": [
+      19.9975,
+      73.7898
+    ]
+  },
+  {
+    "district_code": "RJ-JAI",
+    "district_name": "Jaipur",
+    "state_code": "IN-RJ",
+    "state_name": "Rajasthan",
+    "total_area_sqkm": 11143,
+    "center_coords": [
+      26.9124,
+      75.7873
+    ]
+  },
+  {
+    "district_code": "RJ-JOD",
+    "district_name": "Jodhpur",
+    "state_code": "IN-RJ",
+    "state_name": "Rajasthan",
+    "total_area_sqkm": 22850,
+    "center_coords": [
+      26.2389,
+      73.0243
+    ]
+  },
+  {
+    "district_code": "RJ-UDA",
+    "district_name": "Udaipur",
+    "state_code": "IN-RJ",
+    "state_name": "Rajasthan",
+    "total_area_sqkm": 11724,
+    "center_coords": [
+      24.5854,
+      73.7125
+    ]
+  },
+  {
+    "district_code": "KA-BLU",
+    "district_name": "Bengaluru Urban",
+    "state_code": "IN-KA",
+    "state_name": "Karnataka",
+    "total_area_sqkm": 2196,
+    "center_coords": [
+      12.9716,
+      77.5946
+    ]
+  },
+  {
+    "district_code": "KA-MYS",
+    "district_name": "Mysuru",
+    "state_code": "IN-KA",
+    "state_name": "Karnataka",
+    "total_area_sqkm": 6854,
+    "center_coords": [
+      12.2958,
+      76.6394
+    ]
+  },
+  {
+    "district_code": "TN-CHE",
+    "district_name": "Chennai",
+    "state_code": "IN-TN",
+    "state_name": "Tamil Nadu",
+    "total_area_sqkm": 426,
+    "center_coords": [
+      13.0827,
+      80.2707
+    ]
+  },
+  {
+    "district_code": "TN-CBE",
+    "district_name": "Coimbatore",
+    "state_code": "IN-TN",
+    "state_name": "Tamil Nadu",
+    "total_area_sqkm": 4723,
+    "center_coords": [
+      11.0168,
+      76.9558
+    ]
+  }
+]

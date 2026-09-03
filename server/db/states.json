@@ -1,0 +1,178 @@
+[
+  {
+    "state_code": "IN-UP",
+    "state_name": "Uttar Pradesh",
+    "capital": "Lucknow",
+    "total_area_sqkm": 243286,
+    "region": "North",
+    "center_coords": [
+      26.8467,
+      80.9462
+    ]
+  },
+  {
+    "state_code": "IN-BR",
+    "state_name": "Bihar",
+    "capital": "Patna",
+    "total_area_sqkm": 94163,
+    "region": "East",
+    "center_coords": [
+      25.5941,
+      85.1376
+    ]
+  },
+  {
+    "state_code": "IN-MP",
+    "state_name": "Madhya Pradesh",
+    "capital": "Bhopal",
+    "total_area_sqkm": 308252,
+    "region": "Central",
+    "center_coords": [
+      22.9734,
+      78.6569
+    ]
+  },
+  {
+    "state_code": "IN-MH",
+    "state_name": "Maharashtra",
+    "capital": "Mumbai",
+    "total_area_sqkm": 307713,
+    "region": "West",
+    "center_coords": [
+      19.7515,
+      75.7139
+    ]
+  },
+  {
+    "state_code": "IN-RJ",
+    "state_name": "Rajasthan",
+    "capital": "Jaipur",
+    "total_area_sqkm": 342239,
+    "region": "North",
+    "center_coords": [
+      27.0238,
+      74.2179
+    ]
+  },
+  {
+    "state_code": "IN-KA",
+    "state_name": "Karnataka",
+    "capital": "Bengaluru",
+    "total_area_sqkm": 191791,
+    "region": "South",
+    "center_coords": [
+      15.3173,
+      75.7139
+    ]
+  },
+  {
+    "state_code": "IN-TN",
+    "state_name": "Tamil Nadu",
+    "capital": "Chennai",
+    "total_area_sqkm": 130058,
+    "region": "South",
+    "center_coords": [
+      11.1271,
+      78.6569
+    ]
+  },
+  {
+    "state_code": "IN-GJ",
+    "state_name": "Gujarat",
+    "capital": "Gandhinagar",
+    "total_area_sqkm": 196024,
+    "region": "West",
+    "center_coords": [
+      22.2587,
+      71.1924
+    ]
+  },
+  {
+    "state_code": "IN-WB",
+    "state_name": "West Bengal",
+    "capital": "Kolkata",
+    "total_area_sqkm": 88752,
+    "region": "East",
+    "center_coords": [
+      22.9868,
+      87.855
+    ]
+  },
+  {
+    "state_code": "IN-AP",
+    "state_name": "Andhra Pradesh",
+    "capital": "Amaravati",
+    "total_area_sqkm": 162970,
+    "region": "South",
+    "center_coords": [
+      15.9129,
+      79.74
+    ]
+  },
+  {
+    "state_code": "IN-OD",
+    "state_name": "Odisha",
+    "capital": "Bhubaneswar",
+    "total_area_sqkm": 155707,
+    "region": "East",
+    "center_coords": [
+      20.9517,
+      85.0985
+    ]
+  },
+  {
+    "state_code": "IN-PB",
+    "state_name": "Punjab",
+    "capital": "Chandigarh",
+    "total_area_sqkm": 50362,
+    "region": "North",
+    "center_coords": [
+      31.1471,
+      75.3412
+    ]
+  },
+  {
+    "state_code": "IN-HR",
+    "state_name": "Haryana",
+    "capital": "Chandigarh",
+    "total_area_sqkm": 44212,
+    "region": "North",
+    "center_coords": [
+      29.0588,
+      76.0856
+    ]
+  },
+  {
+    "state_code": "IN-AS",
+    "state_name": "Assam",
+    "capital": "Dispur",
+    "total_area_sqkm": 78438,
+    "region": "Northeast",
+    "center_coords": [
+      26.2006,
+      92.9376
+    ]
+  },
+  {
+    "state_code": "IN-KL",
+    "state_name": "Kerala",
+    "capital": "Thiruvananthapuram",
+    "total_area_sqkm": 38863,
+    "region": "South",
+    "center_coords": [
+      10.8505,
+      76.2711
+    ]
+  },
+  {
+    "state_code": "IN-ALL",
+    "state_name": "All India",
+    "capital": "New Delhi",
+    "total_area_sqkm": 3287263,
+    "region": "Central",
+    "center_coords": [
+      20.5937,
+      78.9629
+    ]
+  }
+]

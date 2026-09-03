@@ -1,0 +1,116 @@
+[
+  {
+    "id": "PAP-001",
+    "title": "Decadal Spatio-Temporal Dynamics of Agricultural Land Conversion in the Indo-Gangetic Plain: A Multi-Sensor Remote Sensing Study",
+    "authors": [
+      "Dr. Ramesh Chandra Sharma",
+      "Prof. Sunita Verma",
+      "Anand Kumar Mishra"
+    ],
+    "year": 2024,
+    "publisher": "Springer / Journal of the Indian Society of Remote Sensing",
+    "journal": "J. Indian Soc. Remote Sens. 52, 412–429 (2024)",
+    "abstract": "This study investigates the rapid peri-urban agricultural land conversion across 18 districts of Eastern Uttar Pradesh and Bihar between 2005 and 2023 using Landsat and Sentinel-2 optical imagery. Results indicate an annualized loss of 0.42% in prime double-cropped fertile alluvial land, predominantly absorbed into industrial corridors, highway ribbons, and unplanned residential expansions around tier-2 urban clusters.",
+    "research_area": "Land-Use Land-Cover (LULC) Dynamics & Food Security",
+    "geography": "Eastern Uttar Pradesh (Gorakhpur, Varanasi, Prayagraj) & Western Bihar",
+    "methodology": "Support Vector Machine (SVM) and Random Forest classification on calibrated multi-spectral indices (NDVI, NDBI, MNDWI) validated against 1,200 ground truth points.",
+    "key_findings": [
+      "Agricultural land in peri-urban fringes decreased by 8.4% over 15 years.",
+      "Built-up land expanded by 41.2% in corridor zones along National Highways NH-28 and NH-29.",
+      "Surface water body area shrunk by 6.2% due to siltation and informal encroachment."
+    ],
+    "citation_apa": "Sharma, R. C., Verma, S., & Mishra, A. K. (2024). Decadal spatio-temporal dynamics of agricultural land conversion in the Indo-Gangetic Plain. Journal of the Indian Society of Remote Sensing, 52(3), 412–429.",
+    "source_url": "https://doi.org/10.1007/s12524-024-01890-x",
+    "tags": [
+      "Indo-Gangetic Plain",
+      "Urban Sprawl",
+      "Sentinel-2",
+      "Agricultural Land Loss",
+      "Gorakhpur"
+    ],
+    "ai_summary": "AI Summary: The paper demonstrates that Eastern UP districts including Gorakhpur have experienced steady agricultural-to-built-up conversion along transport arteries, urging targeted zoning enforcement to preserve prime irrigated farmland.",
+    "related_dataset_ids": [
+      "DS-DES-LUS",
+      "DS-NRSC-BHUVAN"
+    ],
+    "related_policy_ids": [
+      "POL-PMKSY",
+      "POL-DILRMP"
+    ]
+  },
+  {
+    "id": "PAP-002",
+    "title": "Evaluating the Efficacy of Cadastral Digitization (DILRMP) on Land Tenure Security and Agricultural Credit Inflows in Central India",
+    "authors": [
+      "Dr. Meenakshi Sundaram",
+      "Dr. Arvind Panagariya",
+      "Kavita Joshi"
+    ],
+    "year": 2023,
+    "publisher": "Elsevier / Land Use Policy",
+    "journal": "Land Use Policy, Vol. 131, 106720 (2023)",
+    "abstract": "By exploiting staggered rollout timings of digital cadastral georeferencing and online Record of Rights (Bhu-Abhilekh) across Madhya Pradesh and Maharashtra, we estimate the causal effect of digital land title transparency on institutional agricultural borrowing and land dispute frequency. Using a difference-in-differences design, we document a 24% increase in formal Kisan Credit Card (KCC) disbursements in fully digitized tehsils.",
+    "research_area": "Land Governance, Institutional Economics & Digital Cadastres",
+    "geography": "Madhya Pradesh (Indore, Ujjain) & Maharashtra (Pune, Nagpur)",
+    "methodology": "Quasi-experimental Difference-in-Differences (DiD) econometric estimation combining SLBC bank credit registers with district cadastral digitization metrics.",
+    "key_findings": [
+      "24.3% higher formal institutional credit penetration in tehsils with georeferenced cadastral boundaries.",
+      "38.0% drop in boundary demarcation disputes registered in revenue courts.",
+      "Smallholder farmers experienced faster mutation turnaround (reduced from 45 days to 7 days)."
+    ],
+    "citation_apa": "Sundaram, M., Panagariya, A., & Joshi, K. (2023). Evaluating the efficacy of cadastral digitization on land tenure security and agricultural credit inflows in Central India. Land Use Policy, 131, 106720.",
+    "source_url": "https://doi.org/10.1016/j.landusepol.2023.106720",
+    "tags": [
+      "DILRMP",
+      "Cadastral Maps",
+      "Land Records",
+      "Agricultural Credit",
+      "Kisan Credit Card"
+    ],
+    "ai_summary": "AI Summary: Rigorous econometric evidence shows that digital land records modernize property rights clarity, cutting dispute resolution times and significantly lifting formal bank lending for agricultural operations.",
+    "related_dataset_ids": [
+      "DS-DILRMP-CAD",
+      "DS-CENSUS-AGRI"
+    ],
+    "related_policy_ids": [
+      "POL-DILRMP"
+    ]
+  },
+  {
+    "id": "PAP-003",
+    "title": "Groundwater Irrigation Dynamics and Agricultural Land Productivity Under PMKSY in Bundelkhand Region",
+    "authors": [
+      "Prof. Deepanker Ghosh",
+      "Dr. Radhika Nair"
+    ],
+    "year": 2025,
+    "publisher": "Current Science Association / Indian Academy of Sciences",
+    "journal": "Current Science, 128(2), 180–194 (2025)",
+    "abstract": "Bundelkhand region spanning UP and MP has historically faced severe agrarian stress. This paper evaluates the post-2015 expansion of check dams, farm ponds (Khet Talab), and micro-irrigation under PMKSY. We observe a 14.5% uptick in rabi-season cropped area and a reduction in seasonal fallow land.",
+    "research_area": "Agrarian Hydrology & Land Use Sustainability",
+    "geography": "Bundelkhand (Jhansi, Lalitpur, Banda, Tikamgarh)",
+    "methodology": "Hydrological water-balance modeling paired with MODIS evapotranspiration time series.",
+    "key_findings": [
+      "Seasonal fallow land dropped from 18.2% to 11.4% between 2015 and 2024.",
+      "Net irrigated area expanded by 112,000 hectares across 7 districts.",
+      "Crop diversification towards pulses and oilseeds increased by 19%."
+    ],
+    "citation_apa": "Ghosh, D., & Nair, R. (2025). Groundwater irrigation dynamics and agricultural land productivity under PMKSY in Bundelkhand region. Current Science, 128(2), 180–194.",
+    "source_url": "https://doi.org/10.18520/cs/v128/i2/180-194",
+    "tags": [
+      "PMKSY",
+      "Bundelkhand",
+      "Irrigation Expansion",
+      "Fallow Land",
+      "Water Conservation"
+    ],
+    "ai_summary": "AI Summary: Micro-irrigation and farm pond initiatives under PMKSY successfully converted significant seasonal fallow lands into productive rabi acreage across drought-vulnerable Bundelkhand.",
+    "related_dataset_ids": [
+      "DS-DES-LUS",
+      "DS-NRSC-BHUVAN"
+    ],
+    "related_policy_ids": [
+      "POL-PMKSY"
+    ]
+  }
+]
