@@ -1,0 +1,251 @@
+import express, { Request, Response } from 'express';
+import { db } from '../db/database.ts';
+import { AIService } from '../services/aiService.ts';
+import { StatsEngine } from '../services/statsEngine.ts';
+import { PolicyService } from '../services/policyService.ts';
+import { IngestionService } from '../services/ingestionService.ts';
+
+const router = express.Router();
+
+// States
+router.get('/states', (req: Request, res: Response) => {
+  res.json({ success: true, data: db.getStates() });
+});
+
+router.get('/states/:stateCode', (req: Request, res: Response) => {
+  const state = db.getStateByCode(req.params.stateCode);
+  if (!state) return res.status(404).json({ success: false, error: 'State not found' });
+  res.json({ success: true, data: state });
+});
+
+// Districts
+router.get('/districts', (req: Request, res: Response) => {
+  const stateCode = req.query.stateCode as string;
+  res.json({ success: true, data: db.getDistricts(stateCode) });
+});
+
+router.get('/districts/:districtCode', (req: Request, res: Response) => {
+  const district = db.getDistrictByCode(req.params.districtCode);
+  if (!district) return res.status(404).json({ success: false, error: 'District not found' });
+  res.json({ success: true, data: district });
+});
+
+// Land Use Records
+router.get('/land-use/records', (req: Request, res: Response) => {
+  const { state_code, district_code, year, category } = req.query;
+  const records = db.getLandUseRecords({
+    state_code: state_code as string,
+    district_code: district_code as string,
+    year: year ? Number(year) : undefined,
+    category: category as string
+  });
+  res.json({ success: true, count: records.length, data: records });
+});
+
+// Trend Analysis Endpoint
+router.get('/land-use/trends', (req: Request, res: Response) => {
+  const stateCode = (req.query.state as string) || 'IN-ALL';
+  const districtCode = req.query.district as string;
+  const category = (req.query.category as string) || 'agricultural';
+
+  const records = db.getLandUseRecords({
+    state_code: stateCode,
+    district_code: districtCode
+  }).sort((a, b) => a.year - b.year);
+
+  const key = `${category}_pct`;
+  const series = records.map(r => {
+    const rec = r as any;
+    return {
+      year: r.year,
+      value: typeof rec[key] === 'number' ? rec[key] : 0,
+      agricultural: r.agricultural_pct,
+      forest: r.forest_pct,
+      builtup: r.builtup_pct,
+      water: r.waterbodies_pct,
+      barren: r.barren_pct,
+      irrigated: r.irrigated_pct,
+      degraded: r.degraded_pct
+    };
+  });
+
+  const metrics = StatsEngine.analyzeTrend(series.map(s => ({ year: s.year, value: s.value })));
+
+  const state = db.getStateByCode(stateCode);
+  const district = districtCode ? db.getDistrictByCode(districtCode) : undefined;
+
+  res.json({
+    success: true,
+    geography: {
+      type: district ? 'district' : stateCode === 'IN-ALL' ? 'national' : 'state',
+      name: district ? district.district_name : state ? state.state_name : 'All India',
+      stateCode,
+      districtCode
+    },
+    category,
+    period: {
+      from: series[0]?.year || 2005,
+      to: series[series.length - 1]?.year || 2025
+    },
+    data: series,
+    summary: metrics,
+    sources: [
+      { name: 'Ministry of Agriculture & Farmers Welfare (DES)', year: '2025', url: 'https://desagri.gov.in' },
+      { name: 'State Directorate of Land Records', year: '2025', url: 'https://updes.up.nic.in' }
+    ]
+  });
+});
+
+// Comparison Endpoint
+router.get('/land-use/compare', (req: Request, res: Response) => {
+  const geo1 = (req.query.geo1 as string) || 'IN-UP';
+  const geo2 = (req.query.geo2 as string) || 'IN-BR';
+  const year = req.query.year ? Number(req.query.year) : 2025;
+
+  const recs1 = db.getLandUseRecords({ state_code: geo1, year });
+  const recs2 = db.getLandUseRecords({ state_code: geo2, year });
+
+  const r1 = recs1[0] || db.getLandUseRecords({ state_code: geo1 })[0];
+  const r2 = recs2[0] || db.getLandUseRecords({ state_code: geo2 })[0];
+
+  const state1 = db.getStateByCode(geo1);
+  const state2 = db.getStateByCode(geo2);
+
+  res.json({
+    success: true,
+    year,
+    comparison: {
+      geo1: {
+        code: geo1,
+        name: state1?.state_name || geo1,
+        record: r1
+      },
+      geo2: {
+        code: geo2,
+        name: state2?.state_name || geo2,
+        record: r2
+      },
+      deltas: r1 && r2 ? {
+        agricultural_diff: Number((r1.agricultural_pct - r2.agricultural_pct).toFixed(2)),
+        forest_diff: Number((r1.forest_pct - r2.forest_pct).toFixed(2)),
+        builtup_diff: Number((r1.builtup_pct - r2.builtup_pct).toFixed(2)),
+        water_diff: Number((r1.waterbodies_pct - r2.waterbodies_pct).toFixed(2)),
+        barren_diff: Number((r1.barren_pct - r2.barren_pct).toFixed(2)),
+        irrigated_diff: Number((r1.irrigated_pct - r2.irrigated_pct).toFixed(2))
+      } : null
+    }
+  });
+});
+
+// Datasets
+router.get('/datasets', (req: Request, res: Response) => {
+  const { search, category } = req.query;
+  const datasets = db.getDatasets(search as string, category as string);
+  res.json({ success: true, count: datasets.length, data: datasets });
+});
+
+router.get('/datasets/:id', (req: Request, res: Response) => {
+  const dataset = db.getDatasetById(req.params.id);
+  if (!dataset) return res.status(404).json({ success: false, error: 'Dataset not found' });
+  res.json({ success: true, data: dataset });
+});
+
+// Data Sources
+router.get('/data-sources', (req: Request, res: Response) => {
+  res.json({ success: true, data: db.getDataSources() });
+});
+
+router.post('/data-sources/:id/sync', (req: Request, res: Response) => {
+  const synced = db.syncDataSource(req.params.id);
+  if (!synced) return res.status(404).json({ success: false, error: 'Data source not found' });
+  res.json({ success: true, message: `Data source ${synced.name} synchronized successfully`, data: synced });
+});
+
+// Policies
+router.get('/policies', (req: Request, res: Response) => {
+  res.json({ success: true, data: db.getPolicies() });
+});
+
+router.get('/policies/:id', (req: Request, res: Response) => {
+  const policy = db.getPolicyById(req.params.id);
+  if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
+  res.json({ success: true, data: policy });
+});
+
+router.get('/policies/:id/impact', (req: Request, res: Response) => {
+  try {
+    const stateCode = (req.query.state as string) || 'IN-UP';
+    const impact = PolicyService.analyzePolicyImpact(req.params.id, stateCode);
+    res.json({ success: true, data: impact });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
+  }
+});
+
+// Research Papers
+router.get('/research', (req: Request, res: Response) => {
+  const { search, tag } = req.query;
+  const papers = db.getResearchPapers(search as string, tag as string);
+  res.json({ success: true, count: papers.length, data: papers });
+});
+
+router.get('/research/:id', (req: Request, res: Response) => {
+  const paper = db.getResearchPaperById(req.params.id);
+  if (!paper) return res.status(404).json({ success: false, error: 'Research paper not found' });
+  res.json({ success: true, data: paper });
+});
+
+// Anomalies
+router.get('/anomalies', (req: Request, res: Response) => {
+  const stateCode = req.query.state as string;
+  res.json({ success: true, data: db.getAnomalies(stateCode) });
+});
+
+// AI Query
+router.post('/ai/query', async (req: Request, res: Response) => {
+  const { query } = req.body;
+  if (!query || typeof query !== 'string') {
+    return res.status(400).json({ success: false, error: 'Query string is required' });
+  }
+
+  try {
+    const answer = await AIService.answerQuery(query);
+    res.json({ success: true, data: answer });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: 'Failed to process AI query', details: err.message });
+  }
+});
+
+router.get('/ai/recent-queries', (req: Request, res: Response) => {
+  res.json({ success: true, data: db.getRecentAIQueries() });
+});
+
+// Admin Ingestion
+router.post('/admin/upload', (req: Request, res: Response) => {
+  const { rawRows, columnMapping, metadata } = req.body;
+  if (!rawRows || !columnMapping || !metadata) {
+    return res.status(400).json({ success: false, error: 'Missing rawRows, columnMapping, or metadata payload' });
+  }
+
+  const result = IngestionService.validateAndTransform(rawRows, columnMapping, metadata);
+  if (!result.validation.isValid) {
+    return res.status(422).json({ success: false, validation: result.validation });
+  }
+
+  if (result.dataset && result.records) {
+    db.addUploadedDataset(result.dataset, result.records);
+  }
+
+  res.json({
+    success: true,
+    message: `Successfully ingested ${result.records?.length} records into dataset "${result.dataset?.title}"`,
+    validation: result.validation,
+    dataset: result.dataset
+  });
+});
+
+router.get('/admin/audit-logs', (req: Request, res: Response) => {
+  res.json({ success: true, data: db.getAuditLogs() });
+});
+
+export default router;

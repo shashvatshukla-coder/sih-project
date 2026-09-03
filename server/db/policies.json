@@ -1,0 +1,87 @@
+[
+  {
+    "id": "POL-PMKSY",
+    "name": "Pradhan Mantri Krishi Sinchayee Yojana",
+    "acronym": "PMKSY",
+    "ministry": "Ministry of Jal Shakti & Ministry of Agriculture",
+    "launch_year": 2015,
+    "description": "National mission aimed at achieving convergence of investments in irrigation at the field level, expanding cultivable area under assured irrigation (Har Khet Ko Pani), and improving on-farm water-use efficiency (Per Drop More Crop).",
+    "target_region": "Pan-India, with special focus on drought-prone and water-stressed districts in UP Bundelkhand, MP, and Marathwada",
+    "objectives": [
+      "Expand gross irrigated area from 49% to over 56% nationwide",
+      "Reduce waterlogging and soil salinization in canal command areas",
+      "Promote micro-irrigation (drip & sprinkler) for intensive crop rotation",
+      "Enhance groundwater recharge in depleted aquifers"
+    ],
+    "related_indicators": [
+      "Irrigated Area %",
+      "Agricultural Land %",
+      "Water Bodies Area",
+      "Land Degradation %"
+    ],
+    "documents_url": "https://pmksy.gov.in/guidelines.aspx",
+    "pre_period": "2010-2015",
+    "post_period": "2016-2025",
+    "observed_impact_summary": "District-level time series data shows irrigated agricultural land share increased by +4.1% in Uttar Pradesh and +10.2% in Madhya Pradesh post-2015, coinciding with canal modernization and micro-irrigation subsidies.",
+    "methodology_note": "Before/After longitudinal comparison using MoA&FW Land Use Statistics and CGWB ground water monitoring stations. Observed association does not necessarily imply direct isolated causation.",
+    "linked_dataset_ids": [
+      "DS-DES-LUS",
+      "DS-CENSUS-AGRI"
+    ]
+  },
+  {
+    "id": "POL-DILRMP",
+    "name": "Digital India Land Records Modernization Programme (Bhu-Aadhaar / ULPIN)",
+    "acronym": "DILRMP",
+    "ministry": "Department of Land Resources, Ministry of Rural Development",
+    "launch_year": 2008,
+    "description": "A major national e-governance initiative to build a transparent, integrated land information management system by computerizing Records of Rights (RoRs), digitizing cadastral maps with GIS georeferencing, and assigning a 14-digit Unique Land Parcel Identification Number.",
+    "target_region": "All 700+ revenue districts across India",
+    "objectives": [
+      "100% digital cadastral map integration with spatial parcel boundaries",
+      "Real-time mutation synchronization between Sub-Registrar Offices and Tehsils",
+      "Reduction of land dispute litigation and title uncertainty in agricultural parcels",
+      "Single-window citizen access to certified spatial land records"
+    ],
+    "related_indicators": [
+      "Cadastral Digitization %",
+      "Recorded Land Disputes",
+      "Built-up Land Conversion Registration"
+    ],
+    "documents_url": "https://dilrmp.gov.in/policies",
+    "pre_period": "2005-2010",
+    "post_period": "2011-2025",
+    "observed_impact_summary": "State records indicate a 64% decrease in unregistered partition disputes and over 91% geo-referencing of village parcel maps in pilot districts across UP, MP, and Maharashtra.",
+    "methodology_note": "Administrative audit data combined with DoLR quarterly MIS filings.",
+    "linked_dataset_ids": [
+      "DS-DILRMP-CAD"
+    ]
+  },
+  {
+    "id": "POL-GIM",
+    "name": "National Mission for a Green India (GIM)",
+    "acronym": "GIM",
+    "ministry": "Ministry of Environment, Forest & Climate Change",
+    "launch_year": 2014,
+    "description": "One of the eight missions under the National Action Plan on Climate Change (NAPCC) aimed at protecting, restoring, and enhancing India's forest cover through agro-forestry and eco-restoration of degraded lands.",
+    "target_region": "Vulnerable forest corridors, Western Ghats, Central Indian Highlands, and degraded catchment areas",
+    "objectives": [
+      "Increase forest/tree cover to 33% of geographic area in target landscapes",
+      "Enhance carbon sequestration by 50-60 million tonnes annually by 2030",
+      "Improve livelihood opportunities for 3 million forest-dependent households"
+    ],
+    "related_indicators": [
+      "Forest Cover %",
+      "Degraded Land %",
+      "Barren / Wasteland %"
+    ],
+    "documents_url": "https://moef.gov.in/gim",
+    "pre_period": "2008-2014",
+    "post_period": "2015-2025",
+    "observed_impact_summary": "Forest cover in Madhya Pradesh and Karnataka stabilized with moderate gains in open and community-managed forests (+0.5% to +0.8% increase in forest share).",
+    "methodology_note": "FSI biennial satellite canopy assessment normalized across terrain gradients.",
+    "linked_dataset_ids": [
+      "DS-FSI-ISFR"
+    ]
+  }
+]

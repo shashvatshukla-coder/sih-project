@@ -1,0 +1,81 @@
+[
+  {
+    "id": "ANOM-001",
+    "geography_type": "district",
+    "geography_name": "Gautam Buddha Nagar",
+    "state_code": "IN-UP",
+    "district_code": "UP-GBN",
+    "indicator": "Built-up Land Expansion",
+    "year_range": "2015–2025",
+    "observed_value": "+47.9% built-up growth (29.0% -> 42.9% total area)",
+    "expected_range": "+8.0% to +14.0% state baseline mean",
+    "deviation_zscore": 3.42,
+    "severity": "Critical",
+    "possible_factors": [
+      "Rapid infrastructure expansion surrounding Noida International Airport (Jewar)",
+      "Yamuna Expressway industrial and logistics zoning corridors",
+      "Conversion of former peri-urban agricultural holdings into commercial clusters"
+    ],
+    "confidence": 96,
+    "methodology": "Z-score deviation calculated against 75 UP district historical decadal built-up growth distributions."
+  },
+  {
+    "id": "ANOM-002",
+    "geography_type": "district",
+    "geography_name": "Bengaluru Urban",
+    "state_code": "IN-KA",
+    "district_code": "KA-BLU",
+    "indicator": "Agricultural Land Contraction",
+    "year_range": "2015–2025",
+    "observed_value": "-46.4% agricultural land share (28.0% -> 15.0%)",
+    "expected_range": "-3.0% to -6.5% state baseline mean",
+    "deviation_zscore": -3.15,
+    "severity": "Critical",
+    "possible_factors": [
+      "High-intensity tech corridor and outer ring road residential conversion",
+      "Severe pressure on peri-urban green belts in Electronic City, Sarjapur, and Whitefield",
+      "Loss of lake catchment zones and agrarian water tanks"
+    ],
+    "confidence": 95,
+    "methodology": "Moving average variance analysis and historical decadal LULC change matrices."
+  },
+  {
+    "id": "ANOM-003",
+    "geography_type": "district",
+    "geography_name": "Gorakhpur",
+    "state_code": "IN-UP",
+    "district_code": "UP-GKP",
+    "indicator": "Water Bodies Area Contraction",
+    "year_range": "2015–2025",
+    "observed_value": "-4.7% net surface water extent (6.4% -> 6.1% district area)",
+    "expected_range": "-0.5% to +0.8% regional baseline",
+    "deviation_zscore": -2.18,
+    "severity": "Warning",
+    "possible_factors": [
+      "Peri-urban wetland encroachment and drainage modification",
+      "Siltation of floodplain oxbow lakes (Tals) along the Rapti river basin",
+      "Diversion of secondary agricultural canals"
+    ],
+    "confidence": 92,
+    "methodology": "Multi-year MNDWI remote sensing index deviation threshold calculation."
+  },
+  {
+    "id": "ANOM-004",
+    "geography_type": "state",
+    "geography_name": "Rajasthan",
+    "state_code": "IN-RJ",
+    "indicator": "Barren Land Reclamation to Cropland",
+    "year_range": "2010–2025",
+    "observed_value": "-20.0% barren land reduction accompanied by +8.1% agricultural expansion",
+    "expected_range": "-4.0% to -7.0% national benchmark",
+    "deviation_zscore": 2.35,
+    "severity": "Informational",
+    "possible_factors": [
+      "Indira Gandhi Canal Project (IGNP) command area stabilization",
+      "Wasteland development and solar park dual-use land management in western districts",
+      "Adoption of pressurized drip irrigation in arid sandy soils"
+    ],
+    "confidence": 94,
+    "methodology": "Longitudinal state-level 9-fold land classification statistical break test."
+  }
+]

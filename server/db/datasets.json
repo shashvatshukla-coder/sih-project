@@ -1,0 +1,189 @@
+[
+  {
+    "id": "DS-DES-LUS",
+    "title": "Land Use Statistics At A Glance (All-India & State Series)",
+    "publisher": "Directorate of Economics and Statistics, Ministry of Agriculture & Farmers Welfare",
+    "description": "Comprehensive 9-fold classification of land-use statistics covering reported area, forest cover, area not available for cultivation, other uncultivated lands, fallow lands, and net area sown across Indian States and UTs.",
+    "category": "Land Use",
+    "coverage": "All India (36 States & UTs, 700+ Districts)",
+    "date_range": "2000-01 to 2024-25",
+    "last_updated": "2025-11-15",
+    "format": "CSV",
+    "update_frequency": "Annual",
+    "source_url": "https://desagri.gov.in/land-use-statistics",
+    "license": "Government Open Data License - India (GODL)",
+    "data_quality": {
+      "completeness": 97.4,
+      "freshness": "2025 Edition (Published Nov 2025)",
+      "geographic_coverage_count": 36,
+      "missing_values_pct": 1.2,
+      "reliability_tier": "Tier 1 (Official MoA/NRSC)"
+    },
+    "sample_rows": [
+      {
+        "State": "Uttar Pradesh",
+        "Year": "2024-25",
+        "Total_Area_000_Ha": 24328.6,
+        "Net_Sown_000_Ha": 16640,
+        "Forest_000_Ha": 2240,
+        "Non_Agri_Use_000_Ha": 2870
+      },
+      {
+        "State": "Madhya Pradesh",
+        "Year": "2024-25",
+        "Total_Area_000_Ha": 30825.2,
+        "Net_Sown_000_Ha": 15166,
+        "Forest_000_Ha": 8785,
+        "Non_Agri_Use_000_Ha": 2466
+      },
+      {
+        "State": "Maharashtra",
+        "Year": "2024-25",
+        "Total_Area_000_Ha": 30771.3,
+        "Net_Sown_000_Ha": 16554,
+        "Forest_000_Ha": 5385,
+        "Non_Agri_Use_000_Ha": 3999
+      }
+    ]
+  },
+  {
+    "id": "DS-FSI-ISFR",
+    "title": "India State of Forest Report (ISFR) Biennial Assessment",
+    "publisher": "Forest Survey of India (FSI), Ministry of Environment, Forest & Climate Change",
+    "description": "Satellite-derived forest canopy density assessment categorizing Very Dense Forest (VDF), Moderately Dense Forest (MDF), Open Forest (OF), and Scrub cover by district and altitude zones.",
+    "category": "Forestry",
+    "coverage": "All India & District Boundaries",
+    "date_range": "2005 to 2025 Biennial",
+    "last_updated": "2025-02-10",
+    "format": "GeoJSON",
+    "update_frequency": "Biannual",
+    "source_url": "https://fsi.nic.in/isfr-forest-cover",
+    "license": "GODL - India",
+    "data_quality": {
+      "completeness": 99.1,
+      "freshness": "2025 Biennial Release",
+      "geographic_coverage_count": 732,
+      "missing_values_pct": 0.4,
+      "reliability_tier": "Tier 1 (Official MoA/NRSC)"
+    },
+    "sample_rows": [
+      {
+        "District": "Gorakhpur",
+        "State": "Uttar Pradesh",
+        "VDF_sqkm": 12.4,
+        "MDF_sqkm": 42.1,
+        "OF_sqkm": 71.7,
+        "Total_Forest_sqkm": 126.2
+      },
+      {
+        "District": "Pune",
+        "State": "Maharashtra",
+        "VDF_sqkm": 184.2,
+        "MDF_sqkm": 742,
+        "OF_sqkm": 950.8,
+        "Total_Forest_sqkm": 1877
+      }
+    ]
+  },
+  {
+    "id": "DS-NRSC-BHUVAN",
+    "title": "National Land Use / Land Cover 50K Spatial Geodatabase (Bhuvan)",
+    "publisher": "National Remote Sensing Centre (NRSC), ISRO, Department of Space",
+    "description": "Multi-temporal IRS LISS-III and Sentinel sensor classification tracking kharif, rabi, zaid croplands, wetlands, urban sprawl polygons, and wasteland reclaim status.",
+    "category": "Satellite / Remote Sensing",
+    "coverage": "1:50,000 Pan-India Geospatial Layers",
+    "date_range": "2005-06 to 2024-25",
+    "last_updated": "2025-08-20",
+    "format": "API",
+    "update_frequency": "Annual",
+    "source_url": "https://bhuvan.nrsc.gov.in/lulc",
+    "license": "ISRO Open Data Policy",
+    "data_quality": {
+      "completeness": 95.8,
+      "freshness": "2024-25 Annual Cycle",
+      "geographic_coverage_count": 36,
+      "missing_values_pct": 2.1,
+      "reliability_tier": "Tier 1 (Official MoA/NRSC)"
+    },
+    "sample_rows": [
+      {
+        "Grid_ID": "72E04",
+        "State": "Uttar Pradesh",
+        "Builtup_ha": 4210.5,
+        "Cropland_Double_ha": 14500.2,
+        "Wetland_ha": 890.1,
+        "Sensor": "IRS-Resourcesat-2A"
+      }
+    ]
+  },
+  {
+    "id": "DS-DILRMP-CAD",
+    "title": "Digital India Land Records Modernization Programme (DILRMP) Cadastral Status",
+    "publisher": "Department of Land Resources (DoLR), Ministry of Rural Development",
+    "description": "Cadastral map digitization, Record of Rights (RoR) computerization, sub-registrar office computerization, and unique land parcel identification number (ULPIN / Bhu-Aadhaar) roll-out metrics.",
+    "category": "Land Use",
+    "coverage": "National Tehsil / Taluk Level",
+    "date_range": "2008 to 2025",
+    "last_updated": "2026-01-05",
+    "format": "JSON",
+    "update_frequency": "Quarterly",
+    "source_url": "https://dilrmp.gov.in",
+    "license": "GODL - India",
+    "data_quality": {
+      "completeness": 94.2,
+      "freshness": "Q4 2025-26",
+      "geographic_coverage_count": 685,
+      "missing_values_pct": 3.5,
+      "reliability_tier": "Tier 1 (Official MoA/NRSC)"
+    },
+    "sample_rows": [
+      {
+        "State": "Uttar Pradesh",
+        "Digitized_Villages": 108420,
+        "RoR_Online_Pct": 99.8,
+        "Cadastral_Maps_GeoReferenced_Pct": 91.2
+      },
+      {
+        "State": "Madhya Pradesh",
+        "Digitized_Villages": 54903,
+        "RoR_Online_Pct": 100,
+        "Cadastral_Maps_GeoReferenced_Pct": 96.4
+      }
+    ]
+  },
+  {
+    "id": "DS-CENSUS-AGRI",
+    "title": "All India Agriculture Census Operational Landholdings",
+    "publisher": "Agriculture Census Division, Ministry of Agriculture & Farmers Welfare",
+    "description": "Distribution of operational holdings across marginal (<1 ha), small (1-2 ha), semi-medium (2-4 ha), medium (4-10 ha), and large (>=10 ha) tenure classes with irrigation and tenancy records.",
+    "category": "Agriculture",
+    "coverage": "All India State & District Aggregates",
+    "date_range": "2005-06, 2010-11, 2015-16, 2021-22",
+    "last_updated": "2024-10-10",
+    "format": "XLSX",
+    "update_frequency": "Decennial",
+    "source_url": "https://agcensus.gov.in",
+    "license": "GODL - India",
+    "data_quality": {
+      "completeness": 98,
+      "freshness": "11th Agri Census (2021-22 Series)",
+      "geographic_coverage_count": 36,
+      "missing_values_pct": 0.8,
+      "reliability_tier": "Tier 1 (Official MoA/NRSC)"
+    },
+    "sample_rows": [
+      {
+        "State": "Uttar Pradesh",
+        "Marginal_Holdings_Pct": 80.2,
+        "Small_Holdings_Pct": 12.8,
+        "Avg_Holding_Size_Ha": 0.73
+      },
+      {
+        "State": "Punjab",
+        "Marginal_Holdings_Pct": 14.1,
+        "Small_Holdings_Pct": 18.7,
+        "Avg_Holding_Size_Ha": 3.62
+      }
+    ]
+  }
+]
