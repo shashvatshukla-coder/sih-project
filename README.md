@@ -59,6 +59,25 @@ npm run dev:client   # Starts Vite Dev Server on http://localhost:5173
 npm run build
 ```
 
+### 5. Deploying the Backend on Render
+
+The repository includes a `render.yaml` Blueprint for the Express API. In Render, create a **Blueprint**, connect this repository, and Render will use these settings automatically:
+
+- **Service type**: Web Service
+- **Build command**: `npm ci --omit=dev`
+- **Start command**: `npm start`
+- **Health check path**: `/health`
+
+For a manual Web Service setup, leave **Root Directory** empty and use the same commands above. Render supplies `PORT`; the server binds to `0.0.0.0` automatically.
+
+After Render gives you the backend URL, add this environment variable to the Vercel frontend and redeploy it:
+
+```bash
+VITE_API_BASE_URL=https://YOUR-RENDER-SERVICE.onrender.com/api
+```
+
+Optionally restrict backend browser access by setting `CORS_ORIGINS` on Render to your exact Vercel origin (without a trailing slash). Multiple origins can be comma-separated.
+
 ---
 
 ## 📜 Official Standards Compliance
