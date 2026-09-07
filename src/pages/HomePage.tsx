@@ -103,7 +103,7 @@ export const HomePage: React.FC = () => {
                 type="text"
                 value={heroPrompt}
                 onChange={e => setHeroPrompt(e.target.value)}
-                placeholder="Ask e.g. 'UP mein agricultural land-use ka trend kya hai?'..."
+                placeholder="Ask e.g. 'Show land statistics of Gauriganj, Amethi' or 'UP land trend'..."
                 className="w-full pl-10 pr-4 py-3 text-xs md:text-sm font-medium rounded-xl bg-white/10 border border-white/20 text-white placeholder-slate-400 backdrop-blur-md focus:outline-hidden focus:ring-2 focus:ring-brand-400"
               />
             </div>
