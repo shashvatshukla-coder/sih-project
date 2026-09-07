@@ -1,9 +1,10 @@
-import express, { Request, Response } from 'express';
+﻿import express, { Request, Response } from 'express';
 import { db } from '../db/database.ts';
 import { AIService } from '../services/aiService.ts';
 import { StatsEngine } from '../services/statsEngine.ts';
 import { PolicyService } from '../services/policyService.ts';
 import { IngestionService } from '../services/ingestionService.ts';
+import { GeminiService } from '../services/geminiService.ts';
 
 const router = express.Router();
 
@@ -44,7 +45,7 @@ router.get('/land-use/records', (req: Request, res: Response) => {
 
 // Trend Analysis Endpoint
 router.get('/land-use/trends', (req: Request, res: Response) => {
-  const stateCode = (req.query.state as string) || 'IN-ALL';
+  const stateCode = (req.query.state as string) || 'IN-UP';
   const districtCode = req.query.district as string;
   const category = (req.query.category as string) || 'agricultural';
 
@@ -72,7 +73,7 @@ router.get('/land-use/trends', (req: Request, res: Response) => {
   const metrics = StatsEngine.analyzeTrend(series.map(s => ({ year: s.year, value: s.value })));
 
   const state = db.getStateByCode(stateCode);
-  const district = districtCode ? db.getDistrictByCode(districtCode) : undefined;
+  const district = districtCode && districtCode !== 'ALL' ? db.getDistrictByCode(districtCode) : undefined;
 
   res.json({
     success: true,
@@ -91,7 +92,7 @@ router.get('/land-use/trends', (req: Request, res: Response) => {
     summary: metrics,
     sources: [
       { name: 'Ministry of Agriculture & Farmers Welfare (DES)', year: '2025', url: 'https://desagri.gov.in' },
-      { name: 'State Directorate of Land Records', year: '2025', url: 'https://updes.up.nic.in' }
+      { name: 'State Directorate of Land Records & Board of Revenue (UP)', year: '2025', url: 'https://updes.up.nic.in' }
     ]
   });
 });
@@ -201,15 +202,15 @@ router.get('/anomalies', (req: Request, res: Response) => {
   res.json({ success: true, data: db.getAnomalies(stateCode) });
 });
 
-// AI Query
+// AI Query Endpoint
 router.post('/ai/query', async (req: Request, res: Response) => {
-  const { query } = req.body;
+  const { query, apiKey } = req.body;
   if (!query || typeof query !== 'string') {
     return res.status(400).json({ success: false, error: 'Query string is required' });
   }
 
   try {
-    const answer = await AIService.answerQuery(query);
+    const answer = await AIService.answerQuery(query, apiKey);
     res.json({ success: true, data: answer });
   } catch (err: any) {
     res.status(500).json({ success: false, error: 'Failed to process AI query', details: err.message });
@@ -218,6 +219,19 @@ router.post('/ai/query', async (req: Request, res: Response) => {
 
 router.get('/ai/recent-queries', (req: Request, res: Response) => {
   res.json({ success: true, data: db.getRecentAIQueries() });
+});
+
+// Test Gemini API Endpoint
+router.get('/ai/test-gemini', async (req: Request, res: Response) => {
+  const apiKey = req.query.apiKey as string | undefined;
+  const result = await GeminiService.testConnection(apiKey);
+  res.json(result);
+});
+
+router.post('/ai/test-gemini', async (req: Request, res: Response) => {
+  const { apiKey } = req.body;
+  const result = await GeminiService.testConnection(apiKey);
+  res.json(result);
 });
 
 // Admin Ingestion

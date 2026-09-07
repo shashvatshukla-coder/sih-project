@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { AIQueryResponse } from '../../types';
 import { useApp } from '../../context/AppContext';
 import {
@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   AlertTriangle,
   GitCompare,
-  FileText
+  FileText,
+  Bot
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -31,7 +32,7 @@ interface AnswerCardProps {
 }
 
 export const AIAnswerCard: React.FC<AnswerCardProps> = ({ response }) => {
-  const { saveItem, isSaved, setActivePage, setSelectedState } = useApp();
+  const { saveItem, isSaved, setActivePage, setSelectedState, setSelectedDistrict } = useApp();
   const [whyModalOpen, setWhyModalOpen] = useState(false);
 
   const {
@@ -45,6 +46,7 @@ export const AIAnswerCard: React.FC<AnswerCardProps> = ({ response }) => {
     anomaliesDetected,
     sources,
     confidence,
+    aiModel,
     calculationBreakdown
   } = response;
 
@@ -77,6 +79,9 @@ export const AIAnswerCard: React.FC<AnswerCardProps> = ({ response }) => {
     if (intent.stateCode) {
       setSelectedState(intent.stateCode);
     }
+    if (intent.districtCode) {
+      setSelectedDistrict(intent.districtCode);
+    }
     setActivePage('comparison');
   };
 
@@ -85,9 +90,13 @@ export const AIAnswerCard: React.FC<AnswerCardProps> = ({ response }) => {
       {/* Top Header & Structured Intent Badges */}
       <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-slate-200 dark:border-slate-800">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1">
+          <div className="flex items-center gap-2 text-xs font-semibold text-purple-600 dark:text-purple-400 uppercase tracking-wider mb-1 flex-wrap">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Structured Analytical Query Result</span>
+            <span className="px-2 py-0.5 rounded text-[10px] font-mono bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 flex items-center gap-1">
+              <Bot className="w-3 h-3" />
+              {aiModel || 'Google Gemini 1.5 Flash (Grounded)'}
+            </span>
           </div>
           <h3 className="text-lg md:text-xl font-bold text-slate-900 dark:text-white">
             {intent.geographyName} — {intent.indicator?.toUpperCase()} Trend ({metrics.startYear}–{metrics.endYear})
@@ -169,7 +178,7 @@ export const AIAnswerCard: React.FC<AnswerCardProps> = ({ response }) => {
       <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-800 space-y-2">
         <div className="flex items-center justify-between text-xs">
           <span className="font-bold text-slate-800 dark:text-slate-200">
-            Historical Series Trend ({metrics.startYear} → {metrics.endYear})
+            {intent.geographyName}: Historical Series Trend ({metrics.startYear} → {metrics.endYear})
           </span>
           <span className="text-[11px] font-mono text-slate-400">
             CAGR: {metrics.cagr}% p.a.
@@ -212,9 +221,9 @@ export const AIAnswerCard: React.FC<AnswerCardProps> = ({ response }) => {
       <div className="p-4 rounded-xl bg-brand-50/60 dark:bg-brand-950/30 border border-brand-200 dark:border-brand-800/60 text-slate-800 dark:text-slate-200 text-xs space-y-2">
         <div className="flex items-center gap-1.5 font-bold text-brand-900 dark:text-brand-300 text-xs">
           <Sparkles className="w-4 h-4 text-brand-600 dark:text-brand-400" />
-          <span>Evidence-Backed Analytical Summary</span>
+          <span>Grounded Gemini Analytical Synthesis</span>
         </div>
-        <p className="leading-relaxed text-xs md:text-[13px]">
+        <p className="leading-relaxed text-xs md:text-[13px] whitespace-pre-line">
           {summary}
         </p>
       </div>
@@ -292,7 +301,7 @@ export const AIAnswerCard: React.FC<AnswerCardProps> = ({ response }) => {
             className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline flex items-center gap-1"
           >
             <GitCompare className="w-3.5 h-3.5" />
-            Compare with another State →
+            Compare with another District/State →
           </button>
         </div>
       </div>

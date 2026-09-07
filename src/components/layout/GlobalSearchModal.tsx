@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
-import { PageId } from '../../types';
+import { PageId, District } from '../../types';
 import {
   Search,
   X,
