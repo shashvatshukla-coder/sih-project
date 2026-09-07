@@ -77,5 +77,25 @@
     ],
     "confidence": 94,
     "methodology": "Longitudinal state-level 9-fold land classification statistical break test."
+  },
+  {
+    "id": "ANOM-005",
+    "geography_type": "district",
+    "geography_name": "Amethi (Gauriganj)",
+    "state_code": "IN-UP",
+    "district_code": "UP-AMT",
+    "indicator": "Barren/Usar Sodic Soil Reclamation",
+    "year_range": "2010–2025",
+    "observed_value": "-31.1% barren/usar reduction (9.0% -> 6.2%) with +10.0 pp irrigation increase",
+    "expected_range": "-4.0% to -8.0% state baseline mean",
+    "deviation_zscore": 2.58,
+    "severity": "Informational",
+    "possible_factors": [
+      "UP Sodic Land Reclamation Project (UPSLRP) gypsum application and drain network installation",
+      "Expansion of Sharda Sahayak feeder canals and solar pump adoption under PM-KUSUM",
+      "Gauriganj administrative headquarters development converting barren patches into built-up infrastructure"
+    ],
+    "confidence": 94,
+    "methodology": "Longitudinal soil sodicity classification and 9-fold land-use category transition tracking."
   }
 ]

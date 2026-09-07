@@ -15,6 +15,7 @@ export const AskLandAI: React.FC = () => {
   const [inputQuery, setInputQuery] = useState(activeAIQuery || '');
 
   const suggestedQueries = [
+    'Show land statistics of Gauriganj, Amethi (UP)',
     'UP mein agricultural land-use ka trend kya hai?',
     'Which districts have experienced the highest urban expansion?',
     'Compare forest cover in MP and Maharashtra',

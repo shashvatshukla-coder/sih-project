@@ -88,6 +88,17 @@
     ]
   },
   {
+    "district_code": "UP-AMT",
+    "district_name": "Amethi (Gauriganj)",
+    "state_code": "IN-UP",
+    "state_name": "Uttar Pradesh",
+    "total_area_sqkm": 2329,
+    "center_coords": [
+      26.2167,
+      81.6833
+    ]
+  },
+  {
     "district_code": "BR-PAT",
     "district_name": "Patna",
     "state_code": "IN-BR",
