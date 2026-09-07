@@ -199,6 +199,7 @@ export interface AIQueryResponse {
   anomaliesDetected?: string[];
   sources: Array<{ name: string; year: string; url: string; datasetId?: string }>;
   confidence: number;
+  aiModel?: string;
   calculationBreakdown: {
     formula: string;
     rawValues: string;

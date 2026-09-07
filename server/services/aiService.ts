@@ -1,6 +1,7 @@
-import { db } from '../db/database.ts';
+﻿import { db } from '../db/database.ts';
 import { StatsEngine } from './statsEngine.ts';
 import { AIQueryResponse, LandUseRecord } from '../db/schema.ts';
+import { GeminiService } from './geminiService.ts';
 
 interface ParsedIntent {
   type: 'trend_analysis' | 'comparison' | 'anomaly_check' | 'policy_evaluation' | 'general_stat';
@@ -145,7 +146,7 @@ export class AIService {
     };
   }
 
-  public static async answerQuery(queryText: string): Promise<AIQueryResponse> {
+  public static async answerQuery(queryText: string, apiKey?: string): Promise<AIQueryResponse> {
     const intent = this.parseQuery(queryText);
     
     // Retrieve filtered records
@@ -197,6 +198,28 @@ export class AIService {
       summary = `${intent.geographyName} maintains a largely stable share of ${indTitle} between ${metrics.startYear} and ${metrics.endYear}, oscillating mildly around ${metrics.endValue}% with negligible net divergence (${absText}).`;
     }
 
+    // Try Gemini AI Insights if configured
+    let aiModel = 'Grounded Statistical AI Engine (Deterministic Ground Truth)';
+    try {
+      const geminiResult = await GeminiService.generateLandInsights(
+        queryText,
+        {
+          geography: intent.geographyName,
+          indicator: indTitle,
+          timeSeries: series,
+          metrics,
+          anomalies: anomalies.map(a => `${a.geography_name}: ${a.observed_value}`)
+        },
+        apiKey
+      );
+      if (geminiResult.success && geminiResult.text) {
+        summary = geminiResult.text;
+        aiModel = geminiResult.model;
+      }
+    } catch (e) {
+      // Fallback cleanly to statistical grounded answer
+    }
+
     // Potential Drivers
     let potentialDrivers: string[] = [
       'Infrastructural corridor expansion along national and state highways',
@@ -245,6 +268,7 @@ export class AIService {
         { name: 'ISRO Bhuvan Multi-temporal LULC Spatial Layers', year: '2024-25', url: 'https://bhuvan.nrsc.gov.in', datasetId: 'DS-NRSC-BHUVAN' }
       ],
       confidence: 97,
+      aiModel,
       calculationBreakdown: {
         formula: 'Percentage Change = ((End_Value - Start_Value) / Start_Value) * 100',
         rawValues: `Start (${metrics.startYear}): ${metrics.startValue}% | End (${metrics.endYear}): ${metrics.endValue}% | Absolute Delta: ${absText}`,
