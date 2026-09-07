@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Sparkles,
@@ -10,7 +10,9 @@ import {
   AlertCircle,
   Zap,
   Bot,
-  RefreshCw
+  RefreshCw,
+  MapPin,
+  TrendingUp
 } from 'lucide-react';
 import { AIAnswerCard } from './AIAnswerCard';
 
@@ -27,10 +29,31 @@ export const AskLandAI: React.FC = () => {
     testGeminiConnection
   } = useApp();
 
-  const [inputQuery, setInputQuery] = useState(activeAIQuery || '');
+  const [inputQuery, setInputQuery] = useState(activeAIQuery || 'Show land statistics of Gauriganj, Amethi (UP)');
   const [keyInput, setKeyInput] = useState(geminiApiKey || '');
   const [testingKey, setTestingKey] = useState(false);
   const [showKeyConfig, setShowKeyConfig] = useState(false);
+
+  useEffect(() => {
+    if (activeAIQuery) {
+      setInputQuery(activeAIQuery);
+    }
+  }, [activeAIQuery]);
+
+  // If no AI response loaded yet, auto-run the default query for Amethi
+  useEffect(() => {
+    if (!aiResponse && !aiLoading) {
+      runAIQuery(inputQuery);
+    }
+  }, []);
+
+  const quickAmethiQueries = [
+    { label: '🌾 Agricultural Land Trend', query: 'Show agricultural land statistics of Gauriganj, Amethi (UP)' },
+    { label: '🏙️ Gauriganj HQ Urban Sprawl', query: 'What is the built-up urban area expansion in Gauriganj Amethi?' },
+    { label: '🧪 Sodic/Usar Soil Reclamation', query: 'Explain Sodic/Usar land reclamation in Gauriganj Amethi under UPSLRP' },
+    { label: '💧 Sharda Sahayak Canal Irrigation', query: 'How much gross irrigated land is in Amethi under PMKSY & Sharda Sahayak?' },
+    { label: '🌳 Forest & Agro-Forestry Canopy', query: 'What is the forest and tree cover in Amethi district?' }
+  ];
 
   const suggestedQueries = [
     'Show land statistics of Gauriganj, Amethi (UP)',
@@ -61,11 +84,6 @@ export const AskLandAI: React.FC = () => {
     } finally {
       setTestingKey(false);
     }
-  };
-
-  const handleSaveKey = () => {
-    setGeminiApiKey(keyInput);
-    handleTestGemini();
   };
 
   return (
@@ -117,7 +135,7 @@ export const AskLandAI: React.FC = () => {
                 <div className="relative flex-1 w-full">
                   <input
                     type="password"
-                    placeholder="Enter Google Gemini API Key (Optional — default server key active)..."
+                    placeholder="Enter Google Gemini API Key (Optional — default server engine active)..."
                     value={keyInput}
                     onChange={e => setKeyInput(e.target.value)}
                     className="w-full px-3 py-2 text-xs rounded-lg bg-white/10 border border-white/20 text-white placeholder-slate-400 focus:outline-hidden focus:ring-1 focus:ring-purple-400"
@@ -156,7 +174,7 @@ export const AskLandAI: React.FC = () => {
             <button
               type="submit"
               disabled={aiLoading || !inputQuery.trim()}
-              className="flex items-center gap-2 px-5 py-3 text-xs md:text-sm font-bold rounded-xl bg-purple-500 hover:bg-purple-600 text-white transition-all shadow-md disabled:opacity-50 shrink-0"
+              className="flex items-center gap-2 px-5 py-3 text-xs md:text-sm font-bold rounded-xl bg-purple-500 hover:bg-purple-600 text-white transition-all shadow-md disabled:opacity-50 shrink-0 cursor-pointer"
             >
               {aiLoading ? (
                 <>
@@ -172,15 +190,33 @@ export const AskLandAI: React.FC = () => {
             </button>
           </form>
 
-          {/* Suggested Prompts */}
+          {/* Specialized Quick Topic Chips */}
           <div className="pt-2">
-            <span className="text-[11px] font-semibold text-slate-400 mr-2">Suggested Inquiries:</span>
+            <span className="text-[11px] font-semibold text-purple-300 mr-2 flex items-center gap-1 mb-1.5">
+              <MapPin className="w-3.5 h-3.5" />
+              Amethi (Gauriganj) Priority Inquiries:
+            </span>
+            <div className="flex flex-wrap gap-1.5">
+              {quickAmethiQueries.map((item, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => handleSuggestionClick(item.query)}
+                  className="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-purple-500/20 hover:bg-purple-500/40 border border-purple-400/30 text-purple-200 transition-colors"
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Other Regional Suggested Prompts */}
+          <div className="pt-1 border-t border-white/10">
             <div className="flex flex-wrap gap-1.5 mt-2">
               {suggestedQueries.map((q, idx) => (
                 <button
                   key={idx}
                   onClick={() => handleSuggestionClick(q)}
-                  className="px-2.5 py-1 text-[11px] font-medium rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 text-slate-200 transition-colors truncate max-w-full"
+                  className="px-2.5 py-1 text-[10px] font-medium rounded-lg bg-white/10 hover:bg-white/20 border border-white/10 text-slate-300 transition-colors truncate max-w-full"
                 >
                   {q}
                 </button>
@@ -189,7 +225,7 @@ export const AskLandAI: React.FC = () => {
           </div>
         </div>
 
-        {/* Subtle decorative background blur */}
+        {/* Decorative background blur */}
         <div className="absolute right-0 top-0 w-96 h-96 bg-purple-500/20 rounded-full blur-3xl pointer-events-none" />
       </div>
 
@@ -209,19 +245,6 @@ export const AskLandAI: React.FC = () => {
       {/* Render Answer Card */}
       {!aiLoading && aiResponse && (
         <AIAnswerCard response={aiResponse} />
-      )}
-
-      {/* Fallback prompt if no answer yet */}
-      {!aiLoading && !aiResponse && (
-        <div className="p-12 rounded-2xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700 text-center space-y-2">
-          <Sparkles className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto" />
-          <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300">
-            Ask Land Intelligence Assistant
-          </h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
-            Type any question in Hindi, Hinglish, or English to retrieve structured datasets, analytical charts, and evidence-backed summaries.
-          </p>
-        </div>
       )}
     </div>
   );
