@@ -39,18 +39,18 @@ export const ReportGenerator: React.FC = () => {
       });
 
       // Header Banner
-      doc.setFillColor(30, 58, 138); // Deep Navy Brand
+      doc.setFillColor(15, 23, 42); // Deep Slate Navy Brand
       doc.rect(0, 0, 210, 24, 'F');
 
       doc.setFont('helvetica', 'bold');
-      doc.setFontSize(16);
+      doc.setFontSize(15);
       doc.setTextColor(255, 255, 255);
-      doc.text('BHU-DRISHTI: LAND INTELLIGENCE POLICY DOSSIER', 14, 12);
+      doc.text('BHU-DRISHTI: ONE EVIDENCE LAYER FOR EVERY LAND DECISION', 14, 12);
 
-      doc.setFontSize(9);
+      doc.setFontSize(8.5);
       doc.setFont('helvetica', 'normal');
       doc.setTextColor(203, 213, 225);
-      doc.text('Ministry of Agriculture & Farmers Welfare • UP Board of Revenue • NRSC Bhuvan', 14, 18);
+      doc.text('Ministry of Agriculture & Farmers Welfare • UP Board of Revenue • NRSC Bhuvan Geospatial Series', 14, 18);
 
       // Subtitle & Geography
       doc.setFont('helvetica', 'bold');
@@ -170,20 +170,25 @@ export const ReportGenerator: React.FC = () => {
     <div className="space-y-6 text-left">
       {/* Header Banner */}
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider mb-1">
-            <FileText className="w-4 h-4" />
-            <span>Official Policy Brief & Report Generator</span>
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-white p-1 shadow-sm border border-slate-200 dark:border-slate-700 shrink-0 hidden sm:flex items-center justify-center">
+            <img src="/bhu-drishti-logo.png" alt="Bhu-Drishti" className="w-full h-full object-cover object-top" />
           </div>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
-            <span>Land Intelligence Briefing Dossier:</span>
-            <span className="text-brand-700 dark:text-brand-300 font-extrabold underline decoration-brand-400">
-              {geographyLabel}
-            </span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Generate publication-ready executive reports combining executive summaries, statistical trend breakdowns, policy context, and formal methodology citations.
-          </p>
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
+              <FileText className="w-4 h-4" />
+              <span>Official Policy Brief & Report Generator</span>
+            </div>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
+              <span>Land Intelligence Briefing Dossier:</span>
+              <span className="text-brand-700 dark:text-brand-300 font-extrabold underline decoration-brand-400">
+                {geographyLabel}
+              </span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+              Generate publication-ready executive reports combining executive summaries, statistical trend breakdowns, policy context, and formal methodology citations.
+            </p>
+          </div>
         </div>
 
         {/* Actions */}

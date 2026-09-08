@@ -68,19 +68,24 @@ export const ExecutiveDashboard: React.FC = () => {
     <div className="space-y-6 text-left">
       {/* Executive Header Banner */}
       <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-xs font-bold text-brand-600 dark:text-brand-400 uppercase tracking-wider mb-1">
-            <span>Official Government Analytics & Research Portal</span>
+        <div className="flex items-start gap-4">
+          <div className="w-12 h-12 rounded-xl bg-white p-1 shadow-sm border border-slate-200 dark:border-slate-700 shrink-0 hidden sm:flex items-center justify-center">
+            <img src="/bhu-drishti-logo.png" alt="Bhu-Drishti" className="w-full h-full object-cover object-top" />
           </div>
-          <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
-            <span>Land Intelligence Dashboard:</span>
-            <span className="text-brand-700 dark:text-brand-300 font-extrabold underline decoration-brand-400">
-              {activeDistrict ? activeDistrict.district_name : activeState?.state_name || 'Amethi (Gauriganj)'}
-            </span>
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
-            Active Scope: <strong>{activeDistrict ? `${activeDistrict.district_name}, ${activeState?.state_name || 'UP'}` : 'Uttar Pradesh (All 75 Districts)'}</strong> • Series Year: <strong>{selectedYear}</strong> • 9-Fold Classification Scheme.
-          </p>
+          <div>
+            <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
+              <span>BHU-DRISHTI • National Land Records & Geospatial Portal</span>
+            </div>
+            <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
+              <span>Land Intelligence Dashboard:</span>
+              <span className="text-brand-700 dark:text-brand-300 font-extrabold underline decoration-brand-400">
+                {activeDistrict ? activeDistrict.district_name : activeState?.state_name || 'Amethi (Gauriganj)'}
+              </span>
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
+              Active Scope: <strong>{activeDistrict ? `${activeDistrict.district_name}, ${activeState?.state_name || 'UP'}` : 'Uttar Pradesh (All 75 Districts)'}</strong> • Series Year: <strong>{selectedYear}</strong> • 9-Fold Classification Scheme.
+            </p>
+          </div>
         </div>
 
         {/* Primary Action Buttons */}

@@ -23,6 +23,8 @@ import {
   ActivitySquare
 } from 'lucide-react';
 
+import { BrandLogo } from '../common/BrandLogo';
+
 interface SidebarProps {
   collapsed: boolean;
   setCollapsed: (c: boolean) => void;
@@ -80,23 +82,29 @@ export const AppSidebar: React.FC<SidebarProps> = ({
           collapsed ? 'w-20' : 'w-64'
         } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
       >
-        {/* Header Branding */}
-        <div className="flex items-center justify-between h-16 px-4 border-b border-slate-800/80 bg-slate-950/40">
+        {/* Header Branding with Official Bhu-Drishti Logo */}
+        <div className="flex items-center justify-between h-16 px-3 border-b border-slate-800/80 bg-slate-950/40">
           <div
-            className="flex items-center gap-3 cursor-pointer overflow-hidden"
+            className="flex items-center gap-2 cursor-pointer overflow-hidden flex-1"
             onClick={() => handleNav('dashboard')}
           >
-            <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-gradient-to-br from-brand-500 to-brand-700 text-white font-bold shadow-md shrink-0">
-              <Landmark className="w-5 h-5 text-white" />
-            </div>
-            {!collapsed && (
-              <div className="leading-tight truncate">
-                <div className="font-bold text-white tracking-wide text-sm flex items-center gap-1.5">
-                  <span>BHU-DRISHTI</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-brand-500/20 text-brand-300 font-mono font-semibold border border-brand-500/30">IND</span>
+            {collapsed ? (
+              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white p-0.5 shadow-md shrink-0 border border-slate-700">
+                <img src="/bhu-drishti-logo.png" alt="Bhu-Drishti" className="w-full h-full object-cover object-top" />
+              </div>
+            ) : (
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-9 h-9 rounded-xl overflow-hidden bg-white p-0.5 shadow-md shrink-0 border border-slate-700">
+                  <img src="/bhu-drishti-logo.png" alt="Bhu-Drishti" className="w-full h-full object-cover object-top" />
                 </div>
-                <div className="text-[11px] text-slate-400 font-medium truncate">
-                  Land Intelligence Platform
+                <div className="leading-tight truncate">
+                  <div className="font-extrabold text-white tracking-wide text-xs flex items-center gap-1.5">
+                    <span>BHU-DRISHTI</span>
+                    <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-500/20 text-emerald-400 font-mono font-bold border border-emerald-500/30">IND</span>
+                  </div>
+                  <div className="text-[10px] text-slate-400 font-medium truncate">
+                    One evidence layer
+                  </div>
                 </div>
               </div>
             )}
