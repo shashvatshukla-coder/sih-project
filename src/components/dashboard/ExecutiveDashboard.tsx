@@ -42,7 +42,6 @@ export const ExecutiveDashboard: React.FC = () => {
 
   const [showGoogleMapModal, setShowGoogleMapModal] = useState<boolean>(false);
   const [showReportModal, setShowReportModal] = useState<boolean>(false);
-  const [activeTab, setActiveTab] = useState<'overview' | 'googlemap' | 'tehsils'>('overview');
 
   const activeState = states.find(s => s.state_code === selectedState);
   const activeDistrict = selectedDistrict !== 'ALL'
@@ -64,6 +63,9 @@ export const ExecutiveDashboard: React.FC = () => {
     setSelectedDistrict(districtCode);
   };
 
+  // Clean View Tabs State
+  const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'trends' | 'benchmarks'>('overview');
+
   return (
     <div className="space-y-6 text-left">
       {/* Executive Header Banner */}
@@ -78,7 +80,7 @@ export const ExecutiveDashboard: React.FC = () => {
             </div>
             <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
               <span>Land Intelligence Dashboard:</span>
-              <span className="text-brand-700 dark:text-brand-300 font-extrabold underline decoration-brand-400">
+              <span className="text-emerald-700 dark:text-emerald-300 font-extrabold underline decoration-emerald-400">
                 {activeDistrict ? activeDistrict.district_name : activeState?.state_name || 'Amethi (Gauriganj)'}
               </span>
             </h2>
@@ -92,7 +94,7 @@ export const ExecutiveDashboard: React.FC = () => {
         <div className="flex items-center gap-2 flex-wrap">
           <button
             onClick={() => handleDistrictClick('IN-UP', 'UP-AMT')}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border transition-all ${
+            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
               selectedDistrict === 'UP-AMT'
                 ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 border-slate-200 dark:border-slate-700'
@@ -104,7 +106,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
           <button
             onClick={() => setShowGoogleMapModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors"
+            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs transition-colors cursor-pointer"
           >
             <MapPin className="w-3.5 h-3.5" />
             <span>Google Maps View</span>
@@ -112,12 +114,59 @@ export const ExecutiveDashboard: React.FC = () => {
 
           <button
             onClick={() => setShowReportModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-brand-600 hover:bg-brand-700 text-white shadow-xs transition-colors"
+            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-colors cursor-pointer"
           >
             <Download className="w-3.5 h-3.5" />
             <span>Generate Report (PDF)</span>
           </button>
         </div>
+      </div>
+
+      {/* Clean Dashboard Navigation Tabs */}
+      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
+        <button
+          onClick={() => setActiveTab('overview')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'overview'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
+          }`}
+        >
+          <span>📊 Overview & KPIs</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('map')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'map'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
+          }`}
+        >
+          <span>🗺️ Satellite & GIS Explorer</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('trends')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'trends'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
+          }`}
+        >
+          <span>📈 Land Conversion & Trends</span>
+        </button>
+
+        <button
+          onClick={() => setActiveTab('benchmarks')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            activeTab === 'benchmarks'
+              ? 'bg-emerald-600 text-white shadow-sm'
+              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
+          }`}
+        >
+          <span>🏛️ UP District Benchmarks</span>
+        </button>
       </div>
 
       {/* KPI Cards Strip */}
@@ -168,195 +217,202 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
       )}
 
-      {/* Amethi & All Districts Deep-Dive Hub with Google Maps Preview */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm space-y-4">
-        {/* District Switcher Tabs & Actions */}
-        <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <MapPin className="w-4 h-4 text-brand-600" />
-                <span>District Intelligence Hub: All Uttar Pradesh Districts & Amethi Deep-Dive</span>
-              </h3>
+      {/* Tab 1: Executive Overview */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Gemini AI Grounded Quick Insights Strip */}
+          <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 via-slate-50 to-teal-50 dark:from-emerald-950/20 dark:via-slate-900 dark:to-teal-950/20 border border-emerald-200/70 dark:border-emerald-900/40 text-xs text-slate-800 dark:text-slate-200 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
+                <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
+                <span>Google Gemini 1.5 Grounded Insights ({activeDistrict ? activeDistrict.district_name : 'Amethi - Gauriganj'})</span>
+              </div>
+              <button
+                onClick={() => {
+                  runAIQuery('Show land statistics of Gauriganj, Amethi (UP)');
+                }}
+                className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
+              >
+                Ask Gemini Assistant →
+              </button>
             </div>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Select any administrative district to view high-resolution Google Maps satellite imagery, tehsil land distribution, and sodic reclamation figures.
-            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-[12px] text-slate-600 dark:text-slate-300">
+              <div className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                <span><strong>Sodic Reclamation:</strong> Barren usar wastelands in Amethi decreased from 9.7% to 6.2%, reclaiming 8,150+ hectares into productive multi-crop agriculture.</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                <span><strong>HQ Urbanization:</strong> Gauriganj administrative headquarters development expanded built-up share to 13.2% (+5.2 pp shift).</span>
+              </div>
+              <div className="flex items-start gap-2">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                <span><strong>Irrigation Coverage:</strong> Sharda Sahayak canal feeds and PMKSY tubewells raised gross irrigated farmland in Amethi to 89.4%.</span>
+              </div>
+            </div>
           </div>
 
-          {/* Quick Scope Selectors */}
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <button
-              onClick={() => handleDistrictClick('IN-UP', 'ALL')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
-                selectedDistrict === 'ALL'
-                  ? 'bg-brand-600 text-white border-brand-600 shadow-xs'
-                  : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-200'
-              }`}
-            >
-              🌐 All UP Districts (75)
-            </button>
+          {/* Primary Visualizations Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Land-Use Donut */}
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">
+                  Land-Use Distribution: {activeDistrict ? activeDistrict.district_name : 'Amethi (Gauriganj)'}
+                </h3>
+                <SourceBadge source="MoA&FW / DES 2025" />
+              </div>
+              <LandDistributionDonut record={currentRecord} />
+            </div>
 
-            <button
-              onClick={() => handleDistrictClick('IN-UP', 'UP-AMT')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-all ${
+            {/* State Comparison Bar */}
+            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">
+                  District Benchmark: Agricultural Land %
+                </h3>
+                <span className="text-xs text-slate-400">Regional Rankings</span>
+              </div>
+              <StateComparisonBar category="agricultural" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Tab 2: Map & GIS Explorer */}
+      {activeTab === 'map' && (
+        <div className="space-y-6">
+          {/* Embedded Google Maps View & GIS Controls */}
+          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-emerald-600" />
+                  <span>Google Maps Satellite & Tehsil GIS Explorer: {activeDistrict ? activeDistrict.district_name : 'Amethi (Gauriganj)'}</span>
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Switch between Hybrid, Satellite, and Terrain views. Inspect Gauriganj HQ, Amethi, Musafirkhana, and Tiloi.
+                </p>
+              </div>
+            </div>
+
+            <DistrictGoogleMapView
+              districtName={activeDistrict ? activeDistrict.district_name : 'Amethi (Gauriganj)'}
+              districtCode={selectedDistrict}
+              stateName={activeState?.state_name || 'Uttar Pradesh'}
+              centerCoords={
                 selectedDistrict === 'UP-AMT'
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-500/20'
-                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100'
-              }`}
-            >
-              📍 Amethi (Gauriganj) [Active Focus]
-            </button>
-
-            <button
-              onClick={() => setShowReportModal(true)}
-              className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-900 dark:bg-white text-white dark:text-slate-900 hover:opacity-90 shadow-xs transition-opacity"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>Report PDF</span>
-            </button>
+                  ? [26.2167, 81.6833]
+                  : selectedDistrict === 'UP-LKO'
+                  ? [26.8467, 80.9462]
+                  : selectedDistrict === 'UP-GBN'
+                  ? [28.5355, 77.3910]
+                  : selectedDistrict === 'UP-GKP'
+                  ? [26.7606, 83.3732]
+                  : [26.2167, 81.6833]
+              }
+            />
           </div>
-        </div>
 
-        {/* UP Districts Quick Switcher Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2 pt-1">
-          {upDistricts.map(d => (
-            <button
-              key={d.code}
-              onClick={() => handleDistrictClick(d.stateCode, d.code)}
-              className={`p-2.5 rounded-xl border text-left transition-all ${
-                selectedDistrict === d.code
-                  ? 'bg-brand-50 dark:bg-brand-950/60 border-brand-500 shadow-xs ring-1 ring-brand-500'
-                  : 'bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800'
-              }`}
-            >
-              <div className="flex items-center justify-between">
-                <span className="font-bold text-xs text-slate-800 dark:text-slate-200 truncate">
-                  {d.name}
+          {/* Geospatial Map Explorer Section */}
+          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">
+                  Interactive India Geospatial Map Explorer
+                </h3>
+                <span className="text-xs text-slate-400">
+                  Choropleth mapping across 2005–2025 multi-year time series. Click state/district to inspect.
                 </span>
-                {d.code === 'UP-AMT' && (
-                  <span className="w-2 h-2 rounded-full bg-emerald-500" />
-                )}
               </div>
-              <div className="flex items-center justify-between text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-mono">
-                <span>{d.agriPct}% Agri</span>
-                <span>{d.builtupPct}% Urban</span>
-              </div>
-            </button>
-          ))}
-        </div>
+            </div>
 
-        {/* Embedded Google Maps View & GIS Controls */}
-        <div className="pt-2">
-          <DistrictGoogleMapView
-            districtName={activeDistrict ? activeDistrict.district_name : 'Amethi (Gauriganj)'}
-            districtCode={selectedDistrict}
-            stateName={activeState?.state_name || 'Uttar Pradesh'}
-            centerCoords={
-              selectedDistrict === 'UP-AMT'
-                ? [26.2167, 81.6833]
-                : selectedDistrict === 'UP-LKO'
-                ? [26.8467, 80.9462]
-                : selectedDistrict === 'UP-GBN'
-                ? [28.5355, 77.3910]
-                : selectedDistrict === 'UP-GKP'
-                ? [26.7606, 83.3732]
-                : [26.2167, 81.6833]
-            }
-          />
-        </div>
-      </div>
-
-      {/* Gemini AI Grounded Quick Insights Strip */}
-      <div className="p-4 rounded-xl bg-gradient-to-r from-purple-50 via-slate-50 to-brand-50 dark:from-purple-950/20 dark:via-slate-900 dark:to-brand-950/20 border border-purple-200/70 dark:border-purple-900/40 text-xs text-slate-800 dark:text-slate-200 space-y-2">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 font-bold text-purple-700 dark:text-purple-300">
-            <Sparkles className="w-4 h-4 text-purple-600 animate-pulse" />
-            <span>Google Gemini 1.5 Grounded Insights ({activeDistrict ? activeDistrict.district_name : 'Amethi - Gauriganj'})</span>
-          </div>
-          <button
-            onClick={() => {
-              runAIQuery('Show land statistics of Gauriganj, Amethi (UP)');
-            }}
-            className="text-[11px] font-semibold text-purple-600 dark:text-purple-400 hover:underline"
-          >
-            Ask Gemini Assistant →
-          </button>
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-[12px] text-slate-600 dark:text-slate-300">
-          <div className="flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 shrink-0" />
-            <span><strong>Sodic Reclamation:</strong> Barren usar wastelands in Amethi decreased from 9.7% to 6.2%, reclaiming 8,150+ hectares into multi-crop agricultural land.</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 shrink-0" />
-            <span><strong>HQ Urbanization:</strong> Gauriganj district headquarters administrative growth expanded built-up share to 13.2% (+5.2 pp shift).</span>
-          </div>
-          <div className="flex items-start gap-2">
-            <span className="w-1.5 h-1.5 rounded-full bg-purple-500 mt-1.5 shrink-0" />
-            <span><strong>Irrigation Coverage:</strong> Sharda Sahayak canal modernisation and PMKSY tubewells raised gross irrigated farmland in Amethi to 89.4%.</span>
+            <IndiaMapExplorer />
           </div>
         </div>
-      </div>
+      )}
 
-      {/* Primary Visualizations Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Land-Use Donut */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-            <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-              Land-Use Distribution: {activeDistrict ? activeDistrict.district_name : 'Amethi (Gauriganj)'}
-            </h3>
-            <SourceBadge source="MoA&FW / DES 2025" />
-          </div>
-          <LandDistributionDonut record={currentRecord} />
-        </div>
+      {/* Tab 3: Trends & Conversion */}
+      {activeTab === 'trends' && (
+        <div className="space-y-6">
+          {/* Decadal Land Conversion Flow */}
+          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
+            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                <TrendingUp className="w-4 h-4 text-emerald-600" />
+                <span>Amethi / Gauriganj Land Conversion Flow & Transition Dynamics (2010 → 2025)</span>
+              </h3>
+              <button
+                onClick={() => setActivePage('change')}
+                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+              >
+                Full Transition Matrix →
+              </button>
+            </div>
 
-        {/* State Comparison Bar */}
-        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-            <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-              District Benchmark Comparison: Agricultural Land %
-            </h3>
-            <span className="text-xs text-slate-400">Regional Rankings</span>
-          </div>
-          <StateComparisonBar category="agricultural" />
-        </div>
-      </div>
-
-      {/* Geospatial Map Explorer Section */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-          <div>
-            <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-              Interactive India Geospatial Map Explorer
-            </h3>
-            <span className="text-xs text-slate-400">
-              Choropleth mapping across 2005–2025 multi-year time series. Click state/district to inspect.
-            </span>
+            <LandConversionFlow stateName="Amethi (Gauriganj, UP)" fromYear={2010} toYear={2025} />
           </div>
         </div>
+      )}
 
-        <IndiaMapExplorer />
-      </div>
+      {/* Tab 4: Benchmarks */}
+      {activeTab === 'benchmarks' && (
+        <div className="space-y-6">
+          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
+            <div className="pb-3 border-b border-slate-100 dark:border-slate-800">
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
+                <span>District Watchlist & Regional Benchmarks</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Compare key developmental indicators across Uttar Pradesh districts. Click any card to switch scope.
+              </p>
+            </div>
 
-      {/* Decadal Land Conversion Flow */}
-      <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-        <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-          <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-            <TrendingUp className="w-4 h-4 text-brand-600" />
-            <span>Amethi / Gauriganj Land Conversion Flow & Transition Dynamics</span>
-          </h3>
-          <button
-            onClick={() => setActivePage('change')}
-            className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
-          >
-            Full Transition Matrix →
-          </button>
+            {/* UP Districts Quick Switcher Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
+              {upDistricts.map(d => (
+                <button
+                  key={d.code}
+                  onClick={() => handleDistrictClick(d.stateCode, d.code)}
+                  className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+                    selectedDistrict === d.code
+                      ? 'bg-emerald-50/80 dark:bg-emerald-950/60 border-emerald-500 shadow-xs ring-1 ring-emerald-500'
+                      : 'bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800'
+                  }`}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-sm text-slate-900 dark:text-white truncate">
+                      {d.name}
+                    </span>
+                    {d.code === 'UP-AMT' && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">
+                        HQ Focus
+                      </span>
+                    )}
+                  </div>
+                  <div className="grid grid-cols-3 gap-2 text-xs font-mono py-2 border-t border-slate-200 dark:border-slate-700">
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Agri</span>
+                      <span className="font-bold text-emerald-600">{d.agriPct}%</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Urban</span>
+                      <span className="font-bold text-slate-700 dark:text-slate-300">{d.builtupPct}%</span>
+                    </div>
+                    <div>
+                      <span className="text-[10px] text-slate-400 block">Irrigated</span>
+                      <span className="font-bold text-blue-600">{d.irrigatedPct}%</span>
+                    </div>
+                  </div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+                    {d.changeText}
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-
-        <LandConversionFlow stateName="Amethi (Gauriganj, UP)" fromYear={2010} toYear={2025} />
-      </div>
+      )}
 
       {/* Modal View for Google Maps */}
       {showGoogleMapModal && (
