@@ -30,19 +30,28 @@ app.use(cors({
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+// Root welcome & API status
 app.get('/', (req, res) => {
   res.json({
-    name: 'Bhu-Drishti API',
     status: 'online',
+    platform: 'Bhu-Drishti Land Intelligence Platform (India)',
+    version: '1.0.0',
     health: '/health',
-    api: '/api'
+    endpoints: {
+      states: '/api/states',
+      districts: '/api/districts',
+      records: '/api/land-use/records',
+      trends: '/api/land-use/trends',
+      aiQuery: '/api/ai/query',
+      health: '/health'
+    }
   });
 });
 
 // API routing
 app.use('/api', apiRoutes);
 
-// Health check
+// Health check for Render / Cloud monitors
 app.get('/health', (req, res) => {
   res.json({
     status: 'healthy',
