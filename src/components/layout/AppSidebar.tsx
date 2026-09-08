@@ -40,31 +40,51 @@ export const AppSidebar: React.FC<SidebarProps> = ({
 }) => {
   const { activePage, setActivePage, userRole, savedItems } = useApp();
 
-  const navItems: Array<{ id: PageId; label: string; icon: any; badge?: string | number; roleReq?: string }> = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'statistics', label: 'Land Statistics', icon: BarChart3 },
-    { id: 'map', label: 'Map Explorer', icon: MapPin },
-    { id: 'datasets', label: 'Dataset Explorer', icon: Database },
-    { id: 'trends', label: 'Trend Analysis', icon: TrendingUp },
-    { id: 'ai-query', label: 'Ask Land AI', icon: Sparkles, badge: 'AI' },
-    { id: 'anomalies', label: 'Anomaly Detection', icon: AlertTriangle, badge: '4' },
-    { id: 'change', label: 'Land-Use Change', icon: ActivitySquare },
-    { id: 'comparison', label: 'Comparison Tool', icon: GitCompare },
-    { id: 'policy', label: 'Policy Impact', icon: FileCheck2 },
-    { id: 'decision-support', label: 'Decision Support', icon: Scale, badge: 'Executive' },
-    { id: 'research', label: 'Research Library', icon: BookOpen },
-    { id: 'integration', label: 'Data Integration', icon: Layers },
-    { id: 'reports', label: 'Report Generator', icon: FileText },
-    { id: 'workspace', label: 'My Workspace', icon: Bookmark, badge: savedItems.length || undefined },
-    { id: 'admin', label: 'Admin Pipeline', icon: ShieldCheck, roleReq: 'admin' }
+  interface NavItem {
+    id: PageId;
+    label: string;
+    icon: any;
+    badge?: string | number;
+    roleReq?: string;
+  }
+
+  const navSections: Array<{ category: string; items: NavItem[] }> = [
+    {
+      category: 'Workspace',
+      items: [
+        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+        { id: 'statistics', label: 'Land Statistics', icon: BarChart3 },
+        { id: 'map', label: 'Map Explorer', icon: MapPin }
+      ]
+    },
+    {
+      category: 'Analytics & AI',
+      items: [
+        { id: 'ai-query', label: 'Ask Land AI', icon: Sparkles, badge: 'AI' },
+        { id: 'trends', label: 'Trend Analysis', icon: TrendingUp },
+        { id: 'change', label: 'Land-Use Change', icon: ActivitySquare },
+        { id: 'comparison', label: 'Comparison Tool', icon: GitCompare },
+        { id: 'anomalies', label: 'Anomaly Detection', icon: AlertTriangle, badge: '4' }
+      ]
+    },
+    {
+      category: 'Policy & Reports',
+      items: [
+        { id: 'policy', label: 'Policy Impact', icon: FileCheck2 },
+        { id: 'decision-support', label: 'Decision Support', icon: Scale, badge: 'Executive' },
+        { id: 'reports', label: 'Report Generator', icon: FileText },
+        { id: 'datasets', label: 'Dataset Explorer', icon: Database },
+        { id: 'research', label: 'Research Library', icon: BookOpen },
+        { id: 'workspace', label: 'My Workspace', icon: Bookmark, badge: savedItems.length || undefined },
+        { id: 'admin', label: 'Admin Pipeline', icon: ShieldCheck, roleReq: 'admin' }
+      ]
+    }
   ];
 
   const handleNav = (id: PageId) => {
     setActivePage(id);
     setMobileOpen(false);
   };
-
-  const visibleItems = navItems.filter(item => !item.roleReq || userRole === 'admin');
 
   return (
     <>
@@ -119,46 +139,60 @@ export const AppSidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        {/* Navigation List */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-200 dark:scrollbar-thumb-emerald-800">
-          {visibleItems.map(item => {
-            const Icon = item.icon;
-            const isActive = activePage === item.id;
+        {/* Navigation List Organized by Clean Sections */}
+        <nav className="flex-1 px-3 py-3 space-y-4 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-200 dark:scrollbar-thumb-emerald-800">
+          {navSections.map(section => {
+            const visibleItems = section.items.filter(item => !item.roleReq || userRole === 'admin');
+            if (visibleItems.length === 0) return null;
+
             return (
-              <button
-                key={item.id}
-                onClick={() => handleNav(item.id)}
-                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-xs font-semibold transition-all group relative ${
-                  isActive
-                    ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-700/25'
-                    : 'text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 hover:text-emerald-950 dark:hover:text-white'
-                }`}
-                title={collapsed ? item.label : undefined}
-              >
-                <Icon
-                  className={`w-4 h-4 shrink-0 transition-transform ${
-                    isActive ? 'text-white' : 'text-emerald-700 dark:text-emerald-400 group-hover:text-emerald-950 dark:group-hover:text-emerald-100'
-                  }`}
-                />
+              <div key={section.category} className="space-y-1">
                 {!collapsed && (
-                  <span className="truncate flex-1 text-left">{item.label}</span>
+                  <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800/70 dark:text-emerald-400/80 font-mono">
+                    {section.category}
+                  </div>
                 )}
-                {!collapsed && item.badge && (
-                  <span
-                    className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider ${
-                      isActive
-                        ? 'bg-white/25 text-white'
-                        : item.badge === 'AI'
-                        ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-700'
-                        : item.badge === '4'
-                        ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700'
-                        : 'bg-emerald-200/70 dark:bg-emerald-800/60 text-emerald-800 dark:text-emerald-200'
-                    }`}
-                  >
-                    {item.badge}
-                  </span>
-                )}
-              </button>
+                {visibleItems.map(item => {
+                  const Icon = item.icon;
+                  const isActive = activePage === item.id;
+                  return (
+                    <button
+                      key={item.id}
+                      onClick={() => handleNav(item.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all group relative ${
+                        isActive
+                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-700/25'
+                          : 'text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 hover:text-emerald-950 dark:hover:text-white'
+                      }`}
+                      title={collapsed ? item.label : undefined}
+                    >
+                      <Icon
+                        className={`w-4 h-4 shrink-0 transition-transform ${
+                          isActive ? 'text-white' : 'text-emerald-700 dark:text-emerald-400 group-hover:text-emerald-950 dark:group-hover:text-emerald-100'
+                        }`}
+                      />
+                      {!collapsed && (
+                        <span className="truncate flex-1 text-left">{item.label}</span>
+                      )}
+                      {!collapsed && item.badge && (
+                        <span
+                          className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider ${
+                            isActive
+                              ? 'bg-white/25 text-white'
+                              : item.badge === 'AI'
+                              ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-700'
+                              : item.badge === '4'
+                              ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700'
+                              : 'bg-emerald-200/70 dark:bg-emerald-800/60 text-emerald-800 dark:text-emerald-200'
+                          }`}
+                        >
+                          {item.badge}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             );
           })}
         </nav>
