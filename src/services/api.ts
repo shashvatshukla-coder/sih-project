@@ -9,6 +9,7 @@ import {
   Anomaly,
   AIQueryResponse
 } from '../types';
+import { LandAIService } from './landAIService';
 
 const metaEnv = ((import.meta as any).env || {}) as Record<string, string | undefined>;
 const rawBase = metaEnv.VITE_API_URL || metaEnv.VITE_BACKEND_URL || metaEnv.VITE_API_BASE_URL || '/api';
@@ -360,58 +361,14 @@ export const api = {
       });
       if (res.ok) {
         const json = await res.json();
-        return json.data;
+        if (json.data && json.data.summary) {
+          return json.data;
+        }
       }
     } catch (e) {
-      // Fallback response for offline / instant render
+      // fallback to client-side LandAIService
     }
-    return {
-      query,
-      intent: {
-        type: 'trend_analysis',
-        geographyType: 'district',
-        geographyName: 'Amethi (Gauriganj)',
-        stateCode: 'IN-UP',
-        districtCode: 'UP-AMT',
-        indicator: 'agricultural',
-        period: { from: 2005, to: 2025 }
-      },
-      metrics: {
-        startYear: 2005,
-        startValue: 69.5,
-        endYear: 2025,
-        endValue: 66.0,
-        absoluteChange: -3.5,
-        percentageChange: -5.04,
-        cagr: -0.26,
-        direction: 'decreasing'
-      },
-      chartData: [
-        { year: 2005, value: 69.5, agricultural: 69.5, forest: 3.2, builtup: 8.0, water: 4.7, barren: 9.7 },
-        { year: 2010, value: 68.6, agricultural: 68.6, forest: 3.4, builtup: 9.2, water: 4.6, barren: 9.0 },
-        { year: 2015, value: 67.6, agricultural: 67.6, forest: 3.6, builtup: 10.7, water: 4.5, barren: 8.0 },
-        { year: 2020, value: 66.8, agricultural: 66.8, forest: 3.8, builtup: 12.0, water: 4.3, barren: 7.0 },
-        { year: 2025, value: 66.0, agricultural: 66.0, forest: 4.0, builtup: 13.2, water: 4.2, barren: 6.2 }
-      ],
-      summary: 'Amethi (Gauriganj district headquarters, UP) spans 2,329 sq km (232,900 ha) with an agrarian land share of 66.0% in 2025. Sodic/Usar land reclamation under UPSLRP has reduced barren wastelands from 9.7% to 6.2%, while Gauriganj administrative HQ urban development expanded built-up area to 13.2%. Gross irrigation stands at 89.4% through Sharda Sahayak canal feeds and PMKSY tubewells.',
-      potentialDrivers: [
-        'UP Sodic Land Reclamation Project (UPSLRP) converting 8,150+ ha of barren usar into productive double-cropped parcels',
-        'Gauriganj administrative headquarters development expanding civil infrastructure, offices, and residential hubs (built-up +5.2 pp)',
-        'Sharda Sahayak canal command area modernization and PMKSY tubewell expansion bringing gross irrigation to 89.4%',
-        'Perennial surface water retention across village ponds, tals, and Gomti river sub-basin tributaries (4.2% area)'
-      ],
-      sources: [
-        { name: 'Directorate of Economics & Statistics, MoA&FW', year: '2025', url: 'https://desagri.gov.in', datasetId: 'DS-DES-LUS' },
-        { name: 'UP Board of Revenue & District Land Records', year: '2025', url: 'https://updes.up.nic.in', datasetId: 'DS-UP-DES' }
-      ],
-      confidence: 97,
-      aiModel: 'Google Gemini 1.5 Flash (Verified Grounding Engine)',
-      calculationBreakdown: {
-        formula: 'Percentage Change = ((End_Value - Start_Value) / Start_Value) * 100',
-        rawValues: 'Start (2005): 69.5% | End (2025): 66.0% | Absolute Delta: -3.5 pp',
-        stepExplanation: 'Computed exact decadal delta across normalized records from the Directorate of Economics and Statistics. Annualized CAGR is -0.26%.'
-      }
-    };
+    return await LandAIService.queryAI(query, apiKey);
   },
 
   async testGemini(apiKey?: string): Promise<{ success: boolean; message: string; model: string; latencyMs?: number }> {
@@ -427,12 +384,7 @@ export const api = {
     } catch (e) {
       // fallback
     }
-    return {
-      success: true,
-      message: 'Gemini AI connection verified and operational for Bhu-Drishti Land Intelligence.',
-      model: 'Google Gemini 1.5 Flash (Grounded Ground Truth)',
-      latencyMs: 120
-    };
+    return await LandAIService.testGemini(apiKey);
   },
 
   async uploadCustomDataset(payload: { rawRows: any[]; columnMapping: Record<string, string>; metadata: any }) {
