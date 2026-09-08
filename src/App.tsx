@@ -23,18 +23,26 @@ import { DataIntegrationHub } from './components/datasets/DataIntegrationHub';
 import { ReportGenerator } from './components/reports/ReportGenerator';
 import { MyWorkspace } from './components/workspace/MyWorkspace';
 import { AdminDashboard } from './components/admin/AdminDashboard';
-import { ShieldCheck, Landmark } from 'lucide-react';
+import { ShieldCheck } from 'lucide-react';
+import { BrandLogo } from './components/common/BrandLogo';
+import { LoadingSplash } from './components/common/LoadingSplash';
 
 const AppContent: React.FC = () => {
   const { activePage } = useApp();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
+  const [showSplash, setShowSplash] = useState(true);
 
   // Determine if filter bar should be shown
   const showFilterBar = ['dashboard', 'statistics', 'trends', 'change', 'comparison'].includes(activePage);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex">
+      {/* Animated First Loading Splash Screen */}
+      {showSplash && (
+        <LoadingSplash onComplete={() => setShowSplash(false)} />
+      )}
+
       {/* Sidebar Navigation */}
       <AppSidebar
         collapsed={sidebarCollapsed}
@@ -92,23 +100,27 @@ const AppContent: React.FC = () => {
         </main>
 
         {/* Standard Government Research Platform Footer */}
-        <footer className="mt-auto py-6 px-4 md:px-8 border-t border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 text-xs text-slate-500 text-left">
+        <footer className="mt-auto py-6 px-4 md:px-8 border-t border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 text-xs text-slate-500 text-left backdrop-blur-sm">
           <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
-              <div className="flex items-center gap-2 font-bold text-slate-800 dark:text-slate-200">
-                <Landmark className="w-4 h-4 text-brand-600" />
-                <span>Bhu-Drishti: Land-Use & Land Records Intelligence Platform (India)</span>
-              </div>
-              <p className="text-[11px] text-slate-400">
+              <BrandLogo variant="horizontal" size="sm" showMotto={true} />
+              <p className="text-[11px] text-slate-400 pl-1">
                 Adhering to MoA&FW 9-fold land classification standard and GODL India Open Data Guidelines.
               </p>
             </div>
 
-            <div className="flex items-center gap-4 text-[11px] text-slate-400">
-              <span className="flex items-center gap-1">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-500" />
-                Verified Metadata
+            <div className="flex flex-wrap items-center gap-4 text-[11px] text-slate-400">
+              <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                Verified Ground-Truth Intelligence
               </span>
+              <span>•</span>
+              <button
+                onClick={() => setShowSplash(true)}
+                className="hover:text-brand-600 dark:hover:text-brand-400 transition-colors underline cursor-pointer"
+              >
+                Replay Intro Splash
+              </button>
               <span>•</span>
               <span>Version 1.0.0 (Research Edition)</span>
             </div>

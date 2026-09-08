@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 import {
@@ -88,22 +88,31 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
         >
           <Menu className="w-5 h-5" />
         </button>
-        <div className="min-w-0">
-          <h1 className="text-sm md:text-base font-bold text-slate-800 dark:text-white truncate">
-            {getPageTitle()}
-          </h1>
-          <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
-            <span>India Framework</span>
-            <span>•</span>
-            <span className="text-brand-600 dark:text-brand-400 font-bold">
-              {selectedState === 'IN-ALL' ? 'All India' : states.find(s => s.state_code === selectedState)?.state_name || 'Uttar Pradesh'}
-            </span>
-            <span>/</span>
-            <span className="font-bold text-emerald-600 dark:text-emerald-400">
-              📍 {activeDistrictName}
-            </span>
-            <span>•</span>
-            <span className="font-mono">{selectedYear}</span>
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div
+            onClick={() => setActivePage('home')}
+            className="w-8 h-8 rounded-lg overflow-hidden bg-white p-0.5 shadow-xs border border-slate-200 dark:border-slate-700 shrink-0 cursor-pointer hidden xs:flex items-center justify-center hover:scale-105 transition-transform"
+            title="BHU-DRISHTI: One evidence layer for every land decision."
+          >
+            <img src="/bhu-drishti-logo.png" alt="Bhu-Drishti" className="w-full h-full object-cover object-top" />
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-sm md:text-base font-bold text-slate-800 dark:text-white truncate">
+              {getPageTitle()}
+            </h1>
+            <div className="hidden sm:flex items-center gap-2 text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
+              <span>India Framework</span>
+              <span>•</span>
+              <span className="text-brand-600 dark:text-brand-400 font-bold">
+                {selectedState === 'IN-ALL' ? 'All India' : states.find(s => s.state_code === selectedState)?.state_name || 'Uttar Pradesh'}
+              </span>
+              <span>/</span>
+              <span className="font-bold text-emerald-600 dark:text-emerald-400">
+                📍 {activeDistrictName}
+              </span>
+              <span>•</span>
+              <span className="font-mono">{selectedYear}</span>
+            </div>
           </div>
         </div>
       </div>
