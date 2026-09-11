@@ -116,7 +116,7 @@ export const ExecutiveDashboard: React.FC = () => {
       <div 
         className="relative overflow-hidden rounded-3xl bg-slate-950 border border-slate-200/50 dark:border-slate-800 shadow-lg group min-h-[280px] md:min-h-[320px] flex items-center"
       >
-        {/* Render all background images with smooth opacity transitions & Ken Burns zoom */}
+        {/* Render all background images with vivid clarity, smooth opacity transitions & Ken Burns zoom */}
         {BANNER_SLIDES.map((slide, idx) => (
           <div
             key={slide.id}
@@ -124,49 +124,51 @@ export const ExecutiveDashboard: React.FC = () => {
               idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
             }`}
           >
+            {/* Full-Vibrancy Background Image */}
             <div
-              className={`absolute inset-0 bg-cover bg-center transition-transform duration-[6000ms] ease-out ${
-                idx === currentSlide ? 'scale-105' : 'scale-100'
+              className={`absolute inset-0 bg-cover bg-center transition-transform duration-[7000ms] ease-out ${
+                idx === currentSlide ? 'scale-110 brightness-105 contrast-105' : 'scale-100'
               }`}
               style={{ backgroundImage: `url('${slide.image}')` }}
             />
-            {/* Cinematic Gradient Overlays */}
-            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-slate-900/40" />
-            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30" />
+            {/* Gentle, Transparent Vignette (keeps the artwork vivid and colorful) */}
+            <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
           </div>
         ))}
 
-        {/* Slide Content Layer */}
-        <div className="relative z-10 p-6 md:p-10 w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="max-w-2xl text-left space-y-2 animate-fadeIn">
+        {/* Slide Content Layer with Glassmorphism for Crystal-Clear Readability */}
+        <div className="relative z-10 p-6 md:p-8 w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          {/* Left Text Card - Frosted Glass Box */}
+          <div className="max-w-xl text-left space-y-2 p-5 rounded-2xl bg-black/35 backdrop-blur-md border border-white/20 shadow-2xl">
             {/* Badge */}
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-300 text-[11px] font-bold tracking-wide uppercase">
-              <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '6s' }} />
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/30 backdrop-blur-md border border-emerald-300/50 text-emerald-200 text-[11px] font-extrabold tracking-wide uppercase shadow-sm">
+              <Sparkles className="w-3.5 h-3.5 animate-spin text-emerald-300" style={{ animationDuration: '6s' }} />
               <span>{activeSlideData.badge}</span>
             </div>
 
             {/* Headline */}
-            <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight leading-tight transition-all">
+            <h1 className="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight drop-shadow-md">
               {activeSlideData.title}<br />
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-emerald-400">
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-amber-200 drop-shadow-sm">
                 {activeSlideData.highlight}
               </span>
             </h1>
 
             {/* Subtitle */}
-            <p className="text-xs md:text-sm text-slate-200/90 font-normal leading-relaxed max-w-xl">
+            <p className="text-xs md:text-sm text-slate-100 font-medium leading-relaxed drop-shadow-xs">
               {activeSlideData.subtitle}
             </p>
           </div>
 
           {/* Right Government / Domain Thought Card */}
-          <div className="p-4 md:p-6 rounded-2xl bg-white/10 dark:bg-slate-900/60 backdrop-blur-md border border-white/20 dark:border-slate-700/60 text-white max-w-sm shrink-0 shadow-xl relative text-left">
-            <Quote className="w-6 h-6 text-emerald-400/60 absolute top-3 right-3" />
-            <p className="text-xs md:text-sm font-medium italic leading-relaxed text-slate-100 pr-4">
+          <div className="p-5 md:p-6 rounded-2xl bg-black/45 backdrop-blur-md border border-white/25 text-white max-w-sm shrink-0 shadow-2xl relative text-left">
+            <Quote className="w-6 h-6 text-emerald-400/80 absolute top-3 right-3" />
+            <p className="text-xs md:text-sm font-medium italic leading-relaxed text-slate-100 pr-4 drop-shadow-xs">
               {activeSlideData.quote}
             </p>
-            <div className="mt-3 pt-2.5 border-t border-white/15 flex items-center justify-between">
-              <p className="text-[11px] font-bold text-emerald-300">
+            <div className="mt-3 pt-2.5 border-t border-white/20 flex items-center justify-between">
+              <p className="text-[11px] font-bold text-emerald-300 tracking-wide drop-shadow-xs">
                 {activeSlideData.author}
               </p>
             </div>
@@ -174,14 +176,14 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
 
         {/* Carousel Slide Indicators */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/20 shadow-md">
           {BANNER_SLIDES.map((slide, idx) => (
             <div
               key={slide.id}
               className={`h-1.5 rounded-full transition-all duration-500 ${
                 idx === currentSlide
-                  ? 'w-7 bg-emerald-400 shadow-sm shadow-emerald-500/50'
-                  : 'w-1.5 bg-white/30'
+                  ? 'w-8 bg-emerald-400 shadow-sm shadow-emerald-400/80'
+                  : 'w-1.5 bg-white/40'
               }`}
             />
           ))}
