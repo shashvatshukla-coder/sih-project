@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # PostgreSQL Database Service with PostGIS support
+  # ============================================================================
+  postgres:
+    image: postgis/postgis:16-3.4-alpine
+    container_name: bhudrishti-postgres
+    restart: always
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: ${POSTGRES_DB:-bhudrishti}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres} -d ${POSTGRES_DB:-bhudrishti}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # Bhu-Drishti Web Application (Frontend & Backend API)
+  # ============================================================================
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bhudrishti-app
+    restart: always
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      NODE_ENV: production
+      DATABASE_URL: postgresql://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-bhudrishti}?schema=public
+      VITE_GEMINI_API_KEY: ${VITE_GEMINI_API_KEY:-}
+    ports:
+      - "3001:3001"
+    volumes:
+      - ./server/db:/app/server/db
+
+volumes:
+  pgdata:
+    name: bhudrishti-pgdata

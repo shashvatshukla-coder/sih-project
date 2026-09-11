@@ -1,0 +1,190 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model State {
+  state_code      String     @id
+  state_name      String
+  capital         String
+  total_area_sqkm Float
+  region          String
+  center_lat      Float
+  center_lng      Float
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+
+  districts       District[]
+  records         LandUseRecord[]
+
+  @@map("states")
+}
+
+model District {
+  district_code   String     @id
+  district_name   String
+  state_code      String
+  state_name      String
+  total_area_sqkm Float
+  center_lat      Float
+  center_lng      Float
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+
+  state           State      @relation(fields: [state_code], references: [state_code], onDelete: Cascade)
+  records         LandUseRecord[]
+
+  @@map("districts")
+}
+
+model LandUseRecord {
+  id                   String    @id
+  state_code           String
+  state_name           String
+  district_code        String?
+  district_name        String?
+  year                 Int
+  total_area_ha        Float
+  agricultural_area_ha Float
+  agricultural_pct     Float
+  forest_area_ha       Float
+  forest_pct           Float
+  builtup_area_ha      Float
+  builtup_pct          Float
+  waterbodies_area_ha  Float
+  waterbodies_pct      Float
+  barren_area_ha       Float
+  barren_pct           Float
+  other_area_ha        Float
+  other_pct            Float
+  irrigated_pct        Float
+  degraded_pct         Float
+  source_id            String
+  dataset_name         String
+  source_url           String
+  confidence_score     Float     @default(95.0)
+  is_demo              Boolean   @default(false)
+  notes                String?
+  created_at           DateTime  @default(now())
+  updated_at           DateTime  @updatedAt
+
+  state                State     @relation(fields: [state_code], references: [state_code], onDelete: Cascade)
+  district             District? @relation(fields: [district_code], references: [district_code], onDelete: SetNull)
+
+  @@index([state_code, year])
+  @@index([district_code, year])
+  @@index([year])
+  @@map("land_use_records")
+}
+
+model Dataset {
+  id               String   @id
+  title            String
+  publisher        String
+  description      String
+  category         String
+  coverage         String
+  date_range       String
+  last_updated     String
+  format           String
+  update_frequency String
+  source_url       String
+  license          String
+  data_quality     Json
+  sample_rows      Json?
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@map("datasets")
+}
+
+model DataSource {
+  id               String   @id
+  name             String
+  category         String
+  status           String   @default("Connected")
+  last_synced      String
+  datasets_count   Int      @default(0)
+  records_imported Int      @default(0)
+  error_status     String?
+  endpoint_url     String
+  adapter_type     String
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@map("data_sources")
+}
+
+model Policy {
+  id                      String   @id
+  name                    String
+  acronym                 String
+  ministry                String
+  launch_year             Int
+  description             String
+  target_region           String
+  objectives              Json
+  related_indicators      Json
+  documents_url           String
+  pre_period              String
+  post_period             String
+  observed_impact_summary String
+  methodology_note        String
+  linked_dataset_ids      Json
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+
+  @@map("policies")
+}
+
+model ResearchPaper {
+  id               String   @id
+  title            String
+  authors          Json
+  journal          String
+  year             Int
+  doi_url          String
+  abstract         String
+  key_findings     Json
+  geographic_focus String
+  tags             Json
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+
+  @@map("research_papers")
+}
+
+model Anomaly {
+  id                 String   @id
+  district_code      String
+  district_name      String
+  state_code         String
+  year               Int
+  anomaly_type       String
+  severity           String
+  description        String
+  detected_value     Float
+  expected_value     Float
+  confidence_score   Float
+  recommended_action String
+  created_at         DateTime @default(now())
+
+  @@map("anomalies")
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  action       String
+  performed_by String
+  timestamp    DateTime @default(now())
+  details      Json?
+
+  @@map("audit_logs")
+}

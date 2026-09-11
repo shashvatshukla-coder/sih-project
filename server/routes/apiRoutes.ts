@@ -8,6 +8,23 @@ import { GeminiService } from '../services/geminiService.ts';
 
 const router = express.Router();
 
+// System & Database Health
+router.get('/health', (req: Request, res: Response) => {
+  res.json({
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    db: db.getDatabaseStatus()
+  });
+});
+
+router.get('/system/db-status', (req: Request, res: Response) => {
+  res.json({
+    success: true,
+    data: db.getDatabaseStatus()
+  });
+});
+
 // States
 router.get('/states', (req: Request, res: Response) => {
   res.json({ success: true, data: db.getStates() });
