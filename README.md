@@ -22,13 +22,71 @@ Bhu-Drishti unites multi-decadal land statistics, government datasets (MoA&FW, N
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Recharts, Lucide React, jsPDF, html2canvas
+- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Recharts, Lucide React, Leaflet, jsPDF, html2canvas
 - **Backend**: Node.js, Express, TypeScript (`tsx`), CORS, Dotenv, Multer
-- **Data & Normalization**: In-memory relational query repository with official MoA&FW 9-fold land classification schemas
+- **Database Layer**: PostgreSQL (with PostGIS support), Prisma ORM, and resilient zero-latency in-memory cache
+- **Containerization**: Docker & Docker Compose (multi-stage production builds)
+- **AI Intelligence**: Google Gemini 1.5 Flash API with domain-specific grounding
 
 ---
 
-## 💻 Getting Started
+## 🐳 Running with Docker (Recommended - 1 Command)
+
+You can spin up the full application along with a dedicated PostgreSQL (PostGIS) database using Docker Compose:
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/shashvatshukla-coder/sih-project.git
+cd sih-project
+
+# 2. Build and launch all services in background
+docker-compose up -d --build
+
+# 3. View live logs
+docker-compose logs -f
+```
+
+- **Frontend & Backend API**: `http://localhost:3001`
+- **PostgreSQL Database**: `localhost:5432` (User: `postgres`, Password: `postgres`, DB: `bhudrishti`)
+
+To stop the containers:
+```bash
+docker-compose down
+```
+
+---
+
+## 🗄️ PostgreSQL Database Setup & Cloud Hosting
+
+Bhu-Drishti features a **hybrid database architecture**:
+- If `DATABASE_URL` is provided, it automatically connects to PostgreSQL via **Prisma ORM**.
+- If `DATABASE_URL` is omitted, it gracefully falls back to the embedded in-memory database so the app is always functional.
+
+### 1. Generating Prisma Client
+```bash
+npm run db:generate
+```
+
+### 2. Pushing Schema to PostgreSQL
+```bash
+npm run db:push
+```
+
+### 3. Automated Seeding (2005–2025 MoA&FW Datasets)
+Populates all 52+ multi-decadal records, 26 districts, 16 states, policies, and anomaly logs:
+```bash
+npm run db:seed
+```
+
+### 4. Connecting Free Cloud PostgreSQL (Neon / Supabase / Render)
+Set the `DATABASE_URL` environment variable in your `.env` or cloud dashboard:
+```env
+DATABASE_URL="postgresql://user:password@ep-cool-db.us-east-2.aws.neon.tech/bhudrishti?sslmode=require"
+```
+
+---
+
+## 💻 Getting Started (Local Development)
 
 ### 1. Prerequisites
 - **Node.js** (v18 or higher recommended)
@@ -59,24 +117,15 @@ npm run dev:client   # Starts Vite Dev Server on http://localhost:5173
 npm run build
 ```
 
-### 5. Deploying the Backend on Render
+### 5. Deploying on Vercel & Render
 
-The repository includes a `render.yaml` Blueprint for the Express API. In Render, create a **Blueprint**, connect this repository, and Render will use these settings automatically:
-
-- **Service type**: Web Service
-- **Build command**: `npm ci --omit=dev`
-- **Start command**: `npm start`
-- **Health check path**: `/health`
-
-For a manual Web Service setup, leave **Root Directory** empty and use the same commands above. Render supplies `PORT`; the server binds to `0.0.0.0` automatically.
-
-After Render gives you the backend URL, add this environment variable to the Vercel frontend and redeploy it:
-
-```bash
-VITE_API_BASE_URL=https://YOUR-RENDER-SERVICE.onrender.com/api
-```
-
-Optionally restrict backend browser access by setting `CORS_ORIGINS` on Render to your exact Vercel origin (without a trailing slash). Multiple origins can be comma-separated.
+The repository is configured for dual deployment:
+- **Frontend on Vercel**: Connect repo, set root directory to `./`, build command `npm run build`, output directory `dist`.
+- **Backend on Render**: Uses `render.yaml` Blueprint or Web Service (`npm start`, health check `/health`).
+- **Set Environment Variable on Vercel**:
+  ```bash
+  VITE_API_BASE_URL=https://YOUR-RENDER-SERVICE.onrender.com/api
+  ```
 
 ---
 
