@@ -19,7 +19,10 @@ export type PageId =
   | 'reports'
   | 'comparison'
   | 'workspace'
-  | 'admin';
+  | 'admin'
+  | 'case-studies'
+  | 'collaboration'
+  | 'news-events';
 
 export interface State {
   state_code: string;

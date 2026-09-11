@@ -33,8 +33,8 @@ const AppContent: React.FC = () => {
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(true);
 
-  // Determine if filter bar should be shown
-  const showFilterBar = ['dashboard', 'statistics', 'trends', 'change', 'comparison'].includes(activePage);
+  // Determine if filter bar should be shown (kept clean on dashboard)
+  const showFilterBar = ['statistics', 'trends', 'change', 'comparison'].includes(activePage);
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex">
@@ -54,7 +54,7 @@ const AppContent: React.FC = () => {
       {/* Main Content Area */}
       <div
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+          sidebarCollapsed ? 'lg:ml-20' : 'lg:ml-72'
         }`}
       >
         {/* Top Header */}
@@ -68,7 +68,7 @@ const AppContent: React.FC = () => {
 
         {/* Dynamic Page Views */}
         <main className="flex-1 p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto">
-          {activePage === 'home' && <HomePage />}
+          {activePage === 'home' && <ExecutiveDashboard />}
           {activePage === 'dashboard' && <ExecutiveDashboard />}
           {activePage === 'statistics' && <LandStatisticsView />}
           {activePage === 'map' && (
@@ -93,6 +93,9 @@ const AppContent: React.FC = () => {
           {activePage === 'policy' && <PolicyImpactAnalyzer />}
           {activePage === 'decision-support' && <PolicyDecisionDashboard />}
           {activePage === 'research' && <ResearchLibrary />}
+          {activePage === 'case-studies' && <ResearchLibrary />}
+          {activePage === 'collaboration' && <MyWorkspace />}
+          {activePage === 'news-events' && <ReportGenerator />}
           {activePage === 'integration' && <DataIntegrationHub />}
           {activePage === 'reports' && <ReportGenerator />}
           {activePage === 'workspace' && <MyWorkspace />}

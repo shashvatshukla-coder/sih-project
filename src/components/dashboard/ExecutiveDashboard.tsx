@@ -1,452 +1,561 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { MetricCard } from '../common/MetricCard';
-import { LandDistributionDonut } from '../charts/LandDistributionDonut';
-import { HistoricalTrendLine } from '../charts/HistoricalTrendLine';
-import { StateComparisonBar } from '../charts/StateComparisonBar';
-import { LandConversionFlow } from '../charts/LandConversionFlow';
-import { IndiaMapExplorer } from '../maps/IndiaMapExplorer';
-import { DistrictGoogleMapView } from '../maps/DistrictGoogleMapView';
-import { DistrictReportModal } from '../reports/DistrictReportModal';
-import { SourceBadge } from '../common/SourceBadge';
 import {
-  TrendingUp,
-  Sparkles,
-  MapPin,
-  ArrowRight,
   Database,
+  FileText,
+  Shield,
+  MapPin,
+  Users,
+  TrendingUp,
+  Sprout,
+  Target,
   BookOpen,
-  AlertTriangle,
+  Calendar,
+  Lightbulb,
+  ArrowRight,
+  Plus,
+  Minus,
   Layers,
-  FileCheck2,
-  CheckCircle2,
-  Download,
+  Sparkles,
   ExternalLink,
-  Globe,
-  Maximize2
+  ChevronRight
 } from 'lucide-react';
 
 export const ExecutiveDashboard: React.FC = () => {
   const {
-    selectedState,
-    selectedDistrict,
-    selectedYear,
     states,
-    districts,
-    currentRecord,
-    setActivePage,
+    selectedState,
     setSelectedState,
-    setSelectedDistrict,
-    runAIQuery
+    setActivePage
   } = useApp();
 
-  const [showGoogleMapModal, setShowGoogleMapModal] = useState<boolean>(false);
-  const [showReportModal, setShowReportModal] = useState<boolean>(false);
+  const [selectedLayer, setSelectedLayer] = useState<string>('land-use');
+  const [mapZoom, setMapZoom] = useState<number>(1);
 
-  const activeState = states.find(s => s.state_code === selectedState);
-  const activeDistrict = selectedDistrict !== 'ALL'
-    ? districts.find(d => d.district_code === selectedDistrict) || (selectedDistrict === 'UP-AMT' ? { district_code: 'UP-AMT', district_name: 'Amethi (Gauriganj)', state_code: 'IN-UP', state_name: 'Uttar Pradesh', total_area_sqkm: 2329, center_coords: [26.2167, 81.6833] as [number, number] } : null)
-    : null;
-
-  // Key UP Districts & Watchlist
-  const upDistricts = [
-    { name: 'Amethi (Gauriganj)', state: 'Uttar Pradesh', code: 'UP-AMT', stateCode: 'IN-UP', areaSqKm: 2329, agriPct: 66.0, builtupPct: 13.2, irrigatedPct: 89.4, changeText: '-36.1% Usar/Sodic reclamation & Gauriganj HQ growth', status: 'focus' },
-    { name: 'Lucknow', state: 'Uttar Pradesh', code: 'UP-LKO', stateCode: 'IN-UP', areaSqKm: 2528, agriPct: 52.0, builtupPct: 33.5, irrigatedPct: 91.2, changeText: '+28.8% Urban growth along Outer Ring Road', status: 'warning' },
-    { name: 'Gautam Buddha Nagar', state: 'Uttar Pradesh', code: 'UP-GBN', stateCode: 'IN-UP', areaSqKm: 1442, agriPct: 44.9, builtupPct: 42.9, irrigatedPct: 94.5, changeText: '-36.5% Agri loss (Jewar airport corridor)', status: 'critical' },
-    { name: 'Gorakhpur', state: 'Uttar Pradesh', code: 'UP-GKP', stateCode: 'IN-UP', areaSqKm: 3321, agriPct: 71.2, builtupPct: 10.6, irrigatedPct: 86.4, changeText: '-4.7% Wetland/Tal reduction in floodplain', status: 'warning' },
-    { name: 'Varanasi', state: 'Uttar Pradesh', code: 'UP-VNS', stateCode: 'IN-UP', areaSqKm: 1535, agriPct: 58.4, builtupPct: 24.1, irrigatedPct: 92.0, changeText: '+18.4% Ring road & infrastructure sprawl', status: 'normal' },
-    { name: 'Ayodhya (Faizabad)', state: 'Uttar Pradesh', code: 'UP-AYO', stateCode: 'IN-UP', areaSqKm: 2522, agriPct: 67.8, builtupPct: 14.5, irrigatedPct: 88.0, changeText: '+32.0% Tourism corridor & airport expansion', status: 'normal' }
-  ];
-
-  const handleDistrictClick = (stateCode: string, districtCode: string) => {
-    setSelectedState(stateCode);
-    setSelectedDistrict(districtCode);
-  };
-
-  // Clean View Tabs State
-  const [activeTab, setActiveTab] = useState<'overview' | 'map' | 'trends' | 'benchmarks'>('overview');
+  const activeStateObj = states.find(s => s.state_code === selectedState) || states[0];
 
   return (
-    <div className="space-y-6 text-left">
-      {/* Executive Header Banner */}
-      <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-start gap-4">
-          <div className="w-12 h-12 rounded-xl bg-white p-1 shadow-sm border border-slate-200 dark:border-slate-700 shrink-0 hidden sm:flex items-center justify-center">
-            <img src="/bhu-drishti-logo.png" alt="Bhu-Drishti" className="w-full h-full object-cover object-top" />
+    <div className="space-y-6 text-left pb-10">
+      {/* =========================================================================
+          1. HERO PANORAMIC BANNER
+      ========================================================================= */}
+      <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-200/50 dark:border-slate-800 shadow-md">
+        {/* Background Landscape Photo with gradient overlay */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-70"
+          style={{
+            backgroundImage: `url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2000&q=80')`
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/75 to-slate-900/60" />
+
+        <div className="relative z-10 p-6 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="max-w-2xl text-left">
+            <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
+              Knowledge Today.<br />
+              <span className="text-emerald-400">Better Land Governance Tomorrow.</span>
+            </h1>
+            <p className="text-xs md:text-sm text-slate-200 mt-2 font-normal leading-relaxed">
+              A collaborative ecosystem for data, research, policy and innovation
+            </p>
           </div>
-          <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
-              <span>BHU-DRISHTI • National Land Records & Geospatial Portal</span>
-            </div>
-            <h2 className="text-xl md:text-2xl font-bold text-slate-900 dark:text-white flex items-center gap-2 flex-wrap">
-              <span>Land Intelligence Dashboard:</span>
-              <span className="text-emerald-700 dark:text-emerald-300 font-extrabold underline decoration-emerald-400">
-                {activeDistrict ? activeDistrict.district_name : activeState?.state_name || 'Amethi (Gauriganj)'}
-              </span>
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-2xl leading-relaxed">
-              Active Scope: <strong>{activeDistrict ? `${activeDistrict.district_name}, ${activeState?.state_name || 'UP'}` : 'Uttar Pradesh (All 75 Districts)'}</strong> • Series Year: <strong>{selectedYear}</strong> • 9-Fold Classification Scheme.
+
+          {/* Right Government Quote Box */}
+          <div className="p-4 md:p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white max-w-sm shrink-0">
+            <p className="text-xs md:text-sm font-medium italic leading-relaxed text-slate-100">
+              "Sustainable land governance for a stronger, inclusive and resilient India."
+            </p>
+            <p className="text-[11px] font-bold text-emerald-300 mt-2">
+              — Government of India
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* =========================================================================
+          2. 5 PASTEL KPI CARDS ROW
+      ========================================================================= */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        {/* Card 1: Datasets */}
+        <div
+          onClick={() => setActivePage('datasets')}
+          className="p-4 rounded-2xl bg-[#eef8f2] dark:bg-emerald-950/30 border border-[#d2edd9] dark:border-emerald-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
+        >
+          <div className="w-11 h-11 rounded-2xl bg-[#227248] text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+            <Database className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
+              12,450
+            </p>
+            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+              Datasets
+            </p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+              From 35+ Departments
             </p>
           </div>
         </div>
 
-        {/* Primary Action Buttons */}
-        <div className="flex items-center gap-2 flex-wrap">
-          <button
-            onClick={() => handleDistrictClick('IN-UP', 'UP-AMT')}
-            className={`flex items-center gap-1.5 px-3 py-2 text-xs font-bold rounded-lg border transition-all cursor-pointer ${
-              selectedDistrict === 'UP-AMT'
-                ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs'
-                : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 border-slate-200 dark:border-slate-700'
-            }`}
-          >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Scope: Amethi (Gauriganj)</span>
-          </button>
+        {/* Card 2: Research Publications */}
+        <div
+          onClick={() => setActivePage('research')}
+          className="p-4 rounded-2xl bg-[#eef5fc] dark:bg-blue-950/30 border border-[#d2e4f7] dark:border-blue-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
+        >
+          <div className="w-11 h-11 rounded-2xl bg-[#1d63b8] text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+            <FileText className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
+              3,250
+            </p>
+            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+              Research Publications
+            </p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+              Across 500+ Institutions
+            </p>
+          </div>
+        </div>
 
-          <button
-            onClick={() => setShowGoogleMapModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 text-xs font-bold rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white shadow-xs transition-colors cursor-pointer"
-          >
-            <MapPin className="w-3.5 h-3.5" />
-            <span>Google Maps View</span>
-          </button>
+        {/* Card 3: Policy Documents */}
+        <div
+          onClick={() => setActivePage('policy')}
+          className="p-4 rounded-2xl bg-[#fdf2ec] dark:bg-orange-950/30 border border-[#fae0d1] dark:border-orange-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
+        >
+          <div className="w-11 h-11 rounded-2xl bg-[#d45d29] text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+            <Shield className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
+              1,200
+            </p>
+            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+              Policy Documents
+            </p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+              Central & State
+            </p>
+          </div>
+        </div>
 
-          <button
-            onClick={() => setShowReportModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 text-xs font-bold rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-colors cursor-pointer"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>Generate Report (PDF)</span>
-          </button>
+        {/* Card 4: Geospatial Layers */}
+        <div
+          onClick={() => setActivePage('map')}
+          className="p-4 rounded-2xl bg-[#f6effa] dark:bg-purple-950/30 border border-[#edd9f6] dark:border-purple-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
+        >
+          <div className="w-11 h-11 rounded-2xl bg-[#8338a8] text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+            <MapPin className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
+              8,700
+            </p>
+            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+              Geospatial Layers
+            </p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+              Nationwide Coverage
+            </p>
+          </div>
+        </div>
+
+        {/* Card 5: Registered Users */}
+        <div
+          onClick={() => setActivePage('workspace')}
+          className="p-4 rounded-2xl bg-[#eefaf6] dark:bg-teal-950/30 border border-[#cff2e6] dark:border-teal-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group col-span-2 sm:col-span-1"
+        >
+          <div className="w-11 h-11 rounded-2xl bg-[#1b8a6b] text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
+            <Users className="w-5 h-5" />
+          </div>
+          <div className="min-w-0">
+            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
+              2,450
+            </p>
+            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+              Registered Users
+            </p>
+            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+              Researchers | Policymakers
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Clean Dashboard Navigation Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-slate-800 pb-2 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('overview')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'overview'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <span>📊 Overview & KPIs</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('map')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'map'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <span>🗺️ Satellite & GIS Explorer</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('trends')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'trends'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <span>📈 Land Conversion & Trends</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('benchmarks')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-            activeTab === 'benchmarks'
-              ? 'bg-emerald-600 text-white shadow-sm'
-              : 'bg-white dark:bg-slate-900 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-800'
-          }`}
-        >
-          <span>🏛️ UP District Benchmarks</span>
-        </button>
-      </div>
-
-      {/* KPI Cards Strip */}
-      {currentRecord && (
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-          <MetricCard
-            title="Total Geographic Area"
-            value={Math.round((activeDistrict ? activeDistrict.total_area_sqkm : 2329)).toLocaleString()}
-            unit="km²"
-            tooltip="Official reported geographical boundary area."
-            sourceText="MoA&FW / Board of Revenue"
-          />
-          <MetricCard
-            title="Agricultural Land"
-            value={`${currentRecord.agricultural_pct}%`}
-            changePct={-3.5}
-            tooltip="Net sown area plus cultivable fallow parcels."
-            sourceText="MoA&FW 2025"
-          />
-          <MetricCard
-            title="Forest Cover"
-            value={`${currentRecord.forest_pct}%`}
-            changePct={+0.8}
-            tooltip="Canopy forest density and social forestry corridors."
-            sourceText="FSI ISFR 2025"
-          />
-          <MetricCard
-            title="Built-up / Urban Area"
-            value={`${currentRecord.builtup_pct}%`}
-            changePct={+5.2}
-            tooltip="Land occupied by Gauriganj HQ, housing colonies, and infrastructure."
-            sourceText="NRSC Bhuvan"
-          />
-          <MetricCard
-            title="Barren & Usar Land"
-            value={`${currentRecord.barren_pct}%`}
-            changePct={-3.5}
-            tooltip="Sodic/Usar wasteland reclaimed into productive agriculture under UPSLRP."
-            sourceText="UP Bhumi Sudhar Nigam"
-          />
-          <MetricCard
-            title="Irrigation Ratio"
-            value={`${currentRecord.irrigated_pct || 89.4}%`}
-            changePct={+12.9}
-            tooltip="Sharda Sahayak canal system & PMKSY tubewell coverage."
-            sourceText="MoJS / PMKSY"
-          />
-        </div>
-      )}
-
-      {/* Tab 1: Executive Overview */}
-      {activeTab === 'overview' && (
-        <div className="space-y-6">
-          {/* Gemini AI Grounded Quick Insights Strip */}
-          <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 via-slate-50 to-teal-50 dark:from-emerald-950/20 dark:via-slate-900 dark:to-teal-950/20 border border-emerald-200/70 dark:border-emerald-900/40 text-xs text-slate-800 dark:text-slate-200 space-y-2">
+      {/* =========================================================================
+          3. MAIN 3-COLUMN GRID
+      ========================================================================= */}
+      <div className="grid grid-cols-12 gap-6 items-start">
+        {/* =======================================================================
+            LEFT COLUMN: INTERACTIVE LAND USE MAP (Col-span 5)
+        ======================================================================= */}
+        <div className="col-span-12 lg:col-span-5 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
+          <div>
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 font-bold text-emerald-800 dark:text-emerald-300">
-                <Sparkles className="w-4 h-4 text-emerald-600 animate-pulse" />
-                <span>Google Gemini 1.5 Grounded Insights ({activeDistrict ? activeDistrict.district_name : 'Amethi - Gauriganj'})</span>
-              </div>
-              <button
-                onClick={() => {
-                  runAIQuery('Show land statistics of Gauriganj, Amethi (UP)');
-                }}
-                className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 hover:underline cursor-pointer"
-              >
-                Ask Gemini Assistant →
-              </button>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-[12px] text-slate-600 dark:text-slate-300">
-              <div className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                <span><strong>Sodic Reclamation:</strong> Barren usar wastelands in Amethi decreased from 9.7% to 6.2%, reclaiming 8,150+ hectares into productive multi-crop agriculture.</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                <span><strong>HQ Urbanization:</strong> Gauriganj administrative headquarters development expanded built-up share to 13.2% (+5.2 pp shift).</span>
-              </div>
-              <div className="flex items-start gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
-                <span><strong>Irrigation Coverage:</strong> Sharda Sahayak canal feeds and PMKSY tubewells raised gross irrigated farmland in Amethi to 89.4%.</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Primary Visualizations Grid */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Land-Use Donut */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-                  Land-Use Distribution: {activeDistrict ? activeDistrict.district_name : 'Amethi (Gauriganj)'}
-                </h3>
-                <SourceBadge source="MoA&FW / DES 2025" />
-              </div>
-              <LandDistributionDonut record={currentRecord} />
-            </div>
-
-            {/* State Comparison Bar */}
-            <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-              <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-                <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-                  District Benchmark: Agricultural Land %
-                </h3>
-                <span className="text-xs text-slate-400">Regional Rankings</span>
-              </div>
-              <StateComparisonBar category="agricultural" />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Tab 2: Map & GIS Explorer */}
-      {activeTab === 'map' && (
-        <div className="space-y-6">
-          {/* Embedded Google Maps View & GIS Controls */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
               <div>
-                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                  <MapPin className="w-4 h-4 text-emerald-600" />
-                  <span>Google Maps Satellite & Tehsil GIS Explorer: {activeDistrict ? activeDistrict.district_name : 'Amethi (Gauriganj)'}</span>
-                </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Switch between Hybrid, Satellite, and Terrain views. Inspect Gauriganj HQ, Amethi, Musafirkhana, and Tiloi.
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  Interactive Land Use Map
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Explore geospatial data across India
                 </p>
               </div>
             </div>
 
-            <DistrictGoogleMapView
-              districtName={activeDistrict ? activeDistrict.district_name : 'Amethi (Gauriganj)'}
-              districtCode={selectedDistrict}
-              stateName={activeState?.state_name || 'Uttar Pradesh'}
-              centerCoords={
-                selectedDistrict === 'UP-AMT'
-                  ? [26.2167, 81.6833]
-                  : selectedDistrict === 'UP-LKO'
-                  ? [26.8467, 80.9462]
-                  : selectedDistrict === 'UP-GBN'
-                  ? [28.5355, 77.3910]
-                  : selectedDistrict === 'UP-GKP'
-                  ? [26.7606, 83.3732]
-                  : [26.2167, 81.6833]
-              }
-            />
-          </div>
+            {/* Map Frame with Leaflet Satellite Raster & Custom Polygon Preview */}
+            <div className="relative mt-4 w-full h-72 rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center group">
+              {/* Satellite / Terrain GIS Map Background */}
+              <img
+                src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80"
+                alt="India Geospatial Map"
+                className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
+                style={{ filter: 'saturate(1.4) hue-rotate(25deg)' }}
+              />
 
-          {/* Geospatial Map Explorer Section */}
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <div>
-                <h3 className="text-sm font-bold text-slate-800 dark:text-white">
-                  Interactive India Geospatial Map Explorer
-                </h3>
-                <span className="text-xs text-slate-400">
-                  Choropleth mapping across 2005–2025 multi-year time series. Click state/district to inspect.
-                </span>
+              {/* Map SVG Overlay with state highlight */}
+              <div className="absolute inset-0 bg-emerald-950/20 backdrop-brightness-95 pointer-events-none" />
+
+              {/* Zoom Controls */}
+              <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
+                <button
+                  onClick={() => setMapZoom(z => Math.min(z + 0.2, 1.8))}
+                  className="w-7 h-7 rounded-lg bg-white/90 dark:bg-slate-800/90 text-slate-800 dark:text-white flex items-center justify-center font-bold text-sm shadow-sm hover:bg-white transition-colors"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={() => setMapZoom(z => Math.max(z - 0.2, 0.8))}
+                  className="w-7 h-7 rounded-lg bg-white/90 dark:bg-slate-800/90 text-slate-800 dark:text-white flex items-center justify-center font-bold text-sm shadow-sm hover:bg-white transition-colors"
+                >
+                  <Minus className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Color-Coded Legend Overlay */}
+              <div className="absolute bottom-3 right-3 p-2.5 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 text-[10px] space-y-1.5 shadow-sm text-left">
+                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                  <span className="w-2.5 h-2.5 rounded bg-[#84cc16]" />
+                  <span>Agricultural Land</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                  <span className="w-2.5 h-2.5 rounded bg-[#16a34a]" />
+                  <span>Forest Land</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                  <span className="w-2.5 h-2.5 rounded bg-[#dc2626]" />
+                  <span>Urban Area</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                  <span className="w-2.5 h-2.5 rounded bg-[#2563eb]" />
+                  <span>Water Bodies</span>
+                </div>
+                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
+                  <span className="w-2.5 h-2.5 rounded bg-[#eab308]" />
+                  <span>Other Land</span>
+                </div>
               </div>
             </div>
+          </div>
 
-            <IndiaMapExplorer />
+          {/* Bottom Dropdowns & View Details Button */}
+          <div className="pt-2 flex flex-wrap items-center gap-3">
+            <div className="flex-1 min-w-[120px]">
+              <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">
+                Select State
+              </label>
+              <select
+                value={selectedState}
+                onChange={(e) => setSelectedState(e.target.value)}
+                className="w-full text-xs font-semibold px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none"
+              >
+                {states.map(s => (
+                  <option key={s.state_code} value={s.state_code}>
+                    {s.state_name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="flex-1 min-w-[120px]">
+              <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wider">
+                Select Layer
+              </label>
+              <select
+                value={selectedLayer}
+                onChange={(e) => setSelectedLayer(e.target.value)}
+                className="w-full text-xs font-semibold px-3 py-2 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-200 focus:outline-none"
+              >
+                <option value="land-use">Land Use (9-Fold)</option>
+                <option value="forest">Forest Canopy</option>
+                <option value="urban">Urban Sprawl</option>
+                <option value="sodic">Sodic Reclamation</option>
+              </select>
+            </div>
+
+            <div className="self-end">
+              <button
+                onClick={() => setActivePage('map')}
+                className="px-4 py-2 rounded-xl bg-[#1b5e3a] text-white text-xs font-bold hover:bg-[#154d2f] transition-all flex items-center gap-1.5 shadow-xs"
+              >
+                <span>View Details</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Tab 3: Trends & Conversion */}
-      {activeTab === 'trends' && (
-        <div className="space-y-6">
-          {/* Decadal Land Conversion Flow */}
-          <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-3">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-sm font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-                <TrendingUp className="w-4 h-4 text-emerald-600" />
-                <span>Amethi / Gauriganj Land Conversion Flow & Transition Dynamics (2010 → 2025)</span>
-              </h3>
+        {/* =======================================================================
+            MIDDLE COLUMN: KEY INSIGHTS (Col-span 3)
+        ======================================================================= */}
+        <div className="col-span-12 lg:col-span-3 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
+          <div>
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <TrendingUp className="w-4 h-4 text-[#1b5e3a]" />
+                <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                  Key Insights
+                </h2>
+              </div>
               <button
-                onClick={() => setActivePage('change')}
-                className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                onClick={() => setActivePage('trends')}
+                className="text-xs font-bold text-[#1b5e3a] hover:underline"
               >
-                Full Transition Matrix →
+                View All
               </button>
             </div>
 
-            <LandConversionFlow stateName="Amethi (Gauriganj, UP)" fromYear={2010} toYear={2025} />
+            {/* Metric Items List */}
+            <div className="mt-4 space-y-4">
+              {/* Item 1 */}
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                  <TrendingUp className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-base font-extrabold text-slate-900 dark:text-white leading-none">
+                    +12%
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 leading-snug">
+                    Increase in digitized land records (2020-2025)
+                  </p>
+                </div>
+              </div>
+
+              {/* Item 2 */}
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                  <Sprout className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-base font-extrabold text-slate-900 dark:text-white leading-none">
+                    28%
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 leading-snug">
+                    India's land under forest cover
+                  </p>
+                </div>
+              </div>
+
+              {/* Item 3 */}
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                  <Users className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-base font-extrabold text-slate-900 dark:text-white leading-none">
+                    3.2M
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 leading-snug">
+                    Land disputes resolved through digital platforms
+                  </p>
+                </div>
+              </div>
+
+              {/* Item 4 */}
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                  <Target className="w-4 h-4" />
+                </div>
+                <div>
+                  <p className="text-base font-extrabold text-slate-900 dark:text-white leading-none">
+                    65+
+                  </p>
+                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 leading-snug">
+                    Policy experiments in progress across states
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
-      )}
 
-      {/* Tab 4: Benchmarks */}
-      {activeTab === 'benchmarks' && (
-        <div className="space-y-6">
-          <div className="p-6 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs space-y-4">
-            <div className="pb-3 border-b border-slate-100 dark:border-slate-800">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                <span>District Watchlist & Regional Benchmarks</span>
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                Compare key developmental indicators across Uttar Pradesh districts. Click any card to switch scope.
-              </p>
+        {/* =======================================================================
+            RIGHT COLUMN: RESEARCH PUBLICATIONS & ONGOING EXPERIMENTS (Col-span 4)
+        ======================================================================= */}
+        <div className="col-span-12 lg:col-span-4 space-y-5">
+          {/* Card 1: Recent Research Publications */}
+          <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <FileText className="w-4 h-4 text-[#1b5e3a]" />
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Recent Research Publications
+                </h2>
+              </div>
+              <button
+                onClick={() => setActivePage('research')}
+                className="text-xs font-bold text-[#1b5e3a] hover:underline"
+              >
+                View All
+              </button>
             </div>
 
-            {/* UP Districts Quick Switcher Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 pt-1">
-              {upDistricts.map(d => (
-                <button
-                  key={d.code}
-                  onClick={() => handleDistrictClick(d.stateCode, d.code)}
-                  className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
-                    selectedDistrict === d.code
-                      ? 'bg-emerald-50/80 dark:bg-emerald-950/60 border-emerald-500 shadow-xs ring-1 ring-emerald-500'
-                      : 'bg-slate-50 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 border-slate-200 dark:border-slate-800'
-                  }`}
+            <div className="mt-3 space-y-3">
+              {[
+                { title: 'AI-based Land Dispute Prediction in India', author: 'IIT Bombay', year: '2024' },
+                { title: 'Impact of Digital Land Records on Rural Governance', author: 'IIM Ahmedabad', year: '2024' },
+                { title: 'Urban Land Use Change Analysis using Satellite Data', author: 'ISRO', year: '2023' },
+                { title: 'Land Consolidation Models for Sustainable Agriculture', author: 'ICAR', year: '2023' }
+              ].map((pub, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setActivePage('research')}
+                  className="flex items-start gap-2.5 p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors"
                 >
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="font-bold text-sm text-slate-900 dark:text-white truncate">
-                      {d.name}
-                    </span>
-                    {d.code === 'UP-AMT' && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-600 text-white">
-                        HQ Focus
-                      </span>
-                    )}
+                  <FileText className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                  <div className="min-w-0 text-left">
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug hover:text-emerald-600 transition-colors">
+                      {pub.title}
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {pub.author} | {pub.year}
+                    </p>
                   </div>
-                  <div className="grid grid-cols-3 gap-2 text-xs font-mono py-2 border-t border-slate-200 dark:border-slate-700">
-                    <div>
-                      <span className="text-[10px] text-slate-400 block">Agri</span>
-                      <span className="font-bold text-emerald-600">{d.agriPct}%</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 block">Urban</span>
-                      <span className="font-bold text-slate-700 dark:text-slate-300">{d.builtupPct}%</span>
-                    </div>
-                    <div>
-                      <span className="text-[10px] text-slate-400 block">Irrigated</span>
-                      <span className="font-bold text-blue-600">{d.irrigatedPct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Card 2: Ongoing Policy Experiments */}
+          <div className="p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs">
+            <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-[#1b5e3a]" />
+                <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                  Ongoing Policy Experiments
+                </h2>
+              </div>
+              <button
+                onClick={() => setActivePage('decision-support')}
+                className="text-xs font-bold text-[#1b5e3a] hover:underline"
+              >
+                View All
+              </button>
+            </div>
+
+            <div className="mt-3 space-y-3">
+              {[
+                { title: 'Digital Land Record Verification', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+                { title: 'Community Land Mapping Initiative', state: 'Maharashtra', duration: '1 year', status: 'Evaluation', color: 'bg-amber-100 text-amber-800 border-amber-200' },
+                { title: 'Urban Land Use Policy Reform', state: 'Karnataka', duration: '6 months', status: 'Planning', color: 'bg-blue-100 text-blue-800 border-blue-200' }
+              ].map((exp, idx) => (
+                <div
+                  key={idx}
+                  onClick={() => setActivePage('decision-support')}
+                  className="flex items-center justify-between gap-2 p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors"
+                >
+                  <div className="flex items-start gap-2.5 min-w-0 text-left">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
+                        {exp.title}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {exp.state} | {exp.duration}
+                      </p>
                     </div>
                   </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-                    {d.changeText}
-                  </p>
-                </button>
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${exp.color} shrink-0`}>
+                    {exp.status}
+                  </span>
+                </div>
               ))}
             </div>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Modal View for Google Maps */}
-      {showGoogleMapModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-xs animate-in fade-in duration-150">
-          <div className="w-full max-w-5xl">
-            <DistrictGoogleMapView
-              districtName={activeDistrict ? activeDistrict.district_name : 'Amethi (Gauriganj)'}
-              districtCode={selectedDistrict}
-              stateName={activeState?.state_name || 'Uttar Pradesh'}
-              centerCoords={
-                selectedDistrict === 'UP-AMT'
-                  ? [26.2167, 81.6833]
-                  : selectedDistrict === 'UP-LKO'
-                  ? [26.8467, 80.9462]
-                  : selectedDistrict === 'UP-GBN'
-                  ? [28.5355, 77.3910]
-                  : [26.2167, 81.6833]
-              }
-              isModal={true}
-              onClose={() => setShowGoogleMapModal(false)}
-            />
+      {/* =========================================================================
+          4. BOTTOM ROW: QUICK ACCESS & UPCOMING EVENTS
+      ========================================================================= */}
+      <div className="grid grid-cols-12 gap-6 items-start">
+        {/* Quick Access Action Tiles (Col-span 8) */}
+        <div className="col-span-12 lg:col-span-8 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs text-left">
+          <div className="flex items-center gap-2 mb-4">
+            <Sparkles className="w-4 h-4 text-[#1b5e3a]" />
+            <h2 className="text-base font-bold text-slate-900 dark:text-white">
+              Quick Access
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {[
+              { label: 'Explore Datasets', page: 'datasets', icon: Database, bg: 'bg-[#eef8f2]', iconColor: 'text-[#227248]' },
+              { label: 'Browse Research', page: 'research', icon: BookOpen, bg: 'bg-[#f6effa]', iconColor: 'text-[#8338a8]' },
+              { label: 'Find Policies', page: 'policy', icon: FileText, bg: 'bg-[#fdf2ec]', iconColor: 'text-[#d45d29]' },
+              { label: 'Open GIS Maps', page: 'map', icon: Layers, bg: 'bg-[#eef5fc]', iconColor: 'text-[#1d63b8]' },
+              { label: 'Start Policy Experiment', page: 'decision-support', icon: Lightbulb, bg: 'bg-[#fef9e7]', iconColor: 'text-[#b78103]' },
+              { label: 'Join Collaboration Hub', page: 'workspace', icon: Users, bg: 'bg-[#eefaf6]', iconColor: 'text-[#1b8a6b]' }
+            ].map((action, idx) => {
+              const Icon = action.icon;
+              return (
+                <button
+                  key={idx}
+                  onClick={() => setActivePage(action.page as any)}
+                  className={`p-3.5 rounded-2xl ${action.bg} dark:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60 flex flex-col items-center text-center gap-2.5 hover:scale-102 hover:shadow-xs transition-all cursor-pointer`}
+                >
+                  <div className={`w-8 h-8 rounded-xl bg-white dark:bg-slate-700 flex items-center justify-center shadow-2xs ${action.iconColor}`}>
+                    <Icon className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-tight">
+                    {action.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
         </div>
-      )}
 
-      {/* Modal View for PDF Report Generation */}
-      <DistrictReportModal
-        isOpen={showReportModal}
-        onClose={() => setShowReportModal(false)}
-        district={activeDistrict}
-        state={activeState}
-        record={currentRecord}
-        year={selectedYear}
-      />
+        {/* Upcoming Events Card (Col-span 4) */}
+        <div className="col-span-12 lg:col-span-4 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs text-left">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-4 h-4 text-[#1b5e3a]" />
+              <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                Upcoming Events
+              </h2>
+            </div>
+            <button
+              onClick={() => setActivePage('reports')}
+              className="text-xs font-bold text-[#1b5e3a] hover:underline"
+            >
+              View All
+            </button>
+          </div>
+
+          <div className="mt-3 flex items-start gap-3 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50">
+            <Calendar className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
+            <div className="min-w-0">
+              <p className="text-xs font-bold text-slate-900 dark:text-white leading-snug">
+                National Workshop on Land Governance
+              </p>
+              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                15 Oct 2025 | New Delhi
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
