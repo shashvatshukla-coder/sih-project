@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   Database,
@@ -18,8 +18,76 @@ import {
   Layers,
   Sparkles,
   ExternalLink,
-  ChevronRight
+  ChevronRight,
+  ChevronLeft,
+  Quote,
+  Pause,
+  Play
 } from 'lucide-react';
+
+interface BannerSlide {
+  id: number;
+  image: string;
+  badge: string;
+  title: string;
+  highlight: string;
+  subtitle: string;
+  quote: string;
+  author: string;
+}
+
+const BANNER_SLIDES: BannerSlide[] = [
+  {
+    id: 1,
+    image: '/banners/slide1_rainbow.png',
+    badge: 'National Land Vision',
+    title: 'Knowledge Today.',
+    highlight: 'Better Land Governance Tomorrow.',
+    subtitle: 'A collaborative national ecosystem for open data, research, policy and geospatial innovation.',
+    quote: '"Sustainable land governance for a stronger, inclusive and resilient India."',
+    author: 'Government of India • MoA&FW'
+  },
+  {
+    id: 2,
+    image: '/banners/slide2_earth_art.png',
+    badge: 'Ecological Equilibrium',
+    title: 'Preserving Soil.',
+    highlight: 'Empowering Generations.',
+    subtitle: 'Harmonizing agriculture, agroforestry and ecological balance through AI-driven intelligence.',
+    quote: '"The land is the foundation of all economic vitality and life itself; nurture it with wisdom."',
+    author: 'National Land Policy Council'
+  },
+  {
+    id: 3,
+    image: '/banners/slide3_mother_nature.png',
+    badge: 'Land Reclamation',
+    title: 'Reclaiming Wasters.',
+    highlight: 'Expanding Green Canopies.',
+    subtitle: 'Transforming sodic and degraded soils into productive agricultural zones across Uttar Pradesh.',
+    quote: '"To restore the soil is to safeguard our civilization\'s future food security and ecological wealth."',
+    author: 'UP Bhumi Sudhar Nigam • Sodic Reclamation'
+  },
+  {
+    id: 4,
+    image: '/banners/slide4_space_earth.png',
+    badge: 'Space & Remote Sensing',
+    title: 'Precision from Space.',
+    highlight: 'Decisions on Earth.',
+    subtitle: 'Harnessing multi-spectral remote sensing (ISRO Bhuvan & Sentinel) for transparent cadastral governance.',
+    quote: '"One unified evidence layer for every agricultural, forest, and spatial development decision."',
+    author: 'ISRO • National Remote Sensing Centre (NRSC)'
+  },
+  {
+    id: 5,
+    image: '/banners/slide5_rainforest.png',
+    badge: 'Catchment & Rivers',
+    title: 'Protecting Watercourses.',
+    highlight: 'Securing Catchment Basins.',
+    subtitle: 'Safeguarding rivers, floodplains, and irrigated agricultural plains for national prosperity.',
+    quote: '"Water is the lifeblood of our fields; land governance must protect every riverbank and wetland."',
+    author: 'Ministry of Jal Shakti & Agriculture'
+  }
+];
 
 export const ExecutiveDashboard: React.FC = () => {
   const {
@@ -31,44 +99,130 @@ export const ExecutiveDashboard: React.FC = () => {
 
   const [selectedLayer, setSelectedLayer] = useState<string>('land-use');
   const [mapZoom, setMapZoom] = useState<number>(1);
+  const [currentSlide, setCurrentSlide] = useState<number>(0);
+  const [isPaused, setIsPaused] = useState<boolean>(false);
 
-  const activeStateObj = states.find(s => s.state_code === selectedState) || states[0];
+  // Auto-advance slides every 5.5 seconds unless user hovers
+  useEffect(() => {
+    if (isPaused) return;
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % BANNER_SLIDES.length);
+    }, 5500);
+    return () => clearInterval(interval);
+  }, [isPaused]);
+
+  const nextSlide = () => {
+    setCurrentSlide((prev) => (prev + 1) % BANNER_SLIDES.length);
+  };
+
+  const prevSlide = () => {
+    setCurrentSlide((prev) => (prev - 1 + BANNER_SLIDES.length) % BANNER_SLIDES.length);
+  };
+
+  const activeSlideData = BANNER_SLIDES[currentSlide];
 
   return (
     <div className="space-y-6 text-left pb-10">
       {/* =========================================================================
-          1. HERO PANORAMIC BANNER
+          1. ALIVE HERO PANORAMIC CAROUSEL WITH DYNAMIC THOUGHTS & ANIMATIONS
       ========================================================================= */}
-      <div className="relative overflow-hidden rounded-3xl bg-slate-900 border border-slate-200/50 dark:border-slate-800 shadow-md">
-        {/* Background Landscape Photo with gradient overlay */}
-        <div 
-          className="absolute inset-0 bg-cover bg-center opacity-70"
-          style={{
-            backgroundImage: `url('https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=2000&q=80')`
-          }}
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-slate-950/90 via-slate-900/75 to-slate-900/60" />
+      <div 
+        className="relative overflow-hidden rounded-3xl bg-slate-950 border border-slate-200/50 dark:border-slate-800 shadow-lg group min-h-[280px] md:min-h-[320px] flex items-center"
+        onMouseEnter={() => setIsPaused(true)}
+        onMouseLeave={() => setIsPaused(false)}
+      >
+        {/* Render all background images with smooth opacity transitions & Ken Burns zoom */}
+        {BANNER_SLIDES.map((slide, idx) => (
+          <div
+            key={slide.id}
+            className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
+              idx === currentSlide ? 'opacity-100 z-0' : 'opacity-0 pointer-events-none'
+            }`}
+          >
+            <div
+              className={`absolute inset-0 bg-cover bg-center transition-transform duration-[6000ms] ease-out ${
+                idx === currentSlide ? 'scale-105' : 'scale-100'
+              }`}
+              style={{ backgroundImage: `url('${slide.image}')` }}
+            />
+            {/* Cinematic Gradient Overlays */}
+            <div className="absolute inset-0 bg-gradient-to-r from-slate-950/95 via-slate-950/75 to-slate-900/40" />
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-black/30" />
+          </div>
+        ))}
 
-        <div className="relative z-10 p-6 md:p-10 flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
-          <div className="max-w-2xl text-left">
-            <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight leading-tight">
-              Knowledge Today.<br />
-              <span className="text-emerald-400">Better Land Governance Tomorrow.</span>
+        {/* Slide Content Layer */}
+        <div className="relative z-10 p-6 md:p-10 w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+          <div className="max-w-2xl text-left space-y-2 animate-fadeIn">
+            {/* Badge */}
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/20 backdrop-blur-md border border-emerald-400/40 text-emerald-300 text-[11px] font-bold tracking-wide uppercase">
+              <Sparkles className="w-3.5 h-3.5 animate-spin" style={{ animationDuration: '6s' }} />
+              <span>{activeSlideData.badge}</span>
+            </div>
+
+            {/* Headline */}
+            <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight leading-tight transition-all">
+              {activeSlideData.title}<br />
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-300 via-teal-200 to-emerald-400">
+                {activeSlideData.highlight}
+              </span>
             </h1>
-            <p className="text-xs md:text-sm text-slate-200 mt-2 font-normal leading-relaxed">
-              A collaborative ecosystem for data, research, policy and innovation
+
+            {/* Subtitle */}
+            <p className="text-xs md:text-sm text-slate-200/90 font-normal leading-relaxed max-w-xl">
+              {activeSlideData.subtitle}
             </p>
           </div>
 
-          {/* Right Government Quote Box */}
-          <div className="p-4 md:p-5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/20 text-white max-w-sm shrink-0">
-            <p className="text-xs md:text-sm font-medium italic leading-relaxed text-slate-100">
-              "Sustainable land governance for a stronger, inclusive and resilient India."
+          {/* Right Government / Domain Thought Card */}
+          <div className="p-4 md:p-6 rounded-2xl bg-white/10 dark:bg-slate-900/60 backdrop-blur-md border border-white/20 dark:border-slate-700/60 text-white max-w-sm shrink-0 shadow-xl relative text-left">
+            <Quote className="w-6 h-6 text-emerald-400/60 absolute top-3 right-3" />
+            <p className="text-xs md:text-sm font-medium italic leading-relaxed text-slate-100 pr-4">
+              {activeSlideData.quote}
             </p>
-            <p className="text-[11px] font-bold text-emerald-300 mt-2">
-              — Government of India
-            </p>
+            <div className="mt-3 pt-2.5 border-t border-white/15 flex items-center justify-between">
+              <p className="text-[11px] font-bold text-emerald-300">
+                {activeSlideData.author}
+              </p>
+            </div>
           </div>
+        </div>
+
+        {/* Carousel Navigation Chevron Arrows */}
+        <button
+          onClick={prevSlide}
+          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+          title="Previous Slide"
+        >
+          <ChevronLeft className="w-5 h-5" />
+        </button>
+
+        <button
+          onClick={nextSlide}
+          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
+          title="Next Slide"
+        >
+          <ChevronRight className="w-5 h-5" />
+        </button>
+
+        {/* Carousel Slide Indicators & Auto-Play Status */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+          {BANNER_SLIDES.map((slide, idx) => (
+            <button
+              key={slide.id}
+              onClick={() => setCurrentSlide(idx)}
+              className={`h-2 rounded-full transition-all duration-300 ${
+                idx === currentSlide
+                  ? 'w-8 bg-emerald-400 shadow-sm shadow-emerald-500/50'
+                  : 'w-2 bg-white/40 hover:bg-white/70'
+              }`}
+              title={`Slide ${idx + 1}`}
+            />
+          ))}
+
+          <span className="text-[10px] text-emerald-300 font-mono font-bold ml-1">
+            0{currentSlide + 1} / 0{BANNER_SLIDES.length}
+          </span>
         </div>
       </div>
 
