@@ -19,10 +19,7 @@ import {
   Sparkles,
   ExternalLink,
   ChevronRight,
-  ChevronLeft,
-  Quote,
-  Pause,
-  Play
+  Quote
 } from 'lucide-react';
 
 interface BannerSlide {
@@ -100,24 +97,14 @@ export const ExecutiveDashboard: React.FC = () => {
   const [selectedLayer, setSelectedLayer] = useState<string>('land-use');
   const [mapZoom, setMapZoom] = useState<number>(1);
   const [currentSlide, setCurrentSlide] = useState<number>(0);
-  const [isPaused, setIsPaused] = useState<boolean>(false);
 
-  // Auto-advance slides every 5.5 seconds unless user hovers
+  // Auto-advance slides continuously every 4.8 seconds
   useEffect(() => {
-    if (isPaused) return;
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % BANNER_SLIDES.length);
-    }, 5500);
+    }, 4800);
     return () => clearInterval(interval);
-  }, [isPaused]);
-
-  const nextSlide = () => {
-    setCurrentSlide((prev) => (prev + 1) % BANNER_SLIDES.length);
-  };
-
-  const prevSlide = () => {
-    setCurrentSlide((prev) => (prev - 1 + BANNER_SLIDES.length) % BANNER_SLIDES.length);
-  };
+  }, []);
 
   const activeSlideData = BANNER_SLIDES[currentSlide];
 
@@ -128,8 +115,6 @@ export const ExecutiveDashboard: React.FC = () => {
       ========================================================================= */}
       <div 
         className="relative overflow-hidden rounded-3xl bg-slate-950 border border-slate-200/50 dark:border-slate-800 shadow-lg group min-h-[280px] md:min-h-[320px] flex items-center"
-        onMouseEnter={() => setIsPaused(true)}
-        onMouseLeave={() => setIsPaused(false)}
       >
         {/* Render all background images with smooth opacity transitions & Ken Burns zoom */}
         {BANNER_SLIDES.map((slide, idx) => (
@@ -188,39 +173,20 @@ export const ExecutiveDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Carousel Navigation Chevron Arrows */}
-        <button
-          onClick={prevSlide}
-          className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
-          title="Previous Slide"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-
-        <button
-          onClick={nextSlide}
-          className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-black/40 hover:bg-black/70 backdrop-blur-md text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-200 hover:scale-110"
-          title="Next Slide"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-
-        {/* Carousel Slide Indicators & Auto-Play Status */}
-        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
+        {/* Carousel Slide Indicators */}
+        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/10">
           {BANNER_SLIDES.map((slide, idx) => (
-            <button
+            <div
               key={slide.id}
-              onClick={() => setCurrentSlide(idx)}
-              className={`h-2 rounded-full transition-all duration-300 ${
+              className={`h-1.5 rounded-full transition-all duration-500 ${
                 idx === currentSlide
-                  ? 'w-8 bg-emerald-400 shadow-sm shadow-emerald-500/50'
-                  : 'w-2 bg-white/40 hover:bg-white/70'
+                  ? 'w-7 bg-emerald-400 shadow-sm shadow-emerald-500/50'
+                  : 'w-1.5 bg-white/30'
               }`}
-              title={`Slide ${idx + 1}`}
             />
           ))}
 
-          <span className="text-[10px] text-emerald-300 font-mono font-bold ml-1">
+          <span className="text-[9px] text-emerald-300 font-mono font-bold ml-1">
             0{currentSlide + 1} / 0{BANNER_SLIDES.length}
           </span>
         </div>
