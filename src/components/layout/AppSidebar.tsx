@@ -3,27 +3,20 @@ import { useApp } from '../../context/AppContext';
 import { PageId } from '../../types';
 import {
   LayoutDashboard,
-  BarChart3,
-  MapPin,
   Database,
-  TrendingUp,
-  Sparkles,
-  AlertTriangle,
-  GitCompare,
-  FileCheck2,
-  BookOpen,
-  Layers,
   FileText,
-  Bookmark,
-  ShieldCheck,
+  Shield,
+  Map,
+  BookOpen,
+  TrendingUp,
+  Lightbulb,
+  Users,
+  Newspaper,
   ChevronLeft,
   ChevronRight,
-  Landmark,
-  Scale,
-  ActivitySquare
+  Sparkles,
+  Sprout
 } from 'lucide-react';
-
-import { BrandLogo } from '../common/BrandLogo';
 
 interface SidebarProps {
   collapsed: boolean;
@@ -38,47 +31,27 @@ export const AppSidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   setMobileOpen
 }) => {
-  const { activePage, setActivePage, userRole, savedItems } = useApp();
+  const { activePage, setActivePage } = useApp();
 
   interface NavItem {
     id: PageId;
     label: string;
     icon: any;
-    badge?: string | number;
-    roleReq?: string;
+    badge?: string;
   }
 
-  const navSections: Array<{ category: string; items: NavItem[] }> = [
-    {
-      category: 'Workspace',
-      items: [
-        { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-        { id: 'statistics', label: 'Land Statistics', icon: BarChart3 },
-        { id: 'map', label: 'Map Explorer', icon: MapPin }
-      ]
-    },
-    {
-      category: 'Analytics & AI',
-      items: [
-        { id: 'ai-query', label: 'Ask Land AI', icon: Sparkles, badge: 'AI' },
-        { id: 'trends', label: 'Trend Analysis', icon: TrendingUp },
-        { id: 'change', label: 'Land-Use Change', icon: ActivitySquare },
-        { id: 'comparison', label: 'Comparison Tool', icon: GitCompare },
-        { id: 'anomalies', label: 'Anomaly Detection', icon: AlertTriangle, badge: '4' }
-      ]
-    },
-    {
-      category: 'Policy & Reports',
-      items: [
-        { id: 'policy', label: 'Policy Impact', icon: FileCheck2 },
-        { id: 'decision-support', label: 'Decision Support', icon: Scale, badge: 'Executive' },
-        { id: 'reports', label: 'Report Generator', icon: FileText },
-        { id: 'datasets', label: 'Dataset Explorer', icon: Database },
-        { id: 'research', label: 'Research Library', icon: BookOpen },
-        { id: 'workspace', label: 'My Workspace', icon: Bookmark, badge: savedItems.length || undefined },
-        { id: 'admin', label: 'Admin Pipeline', icon: ShieldCheck, roleReq: 'admin' }
-      ]
-    }
+  // Exact 10 items matching Bharat LandNet navigation
+  const navItems: NavItem[] = [
+    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'datasets', label: 'Datasets', icon: Database },
+    { id: 'research', label: 'Research Publications', icon: FileText },
+    { id: 'policy', label: 'Policy Repository', icon: Shield },
+    { id: 'map', label: 'GIS & Maps', icon: Map },
+    { id: 'case-studies', label: 'Case Studies', icon: BookOpen },
+    { id: 'trends', label: 'Analytics Tools', icon: TrendingUp },
+    { id: 'decision-support', label: 'Policy Innovation Lab', icon: Lightbulb },
+    { id: 'collaboration', label: 'Collaboration Hub', icon: Users },
+    { id: 'news-events', label: 'News & Events', icon: Newspaper }
   ];
 
   const handleNav = (id: PageId) => {
@@ -98,122 +71,113 @@ export const AppSidebar: React.FC<SidebarProps> = ({
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex flex-col bg-emerald-50/95 dark:bg-emerald-950/70 text-emerald-900 dark:text-emerald-100 border-r border-emerald-200/90 dark:border-emerald-800/60 shadow-sm backdrop-blur-md transition-all duration-300 ease-in-out ${
-          collapsed ? 'w-20' : 'w-64'
-        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}`}
+        className={`fixed top-0 left-0 z-40 h-screen bg-white dark:bg-slate-900 border-r border-slate-200/90 dark:border-slate-800 transition-all duration-300 ease-in-out flex flex-col justify-between ${
+          collapsed ? 'w-20' : 'w-72'
+        } ${mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'} shadow-sm`}
       >
-        {/* Header Branding with Official Bhu-Drishti Logo */}
-        <div className="flex items-center justify-between h-16 px-3 border-b border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-100/50 dark:bg-emerald-900/40">
+        {/* Top Header / Branding */}
+        <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
           <div
-            className="flex items-center gap-2 cursor-pointer overflow-hidden flex-1"
             onClick={() => handleNav('dashboard')}
+            className="flex items-center gap-3 cursor-pointer select-none text-left overflow-hidden group"
           >
-            {collapsed ? (
-              <div className="w-10 h-10 rounded-xl overflow-hidden bg-white p-0.5 shadow-xs shrink-0 border border-emerald-300 dark:border-emerald-700">
-                <img src="/bhu-drishti-logo.png" alt="Bhu-Drishti" className="w-full h-full object-cover object-top" />
-              </div>
-            ) : (
-              <div className="flex items-center gap-2.5 min-w-0">
-                <div className="w-9 h-9 rounded-xl overflow-hidden bg-white p-0.5 shadow-xs shrink-0 border border-emerald-300 dark:border-emerald-700">
-                  <img src="/bhu-drishti-logo.png" alt="Bhu-Drishti" className="w-full h-full object-cover object-top" />
-                </div>
-                <div className="leading-tight truncate">
-                  <div className="font-extrabold text-emerald-950 dark:text-emerald-50 tracking-wide text-xs flex items-center gap-1.5">
-                    <span>BHU-DRISHTI</span>
-                    <span className="text-[9px] px-1 py-0.2 rounded bg-emerald-200 dark:bg-emerald-800/60 text-emerald-800 dark:text-emerald-200 font-mono font-bold border border-emerald-300 dark:border-emerald-600">IND</span>
-                  </div>
-                  <div className="text-[10px] text-emerald-700 dark:text-emerald-300 font-medium truncate">
-                    One evidence layer
-                  </div>
-                </div>
+            {/* National Emblem / Logo Icon */}
+            <div className="w-10 h-10 shrink-0 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-1 flex items-center justify-center shadow-2xs group-hover:scale-105 transition-transform">
+              <img
+                src="/bhu-drishti-logo.png"
+                alt="Emblem"
+                className="w-full h-full object-cover object-top rounded-lg"
+              />
+            </div>
+
+            {!collapsed && (
+              <div className="min-w-0">
+                <h1 className="text-base font-extrabold text-slate-900 dark:text-white tracking-tight leading-tight flex items-center gap-1.5">
+                  <span>Bharat LandNet</span>
+                </h1>
+                <p className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 truncate leading-tight mt-0.5">
+                  National Digital Platform for Research & Policy Innovation
+                </p>
+                <p className="text-[9px] text-slate-400 dark:text-slate-500 truncate leading-tight mt-0.5">
+                  Empowering Land Governance for a Sustainable India
+                </p>
               </div>
             )}
           </div>
 
+          {/* Desktop Collapse Toggle */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden lg:flex items-center justify-center w-7 h-7 rounded-md text-emerald-700 dark:text-emerald-300 hover:text-emerald-950 dark:hover:text-white hover:bg-emerald-200/60 dark:hover:bg-emerald-900/60 transition-colors"
+            className="hidden lg:flex p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
             title={collapsed ? 'Expand Sidebar' : 'Collapse Sidebar'}
           >
             {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
           </button>
         </div>
 
-        {/* Navigation List Organized by Clean Sections */}
-        <nav className="flex-1 px-3 py-3 space-y-4 overflow-y-auto scrollbar-thin scrollbar-thumb-emerald-200 dark:scrollbar-thumb-emerald-800">
-          {navSections.map(section => {
-            const visibleItems = section.items.filter(item => !item.roleReq || userRole === 'admin');
-            if (visibleItems.length === 0) return null;
+        {/* Navigation Menu */}
+        <div className="flex-1 overflow-y-auto py-3 px-3 space-y-1.5 text-left custom-scrollbar">
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            // Handle equivalent active states
+            const isActive =
+              activePage === item.id ||
+              (item.id === 'case-studies' && activePage === 'research') ||
+              (item.id === 'collaboration' && activePage === 'workspace') ||
+              (item.id === 'news-events' && activePage === 'reports');
 
             return (
-              <div key={section.category} className="space-y-1">
+              <button
+                key={item.id}
+                onClick={() => handleNav(item.id)}
+                title={collapsed ? item.label : undefined}
+                className={`w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 text-left ${
+                  isActive
+                    ? 'bg-[#1b5e3a] text-white shadow-xs font-bold'
+                    : 'text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800/80 hover:text-slate-900 dark:hover:text-white'
+                }`}
+              >
+                <Icon
+                  className={`w-4 h-4 shrink-0 ${
+                    isActive ? 'text-white' : 'text-slate-500 dark:text-slate-400'
+                  }`}
+                />
                 {!collapsed && (
-                  <div className="px-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-emerald-800/70 dark:text-emerald-400/80 font-mono">
-                    {section.category}
-                  </div>
+                  <span className="truncate flex-1 tracking-tight">{item.label}</span>
                 )}
-                {visibleItems.map(item => {
-                  const Icon = item.icon;
-                  const isActive = activePage === item.id;
-                  return (
-                    <button
-                      key={item.id}
-                      onClick={() => handleNav(item.id)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-semibold transition-all group relative ${
-                        isActive
-                          ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-700/25'
-                          : 'text-emerald-900 dark:text-emerald-200 hover:bg-emerald-100/80 dark:hover:bg-emerald-900/40 hover:text-emerald-950 dark:hover:text-white'
-                      }`}
-                      title={collapsed ? item.label : undefined}
-                    >
-                      <Icon
-                        className={`w-4 h-4 shrink-0 transition-transform ${
-                          isActive ? 'text-white' : 'text-emerald-700 dark:text-emerald-400 group-hover:text-emerald-950 dark:group-hover:text-emerald-100'
-                        }`}
-                      />
-                      {!collapsed && (
-                        <span className="truncate flex-1 text-left">{item.label}</span>
-                      )}
-                      {!collapsed && item.badge && (
-                        <span
-                          className={`px-1.5 py-0.5 text-[10px] font-bold rounded-full uppercase tracking-wider ${
-                            isActive
-                              ? 'bg-white/25 text-white'
-                              : item.badge === 'AI'
-                              ? 'bg-purple-100 dark:bg-purple-900/40 text-purple-800 dark:text-purple-300 border border-purple-200 dark:border-purple-700'
-                              : item.badge === '4'
-                              ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-700'
-                              : 'bg-emerald-200/70 dark:bg-emerald-800/60 text-emerald-800 dark:text-emerald-200'
-                          }`}
-                        >
-                          {item.badge}
-                        </span>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
+                {!collapsed && item.badge && (
+                  <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-bold font-mono">
+                    {item.badge}
+                  </span>
+                )}
+              </button>
             );
           })}
-        </nav>
+        </div>
 
-        {/* Bottom User/Docs Section */}
-        <div className="p-3 border-t border-emerald-200/80 dark:border-emerald-800/60 bg-emerald-100/40 dark:bg-emerald-900/20">
-          <div className={`flex items-center gap-3 p-2 rounded-lg bg-white/70 dark:bg-emerald-900/40 border border-emerald-200/80 dark:border-emerald-800/60 shadow-xs ${collapsed ? 'justify-center' : ''}`}>
-            <div className="w-7 h-7 rounded-full bg-emerald-600 flex items-center justify-center text-xs font-bold text-white shadow-xs shrink-0">
-              {userRole === 'admin' ? 'AD' : userRole === 'policymaker' ? 'PM' : userRole === 'researcher' ? 'RS' : 'PB'}
-            </div>
-            {!collapsed && (
-              <div className="truncate text-left leading-tight flex-1">
-                <div className="text-xs font-semibold text-emerald-950 dark:text-emerald-100 capitalize truncate">
-                  {userRole === 'policymaker' ? 'Policy Officer' : userRole === 'researcher' ? 'Lead Researcher' : userRole === 'admin' ? 'System Admin' : 'Public Explorer'}
-                </div>
-                <div className="text-[10px] text-emerald-700 dark:text-emerald-400 truncate uppercase tracking-wider font-mono">
-                  {userRole} Mode
-                </div>
+        {/* Bottom Sustainability Banner */}
+        <div className="p-3 border-t border-slate-100 dark:border-slate-800">
+          {!collapsed ? (
+            <div className="p-3.5 rounded-2xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 flex items-center gap-3">
+              <div className="w-9 h-9 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Sprout className="w-5 h-5" />
               </div>
-            )}
-          </div>
+              <div className="min-w-0 text-left">
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                  Land for People,
+                </p>
+                <p className="text-[11px] font-medium text-emerald-700 dark:text-emerald-400 leading-tight">
+                  Prosperity & Sustainable Future
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-center p-1">
+              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
+                <Sprout className="w-4 h-4" />
+              </div>
+            </div>
+          )}
         </div>
       </aside>
     </>
