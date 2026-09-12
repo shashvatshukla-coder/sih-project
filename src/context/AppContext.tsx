@@ -115,23 +115,40 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     features_granted: ['full_inspection', 'policy_moderation', 'research_curation', 'user_rights_calibration', 'all_roles_switch']
   };
 
+  const GUEST_PROFILE: UserProfile = {
+    id: 'guest',
+    dedicatedFixedId: 'BHU-PUB-0000-0000',
+    email: '',
+    name: 'Guest Explorer',
+    role: 'public',
+    affiliation: 'Public Citizen Explorer',
+    designation: 'Citizen Observer',
+    isGoogleVerified: false,
+    issuedAt: new Date().toISOString(),
+    authProvider: 'guest',
+    isMasterSuperAdmin: false,
+    is_inspection_verified: false
+  };
+
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     try {
       const saved = localStorage.getItem('bhu_user_profile');
       if (saved) {
         const parsed = JSON.parse(saved);
-        if (!parsed.dedicatedFixedId) parsed.dedicatedFixedId = 'BHU-RES-8763-9201';
-        parsed.isMasterSuperAdmin = isMasterAccount(parsed.email);
-        return parsed;
+        if (parsed.isGoogleVerified && parsed.email) {
+          if (!parsed.dedicatedFixedId) parsed.dedicatedFixedId = isMasterAccount(parsed.email) ? 'BHU-RES-8763-9201' : 'BHU-USR-1001-2002';
+          parsed.isMasterSuperAdmin = isMasterAccount(parsed.email);
+          return parsed;
+        }
       }
     } catch {}
-    return MASTER_PROFILE;
+    return GUEST_PROFILE;
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isIdCardModalOpen, setIsIdCardModalOpen] = useState<boolean>(false);
 
-  const dedicatedFixedId = userProfile?.dedicatedFixedId || 'BHU-RES-8763-9201';
+  const dedicatedFixedId = userProfile?.dedicatedFixedId || 'BHU-PUB-0000-0000';
   const isMasterUser = isMasterAccount(userProfile?.email);
 
   // Listen to Firebase auth state changes if available
@@ -139,14 +156,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser && firebaseUser.email) {
         const isMaster = isMasterAccount(firebaseUser.email);
-        const fixedUid = isMaster ? 'BHU-RES-8763-9201' : (userProfile?.dedicatedFixedId || `BHU-USR-${firebaseUser.uid.substring(0, 8).toUpperCase()}`);
+        const fixedUid = isMaster ? 'BHU-RES-8763-9201' : (userProfile?.dedicatedFixedId && userProfile.dedicatedFixedId !== 'BHU-PUB-0000-0000' ? userProfile.dedicatedFixedId : `BHU-USR-${firebaseUser.uid.substring(0, 8).toUpperCase()}`);
         try {
           const verified = await api.verifyGoogleAuth({
             email: firebaseUser.email,
-            name: firebaseUser.displayName || (isMaster ? 'Dr. Shashvat Shukla' : 'Verified Google User'),
+            name: firebaseUser.displayName || (isMaster ? 'Dr. Shashvat Shukla' : firebaseUser.email.split('@')[0]),
             avatar: firebaseUser.photoURL || undefined,
             fixedId: fixedUid,
-            requestedRole: userRole
+            requestedRole: userRole && userRole !== 'public' ? userRole : (isMaster ? 'researcher' : 'researcher')
           });
           setUserProfile(verified);
           setUserRole(verified.role);
@@ -161,7 +178,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   }, []);
 
   const loginWithGoogle = async (customData?: Partial<UserProfile>, requestedRole?: UserRole): Promise<UserProfile> => {
-    const targetEmail = customData?.email || userProfile?.email || MASTER_ADMIN_EMAIL;
+    const targetEmail = (customData?.email || '').trim().toLowerCase();
+    if (!targetEmail) {
+      throw new Error('Please enter a valid Google email address or sign in via the Google popup.');
+    }
     const isMaster = isMasterAccount(targetEmail);
 
     let effectiveRole: UserRole = requestedRole || customData?.role || 'researcher';
@@ -172,7 +192,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     try {
       const verified = await api.verifyGoogleAuth({
         email: targetEmail,
-        name: customData?.name || userProfile?.name || (isMaster ? 'Dr. Shashvat Shukla' : 'Verified Researcher'),
+        name: customData?.name || (isMaster ? 'Dr. Shashvat Shukla' : targetEmail.split('@')[0]),
         avatar: customData?.avatar,
         fixedId: customData?.dedicatedFixedId || (isMaster ? 'BHU-RES-8763-9201' : undefined),
         requestedRole: effectiveRole
@@ -184,13 +204,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     } catch {
       const fallback: UserProfile = {
         id: 'usr_' + Date.now().toString(36),
-        dedicatedFixedId: isMaster ? 'BHU-RES-8763-9201' : `BHU-${effectiveRole.substring(0, 3).toUpperCase()}-9021`,
+        dedicatedFixedId: isMaster ? 'BHU-RES-8763-9201' : `BHU-${effectiveRole.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
         email: targetEmail,
-        name: customData?.name || (isMaster ? 'Dr. Shashvat Shukla' : 'Authorized User'),
+        name: customData?.name || (isMaster ? 'Dr. Shashvat Shukla' : targetEmail.split('@')[0]),
         avatar: customData?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(targetEmail)}&backgroundColor=${isMaster ? '059669' : '1e40af'}`,
         role: effectiveRole,
-        affiliation: isMaster ? 'National Land Records & Geospatial Intelligence Directorate' : 'State Cadastral Research Institute',
-        designation: isMaster ? 'Chief Director of Inspection & Cadastral Research' : 'Cadastral Researcher',
+        affiliation: isMaster ? 'National Land Records & Geospatial Intelligence Directorate' : (effectiveRole === 'policymaker' ? 'NITI Aayog & State Land Planning Commission' : 'State Cadastral Research Institute'),
+        designation: isMaster ? 'Chief Director of Inspection & Cadastral Research' : (effectiveRole === 'policymaker' ? 'Senior Land Policy Advisor' : (effectiveRole === 'public' ? 'Citizen Observer' : 'Cadastral Researcher')),
         isGoogleVerified: true,
         issuedAt: new Date().toISOString(),
         authProvider: 'google',
@@ -206,8 +226,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const loginWithFirebasePopup = async (requestedRole?: UserRole): Promise<UserProfile> => {
     try {
+      // Force account picker every time so the user can choose which Google account to sign in with
+      googleProvider.setCustomParameters({
+        prompt: 'select_account'
+      });
       const cred = await signInWithPopup(auth, googleProvider);
       const email = cred.user.email || '';
+      if (!email) {
+        throw new Error('No email found in Google credentials');
+      }
       const isMaster = isMasterAccount(email);
 
       let effectiveRole: UserRole = requestedRole || 'researcher';
@@ -217,7 +244,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
       const verified = await api.verifyGoogleAuth({
         email: email,
-        name: cred.user.displayName || (isMaster ? 'Dr. Shashvat Shukla' : 'Google User'),
+        name: cred.user.displayName || (isMaster ? 'Dr. Shashvat Shukla' : email.split('@')[0]),
         avatar: cred.user.photoURL || undefined,
         fixedId: isMaster ? 'BHU-RES-8763-9201' : `BHU-${effectiveRole.substring(0, 3).toUpperCase()}-${cred.user.uid.substring(0, 8).toUpperCase()}`,
         requestedRole: effectiveRole
@@ -228,9 +255,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('bhu_user_profile', JSON.stringify(verified));
       return verified;
     } catch (err: any) {
-      console.warn('Firebase popup sign-in encountered error or popup blocker, falling back to simulated Google auth flow:', err);
-      // Clean fallback if popup is blocked by sandbox iFrame
-      return await loginWithGoogle(undefined, requestedRole);
+      console.warn('Firebase popup sign-in encountered error or popup blocker:', err);
+      throw err;
     }
   };
 
