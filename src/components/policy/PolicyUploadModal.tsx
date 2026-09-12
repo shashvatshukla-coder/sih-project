@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { Policy } from '../../types';
@@ -23,12 +23,14 @@ interface PolicyUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPolicyCreated?: (policy: Policy) => void;
+  initialFile?: File | null;
 }
 
 export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
   isOpen,
   onClose,
-  onPolicyCreated
+  onPolicyCreated,
+  initialFile = null
 }) => {
   const { states, selectedState, userProfile } = useApp();
 
@@ -53,8 +55,6 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  if (!isOpen) return null;
 
   const currentStateObj = states.find(s => s.state_code === targetStateCode) || states[0];
 
@@ -107,6 +107,14 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
       setFilePreview(`Binary Policy Asset: ${selectedFile.name} (${(selectedFile.size / 1024).toFixed(1)} KB) - Verified for Gazette Parsing`);
     }
   };
+
+  useEffect(() => {
+    if (isOpen && initialFile) {
+      processFile(initialFile);
+    }
+  }, [isOpen, initialFile]);
+
+  if (!isOpen) return null;
 
   const handleDrop = (e: React.DragEvent) => {
     e.preventDefault();
