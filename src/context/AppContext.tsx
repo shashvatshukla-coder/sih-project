@@ -7,7 +7,14 @@ import {
   District,
   LandUseRecord,
   AIQueryResponse,
-  UserProfile
+  UserProfile,
+  DashboardConfig,
+  DashboardKPICard,
+  DashboardInsightItem,
+  DashboardPublicationItem,
+  DashboardPolicyExperiment,
+  DashboardUpcomingEvent,
+  DashboardBannerSlide
 } from '../types';
 import { api } from '../services/api';
 import {
@@ -58,6 +65,30 @@ interface AppContextType {
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
   isMasterUser: boolean;
+  isInspectionAuthorized: boolean;
+
+  // Dashboard Live Data & Control (Inspection Directorate)
+  dashboardConfig: DashboardConfig;
+  setDashboardConfig: React.Dispatch<React.SetStateAction<DashboardConfig>>;
+  isDashboardEditMode: boolean;
+  setIsDashboardEditMode: (val: boolean) => void;
+  updateDashboardKPI: (key: keyof DashboardConfig['kpiCards'], count: string, subtitle: string) => void;
+  updateDashboardInsight: (id: string, updates: Partial<DashboardInsightItem>) => void;
+  addDashboardInsight: (item: Omit<DashboardInsightItem, 'id'>) => void;
+  deleteDashboardInsight: (id: string) => void;
+  updateDashboardPublication: (id: string, updates: Partial<DashboardPublicationItem>) => void;
+  addDashboardPublication: (item: Omit<DashboardPublicationItem, 'id'>) => void;
+  deleteDashboardPublication: (id: string) => void;
+  updatePolicyExperiment: (id: string, updates: Partial<DashboardPolicyExperiment>) => void;
+  addPolicyExperiment: (item: Omit<DashboardPolicyExperiment, 'id'>) => void;
+  deletePolicyExperiment: (id: string) => void;
+  updateUpcomingEvent: (id: string, updates: Partial<DashboardUpcomingEvent>) => void;
+  addUpcomingEvent: (item: Omit<DashboardUpcomingEvent, 'id'>) => void;
+  deleteUpcomingEvent: (id: string) => void;
+  updateBannerSlide: (id: string, updates: Partial<DashboardBannerSlide>) => void;
+  updateCurrentLandUseRecord: (updates: Partial<LandUseRecord>) => Promise<void>;
+  resetDashboardToBaseline: () => Promise<void>;
+  saveDashboardConfig: (customConfig?: DashboardConfig) => Promise<void>;
 
   states: State[];
   allDistricts: District[];
@@ -84,6 +115,83 @@ interface AppContextType {
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
+
+export const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
+  kpiCards: {
+    datasets: { count: '12,450', subtitle: 'From 35+ Departments' },
+    research: { count: '3,250', subtitle: 'Across 500+ Institutions' },
+    policies: { count: '1,200', subtitle: 'Central & State' },
+    layers: { count: '8,700', subtitle: 'Nationwide Coverage' },
+    users: { count: '2,450', subtitle: 'Researchers | Policymakers' }
+  },
+  keyInsights: [
+    { id: 'ki-1', metric: '+12%', description: 'Increase in digitized land records (2020-2025)', icon: 'TrendingUp' },
+    { id: 'ki-2', metric: '28%', description: "India's land under forest cover", icon: 'Sprout' },
+    { id: 'ki-3', metric: '3.2M', description: 'Land disputes resolved through digital platforms', icon: 'Users' },
+    { id: 'ki-4', metric: '65+', description: 'Policy experiments in progress across states', icon: 'Target' }
+  ],
+  recentPublications: [
+    { id: 'pub-1', title: 'AI-based Land Dispute Prediction in India', author: 'IIT Bombay', year: '2024' },
+    { id: 'pub-2', title: 'Impact of Digital Land Records on Rural Governance', author: 'IIM Ahmedabad', year: '2024' },
+    { id: 'pub-3', title: 'Urban Land Use Change Analysis using Satellite Data', author: 'ISRO', year: '2023' },
+    { id: 'pub-4', title: 'Land Consolidation Models for Sustainable Agriculture', author: 'ICAR', year: '2023' }
+  ],
+  policyExperiments: [
+    { id: 'exp-1', title: 'Digital Land Record Verification', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+    { id: 'exp-2', title: 'Community Land Mapping Initiative', state: 'Maharashtra', duration: '1 year', status: 'Evaluation', color: 'bg-amber-100 text-amber-800 border-amber-200' },
+    { id: 'exp-3', title: 'Urban Land Use Policy Reform', state: 'Karnataka', duration: '6 months', status: 'Planning', color: 'bg-blue-100 text-blue-800 border-blue-200' }
+  ],
+  upcomingEvents: [
+    { id: 'ev-1', title: 'National Workshop on Land Governance', date: '15 Oct 2025', location: 'New Delhi' }
+  ],
+  bannerSlides: [
+    {
+      id: 'slide-1',
+      headline: 'National Land Vision',
+      highlight: 'Better Land Governance Tomorrow.',
+      subtitle: 'A collaborative national ecosystem for open data, research, policy and geospatial innovation.',
+      quote: '"Sustainable land governance for a stronger, inclusive and resilient India."',
+      author: 'Government of India • MoA&FW',
+      badge: 'National Land Vision'
+    },
+    {
+      id: 'slide-2',
+      headline: 'Preserving Soil.',
+      highlight: 'Empowering Generations.',
+      subtitle: 'Harmonizing agriculture, agroforestry and ecological balance through AI-driven intelligence.',
+      quote: '"The land is the foundation of all economic vitality and life itself; nurture it with wisdom."',
+      author: 'National Land Policy Council',
+      badge: 'Ecological Equilibrium'
+    },
+    {
+      id: 'slide-3',
+      headline: 'Reclaiming Wasters.',
+      highlight: 'Expanding Green Canopies.',
+      subtitle: 'Transforming sodic and degraded soils into productive agricultural zones across Uttar Pradesh.',
+      quote: '"To restore the soil is to safeguard our civilization\'s future food security and ecological wealth."',
+      author: 'UP Bhumi Sudhar Nigam • Sodic Reclamation',
+      badge: 'Land Reclamation'
+    },
+    {
+      id: 'slide-4',
+      headline: 'Precision from Space.',
+      highlight: 'Decisions on Earth.',
+      subtitle: 'Harnessing multi-spectral remote sensing (ISRO Bhuvan & Sentinel) for transparent cadastral governance.',
+      quote: '"One unified evidence layer for every agricultural, forest, and spatial development decision."',
+      author: 'ISRO • National Remote Sensing Centre (NRSC)',
+      badge: 'Space & Remote Sensing'
+    },
+    {
+      id: 'slide-5',
+      headline: 'Protecting Watercourses.',
+      highlight: 'Securing Catchment Basins.',
+      subtitle: 'Safeguarding rivers, floodplains, and irrigated agricultural plains for national prosperity.',
+      quote: '"Water is the lifeblood of our fields; land governance must protect every riverbank and wetland."',
+      author: 'Ministry of Jal Shakti & Agriculture',
+      badge: 'Catchment & Rivers'
+    }
+  ]
+};
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activePage, setActivePage] = useState<PageId>('dashboard');
@@ -150,6 +258,305 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const dedicatedFixedId = userProfile?.dedicatedFixedId || 'BHU-PUB-0000-0000';
   const isMasterUser = isMasterAccount(userProfile?.email);
+  const isInspectionAuthorized =
+    userRole === 'inspector' ||
+    userProfile?.role === 'inspector' ||
+    isMasterUser ||
+    Boolean(userProfile?.is_inspection_verified) ||
+    Boolean(userProfile?.features_granted?.includes('full_inspection'));
+
+  // Dashboard Live Configuration State (Inspection Directorate Control)
+  const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig>(() => {
+    try {
+      const cached = localStorage.getItem('bhu_dashboard_config');
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        return {
+          ...DEFAULT_DASHBOARD_CONFIG,
+          ...parsed,
+          kpiCards: { ...DEFAULT_DASHBOARD_CONFIG.kpiCards, ...(parsed.kpiCards || {}) }
+        };
+      }
+    } catch {}
+    return DEFAULT_DASHBOARD_CONFIG;
+  });
+
+  const [isDashboardEditMode, setIsDashboardEditMode] = useState<boolean>(false);
+
+  // Sync dashboard config with server on initialization
+  useEffect(() => {
+    async function loadRemoteDashboard() {
+      try {
+        const remote = await api.getDashboardData();
+        if (remote && remote.kpiCards) {
+          setDashboardConfig(prev => {
+            const merged = {
+              ...prev,
+              ...remote,
+              kpiCards: { ...prev.kpiCards, ...(remote.kpiCards || {}) }
+            };
+            try {
+              localStorage.setItem('bhu_dashboard_config', JSON.stringify(merged));
+            } catch {}
+            return merged;
+          });
+        }
+      } catch (e) {
+        console.warn('Could not load remote dashboard data:', e);
+      }
+    }
+    loadRemoteDashboard();
+  }, []);
+
+  const updateDashboardKPI = (key: keyof DashboardConfig['kpiCards'], count: string, subtitle: string) => {
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        kpiCards: {
+          ...prev.kpiCards,
+          [key]: { count, subtitle }
+        }
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ kpiCards: updated.kpiCards }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const updateDashboardInsight = (id: string, updates: Partial<DashboardInsightItem>) => {
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        keyInsights: prev.keyInsights.map(item => item.id === id ? { ...item, ...updates } : item)
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ keyInsights: updated.keyInsights }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const addDashboardInsight = (item: Omit<DashboardInsightItem, 'id'>) => {
+    const newItem: DashboardInsightItem = {
+      id: `ki-${Date.now()}`,
+      ...item
+    };
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        keyInsights: [...prev.keyInsights, newItem]
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ keyInsights: updated.keyInsights }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const deleteDashboardInsight = (id: string) => {
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        keyInsights: prev.keyInsights.filter(item => item.id !== id)
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ keyInsights: updated.keyInsights }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const updateDashboardPublication = (id: string, updates: Partial<DashboardPublicationItem>) => {
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        recentPublications: prev.recentPublications.map(item => item.id === id ? { ...item, ...updates } : item)
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ recentPublications: updated.recentPublications }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const addDashboardPublication = (item: Omit<DashboardPublicationItem, 'id'>) => {
+    const newItem: DashboardPublicationItem = {
+      id: `pub-${Date.now()}`,
+      ...item
+    };
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        recentPublications: [newItem, ...prev.recentPublications]
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ recentPublications: updated.recentPublications }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const deleteDashboardPublication = (id: string) => {
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        recentPublications: prev.recentPublications.filter(item => item.id !== id)
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ recentPublications: updated.recentPublications }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const updatePolicyExperiment = (id: string, updates: Partial<DashboardPolicyExperiment>) => {
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        policyExperiments: prev.policyExperiments.map(item => item.id === id ? { ...item, ...updates } : item)
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ policyExperiments: updated.policyExperiments }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const addPolicyExperiment = (item: Omit<DashboardPolicyExperiment, 'id'>) => {
+    const newItem: DashboardPolicyExperiment = {
+      id: `exp-${Date.now()}`,
+      color: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      ...item
+    };
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        policyExperiments: [newItem, ...prev.policyExperiments]
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ policyExperiments: updated.policyExperiments }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const deletePolicyExperiment = (id: string) => {
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        policyExperiments: prev.policyExperiments.filter(item => item.id !== id)
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ policyExperiments: updated.policyExperiments }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const updateUpcomingEvent = (id: string, updates: Partial<DashboardUpcomingEvent>) => {
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        upcomingEvents: prev.upcomingEvents.map(item => item.id === id ? { ...item, ...updates } : item)
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ upcomingEvents: updated.upcomingEvents }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const addUpcomingEvent = (item: Omit<DashboardUpcomingEvent, 'id'>) => {
+    const newItem: DashboardUpcomingEvent = {
+      id: `ev-${Date.now()}`,
+      ...item
+    };
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        upcomingEvents: [...prev.upcomingEvents, newItem]
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ upcomingEvents: updated.upcomingEvents }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const deleteUpcomingEvent = (id: string) => {
+    setDashboardConfig(prev => {
+      const updated = {
+        ...prev,
+        upcomingEvents: prev.upcomingEvents.filter(item => item.id !== id)
+      };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ upcomingEvents: updated.upcomingEvents }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const updateBannerSlide = (id: string, updates: Partial<DashboardBannerSlide>) => {
+    setDashboardConfig(prev => {
+      const slides = (prev.bannerSlides || []).map(s => s.id === id ? { ...s, ...updates } : s);
+      const updated = { ...prev, bannerSlides: slides };
+      try {
+        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+      } catch {}
+      api.updateDashboardData({ bannerSlides: slides }).catch(console.warn);
+      return updated;
+    });
+  };
+
+  const updateCurrentLandUseRecord = async (updates: Partial<LandUseRecord>) => {
+    if (!currentRecord) return;
+    const updated = { ...currentRecord, ...updates };
+    setCurrentRecord(updated);
+    try {
+      await api.overrideLandUseRecord(
+        selectedState,
+        selectedDistrict !== 'ALL' ? selectedDistrict : undefined,
+        selectedYear,
+        updates
+      );
+    } catch (e) {
+      console.warn('Failed to sync land use override to server:', e);
+    }
+  };
+
+  const resetDashboardToBaseline = async () => {
+    setDashboardConfig(DEFAULT_DASHBOARD_CONFIG);
+    try {
+      localStorage.removeItem('bhu_dashboard_config');
+    } catch {}
+    try {
+      await api.resetDashboardData();
+    } catch (e) {
+      console.warn('Failed to reset backend dashboard:', e);
+    }
+  };
+
+  const saveDashboardConfig = async (customConfig?: DashboardConfig) => {
+    const toSave = customConfig || dashboardConfig;
+    try {
+      localStorage.setItem('bhu_dashboard_config', JSON.stringify(toSave));
+    } catch {}
+    await api.updateDashboardData(toSave);
+  };
 
   // Listen to Firebase auth state changes if available
   useEffect(() => {
@@ -184,10 +591,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
     const isMaster = isMasterAccount(targetEmail);
 
-    let effectiveRole: UserRole = requestedRole || customData?.role || 'researcher';
-    if ((effectiveRole === 'inspector' || effectiveRole === 'admin') && !isMaster) {
-      effectiveRole = 'researcher'; // Unprivileged users restricted to researcher, policymaker, or public
-    }
+    let effectiveRole: UserRole = requestedRole || customData?.role || (isMaster ? 'inspector' : 'researcher');
 
     try {
       const verified = await api.verifyGoogleAuth({
@@ -253,10 +657,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       }
       const isMaster = isMasterAccount(email);
 
-      let effectiveRole: UserRole = requestedRole || 'researcher';
-      if ((effectiveRole === 'inspector' || effectiveRole === 'admin') && !isMaster) {
-        effectiveRole = 'researcher';
-      }
+      let effectiveRole: UserRole = requestedRole || (isMaster ? 'inspector' : 'researcher');
 
       const verified = await api.verifyGoogleAuth({
         email: email,
@@ -306,15 +707,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const changeUserRole = (newRole: UserRole) => {
-    // Only master account can switch to inspection or admin
-    if ((newRole === 'inspector' || newRole === 'admin') && !isMasterUser) {
-      alert('Access Restricted: Inspection Directorate is strictly reserved for Chief Inspection Director shashvatshukla81@gmail.com');
-      return;
-    }
     setUserRole(newRole);
     setUserProfile(prev => ({
       ...prev,
-      role: newRole
+      role: newRole,
+      is_inspection_verified: newRole === 'inspector' ? true : prev.is_inspection_verified,
+      features_granted: newRole === 'inspector'
+        ? ['full_inspection', 'policy_moderation', 'research_curation', 'user_rights_calibration', 'all_roles_switch']
+        : prev.features_granted
     }));
   };
 
@@ -506,6 +906,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         logout,
         changeUserRole,
         isMasterUser,
+        isInspectionAuthorized,
+        dashboardConfig,
+        setDashboardConfig,
+        isDashboardEditMode,
+        setIsDashboardEditMode,
+        updateDashboardKPI,
+        updateDashboardInsight,
+        addDashboardInsight,
+        deleteDashboardInsight,
+        updateDashboardPublication,
+        addDashboardPublication,
+        deleteDashboardPublication,
+        updatePolicyExperiment,
+        addPolicyExperiment,
+        deletePolicyExperiment,
+        updateUpcomingEvent,
+        addUpcomingEvent,
+        deleteUpcomingEvent,
+        updateBannerSlide,
+        updateCurrentLandUseRecord,
+        resetDashboardToBaseline,
+        saveDashboardConfig,
         isAuthModalOpen,
         setIsAuthModalOpen,
         isIdCardModalOpen,

@@ -338,3 +338,64 @@ export interface FilterState {
   year: number;
   category: LandCategory;
 }
+
+export interface DashboardKPICard {
+  count: string;
+  subtitle: string;
+}
+
+export interface DashboardInsightItem {
+  id: string;
+  metric: string;
+  description: string;
+  icon: string;
+}
+
+export interface DashboardPublicationItem {
+  id: string;
+  title: string;
+  author: string;
+  year: string;
+}
+
+export interface DashboardPolicyExperiment {
+  id: string;
+  title: string;
+  state: string;
+  duration: string;
+  status: string;
+  color?: string;
+}
+
+export interface DashboardUpcomingEvent {
+  id: string;
+  title: string;
+  date: string;
+  location: string;
+}
+
+export interface DashboardBannerSlide {
+  id: string;
+  headline: string;
+  highlight: string;
+  subtitle: string;
+  quote: string;
+  author: string;
+  badge: string;
+}
+
+export interface DashboardConfig {
+  kpiCards: {
+    datasets: DashboardKPICard;
+    research: DashboardKPICard;
+    policies: DashboardKPICard;
+    layers: DashboardKPICard;
+    users: DashboardKPICard;
+  };
+  keyInsights: DashboardInsightItem[];
+  recentPublications: DashboardPublicationItem[];
+  policyExperiments: DashboardPolicyExperiment[];
+  upcomingEvents: DashboardUpcomingEvent[];
+  bannerSlides?: DashboardBannerSlide[];
+}
+

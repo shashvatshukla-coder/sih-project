@@ -735,6 +735,46 @@ class Database {
     return result;
   }
 
+  public updateLandUseRecord(id: string, updates: Partial<LandUseRecord>): LandUseRecord | undefined {
+    const record = this.records.find(r => r.id === id);
+    if (!record) return undefined;
+    Object.assign(record, updates);
+    this.logAudit('OVERRIDE_LAND_USE_RECORD', 'Inspection Directorate', { record_id: id, updates });
+    return record;
+  }
+
+  public updateLandUseRecordByLocation(
+    stateCode: string,
+    districtCode: string | undefined,
+    year: number,
+    updates: Partial<LandUseRecord>
+  ): LandUseRecord {
+    const normDist = districtCode && districtCode !== 'ALL' ? districtCode.toLowerCase() : undefined;
+    let record = this.records.find(r =>
+      r.state_code.toLowerCase() === stateCode.toLowerCase() &&
+      (normDist ? (r.district_code?.toLowerCase() === normDist) : (!r.district_code || r.district_code === 'ALL')) &&
+      r.year === year
+    );
+
+    if (!record) {
+      const template = this.records.find(r => r.state_code.toLowerCase() === stateCode.toLowerCase()) || this.records[0];
+      record = {
+        ...template,
+        id: `REC-${stateCode}-${normDist || 'STATE'}-${year}-${Date.now()}`,
+        state_code: stateCode,
+        district_code: normDist,
+        year,
+        ...updates
+      };
+      this.records.unshift(record);
+    } else {
+      Object.assign(record, updates);
+    }
+
+    this.logAudit('OVERRIDE_LAND_USE_DATA', 'Inspection Directorate', { stateCode, districtCode, year, updates });
+    return record;
+  }
+
   public getDatasets(search?: string, category?: string): Dataset[] {
     let result = [...this.datasets];
     if (category && category !== 'All') {
@@ -1217,6 +1257,87 @@ class Database {
 
   public getAuditLogs(): any[] {
     return this.auditLogs;
+  }
+
+  private dashboardData: any = {
+    kpiCards: {
+      datasets: { count: '12,450', subtitle: 'From 35+ Departments' },
+      research: { count: '3,250', subtitle: 'Across 500+ Institutions' },
+      policies: { count: '1,200', subtitle: 'Central & State' },
+      layers: { count: '8,700', subtitle: 'Nationwide Coverage' },
+      users: { count: '2,450', subtitle: 'Researchers | Policymakers' }
+    },
+    keyInsights: [
+      { id: 'ki-1', metric: '+12%', description: 'Increase in digitized land records (2020-2025)', icon: 'TrendingUp' },
+      { id: 'ki-2', metric: '28%', description: "India's land under forest cover", icon: 'Sprout' },
+      { id: 'ki-3', metric: '3.2M', description: 'Land disputes resolved through digital platforms', icon: 'Users' },
+      { id: 'ki-4', metric: '65+', description: 'Policy experiments in progress across states', icon: 'Target' }
+    ],
+    recentPublications: [
+      { id: 'pub-1', title: 'AI-based Land Dispute Prediction in India', author: 'IIT Bombay', year: '2024' },
+      { id: 'pub-2', title: 'Impact of Digital Land Records on Rural Governance', author: 'IIM Ahmedabad', year: '2024' },
+      { id: 'pub-3', title: 'Urban Land Use Change Analysis using Satellite Data', author: 'ISRO', year: '2023' },
+      { id: 'pub-4', title: 'Land Consolidation Models for Sustainable Agriculture', author: 'ICAR', year: '2023' }
+    ],
+    policyExperiments: [
+      { id: 'exp-1', title: 'Digital Land Record Verification', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+      { id: 'exp-2', title: 'Community Land Mapping Initiative', state: 'Maharashtra', duration: '1 year', status: 'Evaluation', color: 'bg-amber-100 text-amber-800 border-amber-200' },
+      { id: 'exp-3', title: 'Urban Land Use Policy Reform', state: 'Karnataka', duration: '6 months', status: 'Planning', color: 'bg-blue-100 text-blue-800 border-blue-200' }
+    ],
+    upcomingEvents: [
+      { id: 'ev-1', title: 'National Workshop on Land Governance', date: '15 Oct 2025', location: 'New Delhi' }
+    ]
+  };
+
+  public getDashboardData(): any {
+    return this.dashboardData;
+  }
+
+  public updateDashboardData(updates: any): any {
+    this.dashboardData = {
+      ...this.dashboardData,
+      ...updates,
+      kpiCards: {
+        ...(this.dashboardData.kpiCards || {}),
+        ...(updates.kpiCards || {})
+      }
+    };
+    this.logAudit('OVERRIDE_DASHBOARD_DATA', 'Inspection Directorate', { updates });
+    return this.dashboardData;
+  }
+
+  public resetDashboardData(): any {
+    this.dashboardData = {
+      kpiCards: {
+        datasets: { count: '12,450', subtitle: 'From 35+ Departments' },
+        research: { count: '3,250', subtitle: 'Across 500+ Institutions' },
+        policies: { count: '1,200', subtitle: 'Central & State' },
+        layers: { count: '8,700', subtitle: 'Nationwide Coverage' },
+        users: { count: '2,450', subtitle: 'Researchers | Policymakers' }
+      },
+      keyInsights: [
+        { id: 'ki-1', metric: '+12%', description: 'Increase in digitized land records (2020-2025)', icon: 'TrendingUp' },
+        { id: 'ki-2', metric: '28%', description: "India's land under forest cover", icon: 'Sprout' },
+        { id: 'ki-3', metric: '3.2M', description: 'Land disputes resolved through digital platforms', icon: 'Users' },
+        { id: 'ki-4', metric: '65+', description: 'Policy experiments in progress across states', icon: 'Target' }
+      ],
+      recentPublications: [
+        { id: 'pub-1', title: 'AI-based Land Dispute Prediction in India', author: 'IIT Bombay', year: '2024' },
+        { id: 'pub-2', title: 'Impact of Digital Land Records on Rural Governance', author: 'IIM Ahmedabad', year: '2024' },
+        { id: 'pub-3', title: 'Urban Land Use Change Analysis using Satellite Data', author: 'ISRO', year: '2023' },
+        { id: 'pub-4', title: 'Land Consolidation Models for Sustainable Agriculture', author: 'ICAR', year: '2023' }
+      ],
+      policyExperiments: [
+        { id: 'exp-1', title: 'Digital Land Record Verification', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
+        { id: 'exp-2', title: 'Community Land Mapping Initiative', state: 'Maharashtra', duration: '1 year', status: 'Evaluation', color: 'bg-amber-100 text-amber-800 border-amber-200' },
+        { id: 'exp-3', title: 'Urban Land Use Policy Reform', state: 'Karnataka', duration: '6 months', status: 'Planning', color: 'bg-blue-100 text-blue-800 border-blue-200' }
+      ],
+      upcomingEvents: [
+        { id: 'ev-1', title: 'National Workshop on Land Governance', date: '15 Oct 2025', location: 'New Delhi' }
+      ]
+    };
+    this.logAudit('RESET_DASHBOARD_DATA', 'Inspection Directorate', {});
+    return this.dashboardData;
   }
 }
 
