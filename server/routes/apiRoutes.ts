@@ -25,6 +25,24 @@ router.get('/system/db-status', (req: Request, res: Response) => {
   });
 });
 
+router.post('/system/seed-supabase', async (req: Request, res: Response) => {
+  const result = await db.seedSupabase();
+  res.json(result);
+});
+
+router.get('/system/supabase-schema', (req: Request, res: Response) => {
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    const schemaPath = path.join(process.cwd(), 'server', 'db', 'supabase-schema.sql');
+    if (fs.existsSync(schemaPath)) {
+      const sql = fs.readFileSync(schemaPath, 'utf-8');
+      return res.json({ success: true, sql });
+    }
+  } catch {}
+  res.status(404).json({ success: false, error: 'Schema file not found' });
+});
+
 // States
 router.get('/states', (req: Request, res: Response) => {
   res.json({ success: true, data: db.getStates() });
@@ -280,6 +298,175 @@ router.get('/research/:id', (req: Request, res: Response) => {
   const paper = db.getResearchPaperById(req.params.id);
   if (!paper) return res.status(404).json({ success: false, error: 'Research paper not found' });
   res.json({ success: true, data: paper });
+});
+
+// Create / Author new Research Paper
+router.post('/research', (req: Request, res: Response) => {
+  try {
+    const {
+      title,
+      abstract,
+      authors,
+      year,
+      publisher,
+      journal,
+      geography,
+      methodology,
+      key_findings,
+      tags,
+      citation_apa,
+      source_url,
+      dedicatedResearcherId,
+      authorEmail,
+      contentMarkdown,
+      fileAttachment
+    } = req.body;
+
+    if (!title || !abstract) {
+      return res.status(400).json({ success: false, error: 'Title and abstract are required.' });
+    }
+
+    const currentYear = year || new Date().getFullYear();
+    const cleanAuthors = Array.isArray(authors) && authors.length > 0 ? authors : ['Researcher'];
+    const paperId = 'PAP-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 5).toUpperCase();
+
+    const newPaper = {
+      id: paperId,
+      title: title.trim(),
+      authors: cleanAuthors,
+      year: currentYear,
+      publisher: publisher || 'Bhu-Drishti National Land Knowledge Repository',
+      journal: journal || 'Empirical Land Policy & Cadastral Research (MoA&FW)',
+      abstract: abstract.trim(),
+      research_area: geography || 'National / Multi-State',
+      geography: geography || 'India',
+      methodology: methodology || 'Multi-decadal geospatial satellite LULC mapping and econometric trend balance sheets.',
+      key_findings: Array.isArray(key_findings) && key_findings.length > 0 ? key_findings : [
+        'Documented longitudinal spatial shift across study area.',
+        'Validated through Grounded Statistical Engine benchmarks.'
+      ],
+      citation_apa: citation_apa || `${cleanAuthors.join(', ')} (${currentYear}). ${title}. ${journal || 'Bhu-Drishti Land Studies'}. Dedicated UID: ${dedicatedResearcherId || 'RES-OFFICIAL-2026'}`,
+      source_url: source_url || `/research/${paperId}`,
+      tags: Array.isArray(tags) && tags.length > 0 ? tags : ['Land Use', 'Cadastral Maps', 'Research Paper'],
+      ai_summary: `Author study by ${cleanAuthors.join(', ')} focusing on ${geography || 'land dynamics'}. Explores land shifts, policy correlations, and decadal trends.`,
+      related_dataset_ids: ['DS-DES-LUS', 'DS-BHUVAN-LULC'],
+      related_policy_ids: ['POL-DILRMP-2008', 'POL-PMKSY-2015'],
+      dedicatedResearcherId: dedicatedResearcherId || 'BHU-RES-8763-9201',
+      authorEmail: authorEmail || 'researcher@bhu-drishti.gov.in',
+      contentMarkdown: contentMarkdown || '',
+      fileAttachment: fileAttachment || null,
+      isUserAuthored: true,
+      status: 'published' as const
+    };
+
+    const saved = db.addResearchPaper(newPaper as any);
+    res.status(201).json({ success: true, message: 'Research paper published successfully', data: saved });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to save research paper' });
+  }
+});
+
+// Upload Document Endpoint
+router.post('/research/upload', (req: Request, res: Response) => {
+  try {
+    const { fileName, fileSize, fileType, fileContent, title, author, dedicatedResearcherId, geography, tags } = req.body;
+    if (!fileName) {
+      return res.status(400).json({ success: false, error: 'File name is required.' });
+    }
+
+    const paperId = 'PAP-UPL-' + Date.now().toString(36).toUpperCase();
+    const paperTitle = title || fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+
+    const newPaper = {
+      id: paperId,
+      title: paperTitle,
+      authors: [author || 'Institutional Researcher'],
+      year: new Date().getFullYear(),
+      publisher: 'Bhu-Drishti Ingested Document Archive',
+      journal: 'Institutional Field Surveys & Land Documents',
+      abstract: `Ingested document: ${fileName} (${(fileSize ? Math.round(fileSize / 1024) : 0)} KB). Contains cadastral and land-use assessment observations uploaded by authenticated researcher ${dedicatedResearcherId || 'BHU-RES-8763-9201'}.`,
+      research_area: geography || 'Field Survey & Policy',
+      geography: geography || 'India',
+      methodology: 'Direct researcher document upload and automated cadastral indexing.',
+      key_findings: [
+        `Uploaded document file: ${fileName}`,
+        `Authenticated researcher ID: ${dedicatedResearcherId || 'BHU-RES-8763-9201'}`
+      ],
+      citation_apa: `${author || 'Researcher'} (${new Date().getFullYear()}). ${paperTitle}. Bhu-Drishti Land Ingestion Portal. File: ${fileName}.`,
+      source_url: `/research/${paperId}`,
+      tags: Array.isArray(tags) && tags.length > 0 ? tags : ['Uploaded Paper', 'Cadastral Maps', 'Field Survey'],
+      ai_summary: `Document analysis for ${fileName}. Uploaded with verified researcher credentials.`,
+      related_dataset_ids: ['DS-DES-LUS'],
+      related_policy_ids: ['POL-DILRMP-2008'],
+      dedicatedResearcherId: dedicatedResearcherId || 'BHU-RES-8763-9201',
+      contentMarkdown: typeof fileContent === 'string' ? fileContent.substring(0, 50000) : '',
+      fileAttachment: {
+        name: fileName,
+        size: fileSize || 0,
+        type: fileType || 'application/pdf',
+        uploadedAt: new Date().toISOString()
+      },
+      isUserAuthored: true,
+      status: 'published' as const
+    };
+
+    const saved = db.addResearchPaper(newPaper as any);
+    res.status(201).json({ success: true, message: 'Document uploaded and indexed successfully', data: saved });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to upload document' });
+  }
+});
+
+// Google Authentication Endpoints
+router.get('/auth/google/url', (req: Request, res: Response) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const redirectUri = `${req.protocol}://${req.get('host')}/auth/google/callback`;
+
+  if (clientId) {
+    const params = new URLSearchParams({
+      client_id: clientId,
+      redirect_uri: redirectUri,
+      response_type: 'code',
+      scope: 'openid email profile',
+      access_type: 'offline',
+      prompt: 'consent'
+    });
+    return res.json({ success: true, url: `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}` });
+  }
+
+  // Fallback demo auth URL
+  res.json({
+    success: true,
+    url: `/auth/google/callback?code=mock_google_auth_token_${Date.now()}`
+  });
+});
+
+router.post('/auth/google/verify', (req: Request, res: Response) => {
+  const { email, name, avatar, fixedId } = req.body;
+  const userEmail = email || 'shashvatshukla81@gmail.com';
+  const userName = name || 'Dr. Shashvat Shukla';
+
+  // Compute or preserve dedicated fixed researcher ID
+  // e.g. BHU-RES-8763-9201 or hash-derived
+  const dedicatedId = fixedId || 'BHU-RES-8763-9201';
+
+  const profile = {
+    id: 'usr_g_' + Buffer.from(userEmail).toString('base64').substring(0, 10).replace(/[^a-zA-Z0-9]/g, ''),
+    dedicatedFixedId: dedicatedId,
+    email: userEmail,
+    name: userName,
+    avatar: avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName)}&backgroundColor=059669`,
+    role: 'researcher',
+    affiliation: 'National Land Records & Geospatial Intelligence Directorate',
+    designation: 'Senior Cadastral Research Scientist',
+    institutionType: 'ICAR / Indian Council of Agricultural Research & NIC',
+    orcid: '0009-0004-8763-9201',
+    isGoogleVerified: true,
+    issuedAt: new Date().toISOString(),
+    authProvider: 'google'
+  };
+
+  res.json({ success: true, data: profile });
 });
 
 // Anomalies

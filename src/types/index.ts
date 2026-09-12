@@ -126,6 +126,22 @@ export interface Policy {
   linked_dataset_ids: string[];
 }
 
+export interface UserProfile {
+  id: string;
+  dedicatedFixedId: string; // Permanent Dedicated Researcher ID (e.g. BHU-RES-8763-9201)
+  email: string;
+  name: string;
+  avatar?: string;
+  role: UserRole;
+  affiliation: string;
+  designation: string;
+  institutionType?: string;
+  orcid?: string;
+  isGoogleVerified: boolean;
+  issuedAt: string;
+  authProvider: 'google' | 'institutional' | 'guest';
+}
+
 export interface ResearchPaper {
   id: string;
   title: string;
@@ -144,6 +160,19 @@ export interface ResearchPaper {
   ai_summary: string;
   related_dataset_ids: string[];
   related_policy_ids: string[];
+  // Extended researcher authoring & upload fields
+  dedicatedResearcherId?: string;
+  authorEmail?: string;
+  contentMarkdown?: string;
+  fileAttachment?: {
+    name: string;
+    size: number;
+    type: string;
+    dataUrl?: string;
+    uploadedAt: string;
+  };
+  isUserAuthored?: boolean;
+  status?: 'published' | 'under_review' | 'draft';
 }
 
 export interface Anomaly {

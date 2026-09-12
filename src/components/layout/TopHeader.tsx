@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
+import { api } from '../../services/api';
 import {
   Search,
   Moon,
@@ -13,7 +14,13 @@ import {
   Scale,
   Users,
   Check,
-  UserCheck
+  UserCheck,
+  Database,
+  Fingerprint,
+  Award,
+  ShieldCheck,
+  LogOut,
+  ChevronDown
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -25,6 +32,11 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
   const {
     userRole,
     setUserRole,
+    userProfile,
+    dedicatedFixedId,
+    setIsAuthModalOpen,
+    setIsIdCardModalOpen,
+    logout,
     isDarkMode,
     toggleDarkMode,
     setIsSearchOpen,
@@ -33,11 +45,18 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
 
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
   const [notifOpen, setNotifOpen] = useState(false);
+  const [dbStatus, setDbStatus] = useState<any>(null);
+
+  useEffect(() => {
+    api.getDbStatus().then(status => {
+      if (status) setDbStatus(status);
+    }).catch(() => {});
+  }, []);
 
   const roles: Array<{ id: UserRole; title: string; desc: string; icon: any }> = [
-    { id: 'researcher', title: 'Researcher', desc: 'Deep data tables, econometric metrics, paper citations', icon: GraduationCap },
+    { id: 'researcher', title: 'Researcher', desc: 'Author research, drag-and-drop upload, econometric metrics', icon: GraduationCap },
     { id: 'policymaker', title: 'Policy Maker', desc: 'Decision support, priority zone alerts, policy briefs', icon: Scale },
-    { id: 'public', title: 'Public User', desc: 'High-level summaries, interactive choropleths, public open data', icon: Users },
+    { id: 'public', title: 'Public User', desc: 'High-level summaries, interactive choropleths, open data', icon: Users },
     { id: 'admin', title: 'Administrator', desc: 'Dataset ingest pipeline, column mapper, data provenance audit', icon: Shield }
   ];
 
@@ -65,7 +84,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
           <input
             type="text"
             readOnly
-            placeholder="Search datasets, research, policies, maps, case studies..."
+            placeholder="Search datasets, research papers, cadastral maps, policies..."
             className="w-full pl-10 pr-4 py-2 text-xs md:text-sm bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100/90 dark:hover:bg-slate-800 text-slate-900 dark:text-slate-100 rounded-xl border border-slate-200 dark:border-slate-700 focus:outline-none transition-all cursor-pointer placeholder:text-slate-400 font-normal"
           />
           <kbd className="hidden sm:inline-flex absolute right-3 items-center gap-0.5 px-1.5 py-0.5 text-[10px] font-mono text-slate-400 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 rounded">
@@ -74,8 +93,37 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
         </div>
       </div>
 
-      {/* Right Controls: Notification, Dark Mode & User Profile */}
-      <div className="flex items-center gap-3 ml-4">
+      {/* Right Controls */}
+      <div className="flex items-center gap-2.5 sm:gap-3 ml-4">
+        {/* Dedicated Fixed ID Badge */}
+        <button
+          onClick={() => setIsIdCardModalOpen(true)}
+          className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all cursor-pointer shadow-2xs group"
+          title="Click to view Official Cadastral Researcher ID Badge"
+        >
+          <Fingerprint className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+          <div className="text-left leading-none">
+            <span className="block text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              Fixed Researcher ID
+            </span>
+            <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
+              {dedicatedFixedId}
+            </span>
+          </div>
+          <Award className="w-3.5 h-3.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
+        </button>
+
+        {/* Supabase Status Pill */}
+        <button
+          onClick={() => setActivePage('admin')}
+          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
+          title="Database status (click to open Admin Storage Console)"
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+          <Database className="w-3 h-3 text-emerald-600" />
+          <span>{dbStatus?.supabase_connected ? 'Supabase Cloud' : (dbStatus?.postgres_connected ? 'PostgreSQL' : 'Hybrid DB')}</span>
+        </button>
+
         {/* Dark Mode Toggle */}
         <button
           onClick={toggleDarkMode}
@@ -104,45 +152,141 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
               </div>
               <div className="py-2 space-y-2 text-xs">
                 <div className="p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200">
-                  <p className="font-semibold">DES 2025 Series Live</p>
-                  <p className="text-[11px] opacity-80">9-Fold classification benchmarks updated.</p>
+                  <p className="font-semibold">Research Feature Active</p>
+                  <p className="text-[11px] opacity-80">Authoring studio & drag-and-drop file ingestion enabled.</p>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                  <p className="font-semibold">Amethi Cadastral Layers</p>
-                  <p className="text-[11px] opacity-80">Gauriganj HQ sodic reclamation synced.</p>
+                  <p className="font-semibold">Dedicated Researcher UID</p>
+                  <p className="text-[11px] opacity-80">{dedicatedFixedId} bound to Google profile.</p>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* User Profile Pill (Ayushman Researcher) */}
+        {/* Google User Profile & Role Switcher */}
         <div className="relative">
-          <button
-            onClick={() => setRoleMenuOpen(!roleMenuOpen)}
-            className="flex items-center gap-2.5 pl-2 pr-3 py-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-left border border-transparent hover:border-slate-200 dark:hover:border-slate-700"
-          >
-            <div className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-slate-700 dark:text-slate-200 font-bold text-xs shrink-0 shadow-2xs">
-              <UserCheck className="w-4 h-4 text-emerald-700 dark:text-emerald-400" />
-            </div>
-            <div className="hidden sm:block leading-tight min-w-0">
-              <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
-                Ayushman
-              </p>
-              <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate capitalize">
-                {currentRoleObj.title}
-              </p>
-            </div>
-          </button>
-
-          {/* Role Changer Menu */}
-          {roleMenuOpen && (
-            <div className="absolute right-0 mt-2 w-64 p-2 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl z-50 text-left">
-              <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
-                <p className="text-xs font-bold text-slate-900 dark:text-white">Active Session</p>
-                <p className="text-[11px] text-slate-500">ayushman.researcher@nic.in</p>
+          {userProfile?.isGoogleVerified ? (
+            <button
+              onClick={() => setRoleMenuOpen(!roleMenuOpen)}
+              className="flex items-center gap-2.5 pl-1.5 pr-2.5 py-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-all text-left border border-slate-200 dark:border-slate-700 cursor-pointer shadow-2xs"
+            >
+              <div className="relative">
+                <img
+                  src={userProfile.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed=Shashvat&backgroundColor=059669'}
+                  alt="Profile"
+                  className="w-8 h-8 rounded-full object-cover ring-2 ring-emerald-500/60"
+                />
+                <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-emerald-500 border-2 border-white dark:border-slate-900 flex items-center justify-center text-white">
+                  <Check className="w-2 h-2" />
+                </span>
               </div>
-              <div className="py-1 space-y-1">
+              <div className="hidden sm:block leading-tight min-w-0">
+                <div className="flex items-center gap-1">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[110px]">
+                    {userProfile.name}
+                  </p>
+                  <span className="text-[9px] font-bold px-1 rounded bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
+                    G
+                  </span>
+                </div>
+                <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate capitalize">
+                  {currentRoleObj.title}
+                </p>
+              </div>
+              <ChevronDown className="w-3 h-3 text-slate-400" />
+            </button>
+          ) : (
+            <button
+              onClick={() => setIsAuthModalOpen(true)}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold shadow-xs transition-all cursor-pointer"
+            >
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                <path
+                  fill="#4285F4"
+                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                />
+                <path
+                  fill="#34A853"
+                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.36 7.31 24 12 24z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.97 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                />
+              </svg>
+              <span>Sign in with Google</span>
+            </button>
+          )}
+
+          {/* User Menu Dropdown */}
+          {roleMenuOpen && (
+            <div className="absolute right-0 mt-2 w-72 p-2.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl z-50 text-left space-y-2">
+              <div className="px-3 py-2 border-b border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-between mb-1">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">
+                    {userProfile?.name}
+                  </p>
+                  <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
+                    Google
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 truncate">{userProfile?.email}</p>
+                <div className="mt-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-between">
+                  <div>
+                    <span className="block text-[8px] uppercase tracking-wider font-bold text-emerald-700 dark:text-emerald-300">
+                      Dedicated Fixed ID
+                    </span>
+                    <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">
+                      {dedicatedFixedId}
+                    </span>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setRoleMenuOpen(false);
+                      setIsIdCardModalOpen(true);
+                    }}
+                    className="p-1 rounded bg-white dark:bg-slate-800 text-emerald-600 hover:bg-emerald-50"
+                    title="View ID Badge"
+                  >
+                    <Award className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Quick Profile Actions */}
+              <div className="space-y-1">
+                <button
+                  onClick={() => {
+                    setRoleMenuOpen(false);
+                    setIsIdCardModalOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2 p-2 rounded-xl text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium"
+                >
+                  <Award className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>View Official Researcher ID Badge</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setRoleMenuOpen(false);
+                    setIsAuthModalOpen(true);
+                  }}
+                  className="w-full flex items-center gap-2 p-2 rounded-xl text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Google Account Credentials</span>
+                </button>
+              </div>
+
+              {/* Role Switcher */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <p className="px-3 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                  Platform Role
+                </p>
                 {roles.map((r) => {
                   const Icon = r.icon;
                   return (
@@ -167,6 +311,20 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   );
                 })}
               </div>
+
+              {/* Sign Out */}
+              <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  onClick={() => {
+                    logout();
+                    setRoleMenuOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2 p-2 rounded-xl text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors font-semibold"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Sign Out of Google</span>
+                </button>
+              </div>
             </div>
           )}
         </div>
@@ -174,3 +332,4 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
     </header>
   );
 };
+

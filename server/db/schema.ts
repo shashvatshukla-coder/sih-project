@@ -118,6 +118,16 @@ export interface ResearchPaper {
   ai_summary: string;
   related_dataset_ids: string[];
   related_policy_ids: string[];
+  dedicatedResearcherId?: string;
+  authorEmail?: string;
+  fileAttachment?: {
+    name: string;
+    size: number;
+    type: string;
+    url?: string;
+  };
+  contentMarkdown?: string;
+  isUserAuthored?: boolean;
 }
 
 export interface Anomaly {

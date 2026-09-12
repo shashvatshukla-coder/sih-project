@@ -14,7 +14,9 @@ export async function getPrismaClient() {
   }
 
   try {
-    const { PrismaClient } = await import('@prisma/client');
+    const prismaModule: any = await import(/* @vite-ignore */ ('@prisma' + '/client') as any).catch(() => null);
+    if (!prismaModule?.PrismaClient) return null;
+    const PrismaClient = prismaModule.PrismaClient;
     prismaInstance = new PrismaClient({
       log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error']
     });
@@ -24,7 +26,7 @@ export async function getPrismaClient() {
     console.log('[Prisma] Successfully connected to PostgreSQL database.');
     return prismaInstance;
   } catch (err) {
-    console.warn('[Prisma] Could not connect to PostgreSQL database. Falling back to in-memory JSON data:', (err as any).message || err);
+    console.warn('[Prisma] Could not connect to PostgreSQL database. Falling back to in-memory JSON data:', (err as any)?.message || err);
     prismaInstance = null;
     isConnected = false;
     return null;

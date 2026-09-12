@@ -26,7 +26,11 @@ async function main() {
     process.exit(1);
   }
 
-  const { PrismaClient } = await import('@prisma/client');
+  const { PrismaClient } = (await import(/* @vite-ignore */ ('@prisma' + '/client') as any).catch(() => ({}))) as any;
+  if (!PrismaClient) {
+    console.error('❌ Error: @prisma/client is not installed.');
+    process.exit(1);
+  }
   const prisma = new PrismaClient({
     datasourceUrl: databaseUrl
   });

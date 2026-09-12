@@ -1,12 +1,31 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
-@layer base {
-  body {
-    @apply antialiased selection:bg-brand-500 selection:text-white;
-  }
+@theme {
+  --color-brand-50: #F0F5FA;
+  --color-brand-100: #E1EBF5;
+  --color-brand-200: #C3D7EB;
+  --color-brand-300: #96BCE0;
+  --color-brand-400: #649ED1;
+  --color-brand-500: #3D80C0;
+  --color-brand-600: #2A64A0;
+  --color-brand-700: #1F4D7E;
+  --color-brand-800: #193F67;
+  --color-brand-900: #0F253E;
+  --color-brand-950: #0A1828;
+
+  --color-agri-50: #F2F9F3;
+  --color-agri-100: #E1F2E4;
+  --color-agri-500: #2E8540;
+  --color-agri-600: #236932;
+  --color-agri-700: #1B5226;
+
+  --color-forest-500: #15803D;
+  --color-urban-500: #475569;
+  --color-water-500: #0284C7;
+  --color-barren-500: #D97706;
 }
+
+@custom-variant dark (&:where(.dark, .dark *));
 
 /* Custom scrollbars for data tables and sidebars */
 ::-webkit-scrollbar {

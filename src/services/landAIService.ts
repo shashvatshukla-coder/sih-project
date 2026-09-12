@@ -1,4 +1,3 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import { AIQueryResponse, LandCategory } from '../types';
 
 export class LandAIService {
@@ -180,33 +179,26 @@ export class LandAIService {
     };
 
     let summary = '';
-    let aiModel = 'Google Gemini 1.5 Flash (Verified Grounding Engine)';
+    let aiModel = 'Google Gemini (Verified Grounding Engine)';
 
-    // Live Google Gemini API Integration
+    // Server-side AI Query with Grounded Fallback
     const finalKey = apiKey || (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
     if (finalKey) {
       try {
-        const genAI = new GoogleGenerativeAI(finalKey);
-        const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-        const prompt = `You are the Bhu-Drishti Land Intelligence AI for India.
-User Query: "${rawQuery}"
-Context:
-Geography: ${geo.geoName} (${geo.stateCode})
-Indicator: ${indicatorNames[indicator]}
-Time Series (2005-2025): ${JSON.stringify(mappedData, null, 2)}
-Metrics: Baseline ${startVal}% in 2005, Latest ${endVal}% in 2025, Net Shift: ${absChange} pp, CAGR: ${cagr}% p.a.
-Anomalies: ${anomalies.join('; ')}
-Special context for Amethi/Gauriganj: Total Area 2,329 km² (2,32,900 Ha). UPSLRP Sodic reclamation reclaimed 8,150+ ha. Gauriganj HQ urbanization expanded built-up to 13.2%. Sharda Sahayak canals brought irrigation to 89.4%.
-
-Instructions: Provide a concise, highly professional 2-3 paragraph analytical brief with decadal dynamics, drivers, and policy recommendations.`;
-        const res = await model.generateContent(prompt);
-        const text = res.response.text();
-        if (text && text.trim().length > 20) {
-          summary = text.trim();
-          aiModel = 'Google Gemini 1.5 Flash (Live Generated)';
+        const res = await fetch('/api/ai/query', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ query: rawQuery, apiKey: finalKey })
+        });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data?.summary) {
+            summary = json.data.summary;
+            aiModel = json.data.aiModel || 'Google Gemini 2.5 Flash (Live Generated)';
+          }
         }
       } catch (err: any) {
-        console.warn('Live Gemini API call failed, falling back to deterministic grounded engine:', err.message);
+        console.warn('Live Gemini query failed, falling back to deterministic grounded engine:', err?.message);
       }
     }
 
@@ -278,36 +270,23 @@ Instructions: Provide a concise, highly professional 2-3 paragraph analytical br
   }
 
   public static async testGemini(apiKey?: string): Promise<{ success: boolean; message: string; model: string; latencyMs?: number }> {
-    const key = apiKey || (import.meta as any).env?.VITE_GEMINI_API_KEY || '';
-    if (!key) {
-      return {
-        success: false,
-        message: 'No GEMINI_API_KEY provided. The system is operating in Grounded Statistical AI Engine mode.',
-        model: 'Grounded Statistical Engine (Deterministic Baseline)'
-      };
-    }
-
-    const start = Date.now();
     try {
-      const genAI = new GoogleGenerativeAI(key);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      const prompt = 'Hello Gemini! Respond in one short sentence confirming you are active for Bhu-Drishti Land Intelligence Platform.';
-      const res = await model.generateContent(prompt);
-      const text = res.response.text();
-      const latency = Date.now() - start;
-
-      return {
-        success: true,
-        message: text.trim(),
-        model: 'Google Gemini 1.5 Flash (Active & Connected)',
-        latencyMs: latency
-      };
-    } catch (err: any) {
-      return {
-        success: false,
-        message: `Gemini API Error: ${err.message}`,
-        model: 'Google Gemini 1.5 Flash (Connection Failed)'
-      };
+      const res = await fetch('/api/ai/test-gemini', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ apiKey })
+      });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch {
+      // Fallback
     }
+
+    return {
+      success: false,
+      message: 'No active backend response. System is operating in Grounded Statistical AI Engine mode.',
+      model: 'Grounded Statistical Engine (Deterministic Baseline)'
+    };
   }
 }

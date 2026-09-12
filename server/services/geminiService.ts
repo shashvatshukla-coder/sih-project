@@ -1,4 +1,4 @@
-﻿import { GoogleGenerativeAI } from '@google/generative-ai';
+import { GoogleGenAI } from '@google/genai';
 
 export class GeminiService {
   public static async testConnection(apiKey?: string): Promise<{ success: boolean; message: string; model: string; latencyMs?: number }> {
@@ -13,24 +13,26 @@ export class GeminiService {
 
     const start = Date.now();
     try {
-      const genAI = new GoogleGenerativeAI(key);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const ai = new GoogleGenAI({ apiKey: key });
       const prompt = 'Hello Gemini! Respond in one short sentence confirming you are active for Bhu-Drishti Land Intelligence Platform.';
-      const res = await model.generateContent(prompt);
-      const text = res.response.text();
+      const res = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
+      const text = res.text || '';
       const latency = Date.now() - start;
 
       return {
         success: true,
         message: text.trim(),
-        model: 'Google Gemini 1.5 Flash (Active & Connected)',
+        model: 'Google Gemini 2.5 Flash (Active & Connected)',
         latencyMs: latency
       };
     } catch (err: any) {
       return {
         success: false,
         message: `Gemini API Error: ${err.message}`,
-        model: 'Google Gemini 1.5 Flash (Connection Failed)'
+        model: 'Google Gemini (Connection Failed)'
       };
     }
   }
@@ -46,8 +48,7 @@ export class GeminiService {
     }
 
     try {
-      const genAI = new GoogleGenerativeAI(key);
-      const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+      const ai = new GoogleGenAI({ apiKey: key });
       const prompt = `You are the Bhu-Drishti Land Intelligence AI for India.
 User Question: "${query}"
 
@@ -59,11 +60,14 @@ Instructions:
 2. Highlight the decadal shifts, CAGR, and notable drivers (e.g., Sodic/Usar land reclamation, Gauriganj district HQ urban growth, canal irrigation under PMKSY & Sharda Sahayak).
 3. Conclude with actionable policy and urban/agricultural planning recommendations.`;
 
-      const res = await model.generateContent(prompt);
+      const res = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: prompt,
+      });
       return {
         success: true,
-        text: res.response.text().trim(),
-        model: 'Google Gemini 1.5 Flash (Live Generated)'
+        text: (res.text || '').trim(),
+        model: 'Google Gemini 2.5 Flash (Live Generated)'
       };
     } catch (err: any) {
       return {

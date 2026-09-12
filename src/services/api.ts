@@ -7,7 +7,8 @@ import {
   Policy,
   ResearchPaper,
   Anomaly,
-  AIQueryResponse
+  AIQueryResponse,
+  UserProfile
 } from '../types';
 import { LandAIService } from './landAIService';
 
@@ -338,6 +339,60 @@ export const api = {
     return [];
   },
 
+  async createResearchPaper(paper: Partial<ResearchPaper>): Promise<ResearchPaper> {
+    const res = await fetch(`${API_BASE}/research`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(paper)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to create paper');
+    return json.data;
+  },
+
+  async uploadResearchDocument(payload: {
+    fileName: string;
+    fileSize?: number;
+    fileType?: string;
+    fileContent?: string;
+    title?: string;
+    author?: string;
+    dedicatedResearcherId?: string;
+    geography?: string;
+    tags?: string[];
+  }): Promise<ResearchPaper> {
+    const res = await fetch(`${API_BASE}/research/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to upload document');
+    return json.data;
+  },
+
+  async getGoogleAuthUrl(): Promise<string> {
+    try {
+      const res = await fetch(`${API_BASE}/auth/google/url`);
+      if (res.ok) {
+        const json = await res.json();
+        return json.url;
+      }
+    } catch {}
+    return '/auth/google/callback';
+  },
+
+  async verifyGoogleAuth(data: { email?: string; name?: string; avatar?: string; fixedId?: string }): Promise<UserProfile> {
+    const res = await fetch(`${API_BASE}/auth/google/verify`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Google verification failed');
+    return json.data;
+  },
+
   async getAnomalies(stateCode?: string): Promise<Anomaly[]> {
     try {
       const url = stateCode && stateCode !== 'IN-ALL' ? `${API_BASE}/anomalies?state=${stateCode}` : `${API_BASE}/anomalies`;
@@ -400,5 +455,39 @@ export const api = {
     const res = await fetch(`${API_BASE}/admin/audit-logs`);
     const json = await res.json();
     return json.data;
+  },
+
+  async getDbStatus() {
+    try {
+      const res = await fetch(`${API_BASE}/system/db-status`);
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch {}
+    return null;
+  },
+
+  async seedSupabase() {
+    try {
+      const res = await fetch(`${API_BASE}/system/seed-supabase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      return await res.json();
+    } catch (err: any) {
+      return { success: false, message: err?.message || 'Failed to trigger Supabase seed' };
+    }
+  },
+
+  async getSupabaseSchema() {
+    try {
+      const res = await fetch(`${API_BASE}/system/supabase-schema`);
+      if (res.ok) {
+        const json = await res.json();
+        return json.sql;
+      }
+    } catch {}
+    return null;
   }
 };
