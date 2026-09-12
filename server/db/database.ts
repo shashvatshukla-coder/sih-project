@@ -1,4 +1,4 @@
-import { State, District, LandUseRecord, Dataset, DataSource, Policy, ResearchPaper, Anomaly } from './schema.ts';
+import { State, District, LandUseRecord, Dataset, DataSource, Policy, AreaTarget, ResearchPaper, Anomaly } from './schema.ts';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -493,12 +493,120 @@ class Database {
     return src;
   }
 
-  public getPolicies(): Policy[] {
-    return this.policies;
+  public getPolicies(stateCode?: string, districtCode?: string): Policy[] {
+    let list = [...this.policies];
+    if (stateCode && stateCode !== 'IN-ALL') {
+      const sc = stateCode.toLowerCase();
+      list = list.map(p => {
+        const areaTarget = p.area_targets?.find(at => at.state_code.toLowerCase() === sc && (!districtCode || districtCode === 'ALL' || at.district_code?.toLowerCase() === districtCode.toLowerCase()));
+        return areaTarget ? { ...p, current_area_target: areaTarget } : p;
+      });
+    }
+    return list;
   }
 
   public getPolicyById(id: string): Policy | undefined {
     return this.policies.find(p => p.id.toLowerCase() === id.toLowerCase() || p.acronym.toLowerCase() === id.toLowerCase());
+  }
+
+  public addPolicy(policy: Policy): Policy {
+    const existingIndex = this.policies.findIndex(p => p.id === policy.id);
+    if (existingIndex >= 0) {
+      this.policies[existingIndex] = { ...this.policies[existingIndex], ...policy };
+    } else {
+      this.policies.unshift(policy);
+    }
+    this.logAudit('ADD_POLICY', policy.policyMakerName || 'PolicyMaker', {
+      id: policy.id,
+      name: policy.name,
+      acronym: policy.acronym
+    });
+
+    if (this.supabase) {
+      this.supabase.from('policies').upsert([policy], { onConflict: 'id' }).then(({ error }) => {
+        if (error) console.warn('[Supabase] Policy save warning:', error.message);
+      });
+    }
+    return policy;
+  }
+
+  public updatePolicy(id: string, updates: Partial<Policy>): Policy | undefined {
+    const policy = this.getPolicyById(id);
+    if (!policy) return undefined;
+    Object.assign(policy, updates, { is_user_modified: true });
+
+    this.logAudit('UPDATE_POLICY', updates.policyMakerName || 'PolicyMaker', {
+      id: policy.id,
+      updated_fields: Object.keys(updates)
+    });
+
+    if (this.supabase) {
+      this.supabase.from('policies').update(updates).eq('id', policy.id).then(({ error }) => {
+        if (error) console.warn('[Supabase] Policy update warning:', error.message);
+      });
+    }
+    return policy;
+  }
+
+  public updatePolicyArea(id: string, areaTarget: AreaTarget): Policy | undefined {
+    const policy = this.getPolicyById(id);
+    if (!policy) return undefined;
+
+    if (!policy.area_targets) {
+      policy.area_targets = [];
+    }
+
+    const existingIdx = policy.area_targets.findIndex(
+      at => at.state_code.toLowerCase() === areaTarget.state_code.toLowerCase() &&
+            (at.district_code || '').toLowerCase() === (areaTarget.district_code || '').toLowerCase()
+    );
+
+    const now = new Date().toISOString();
+    const cleanTarget: AreaTarget = {
+      ...areaTarget,
+      id: areaTarget.id || `AREA-${Date.now().toString(36).toUpperCase()}`,
+      last_updated: now,
+      updated_by: areaTarget.updated_by || 'Policy Maker'
+    };
+
+    if (existingIdx >= 0) {
+      policy.area_targets[existingIdx] = cleanTarget;
+    } else {
+      policy.area_targets.push(cleanTarget);
+    }
+
+    policy.current_area_target = cleanTarget;
+    policy.is_user_modified = true;
+    policy.status = 'Under Revision';
+
+    this.logAudit('UPDATE_POLICY_AREA', areaTarget.updated_by || 'PolicyMaker', {
+      policy_id: policy.id,
+      state: areaTarget.state_name,
+      district: areaTarget.district_name || 'All Districts',
+      budget: areaTarget.regional_budget_cr
+    });
+
+    if (this.supabase) {
+      this.supabase.from('policies').update({
+        area_targets: policy.area_targets,
+        is_user_modified: true,
+        status: policy.status
+      }).eq('id', policy.id).then(({ error }) => {
+        if (error) console.warn('[Supabase] Policy area target update warning:', error.message);
+      });
+    }
+
+    return policy;
+  }
+
+  public deletePolicy(id: string): boolean {
+    const idx = this.policies.findIndex(p => p.id === id);
+    if (idx >= 0) {
+      this.policies.splice(idx, 1);
+      this.logAudit('DELETE_POLICY', 'PolicyMaker', { id });
+      return true;
+    }
+    return false;
   }
 
   public getResearchPapers(search?: string, tag?: string): ResearchPaper[] {

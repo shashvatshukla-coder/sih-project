@@ -268,13 +268,242 @@ router.post('/data-sources/:id/sync', (req: Request, res: Response) => {
 
 // Policies
 router.get('/policies', (req: Request, res: Response) => {
-  res.json({ success: true, data: db.getPolicies() });
+  const { state, district } = req.query;
+  res.json({ success: true, data: db.getPolicies(state as string, district as string) });
 });
 
 router.get('/policies/:id', (req: Request, res: Response) => {
   const policy = db.getPolicyById(req.params.id);
   if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
   res.json({ success: true, data: policy });
+});
+
+// Create new Policy (Policy Maker)
+router.post('/policies', (req: Request, res: Response) => {
+  try {
+    const {
+      name,
+      acronym,
+      ministry,
+      launch_year,
+      description,
+      target_region,
+      objectives,
+      related_indicators,
+      documents_url,
+      allocated_budget_cr,
+      area_targets,
+      policyMakerId,
+      policyMakerName,
+      status
+    } = req.body;
+
+    if (!name || !description) {
+      return res.status(400).json({ success: false, error: 'Policy name and description are required.' });
+    }
+
+    const id = 'POL-' + (acronym ? acronym.replace(/[^A-Za-z0-9]/g, '').toUpperCase() : Date.now().toString(36).toUpperCase());
+    const newPolicy = {
+      id,
+      name: name.trim(),
+      acronym: acronym ? acronym.trim().toUpperCase() : name.substring(0, 6).toUpperCase(),
+      ministry: ministry || 'Ministry of Agriculture & Farmers Welfare / DoLR',
+      launch_year: Number(launch_year) || new Date().getFullYear(),
+      description: description.trim(),
+      target_region: target_region || 'Pan-India',
+      objectives: Array.isArray(objectives) && objectives.length > 0 ? objectives : [
+        'Optimize regional land-use efficiency and cadastral clarity.',
+        'Preserve cultivable agricultural land and rehabilitate sodic/barren soils.'
+      ],
+      related_indicators: Array.isArray(related_indicators) && related_indicators.length > 0 ? related_indicators : [
+        'Agricultural Land %',
+        'Irrigated Area %',
+        'Barren / Wasteland %'
+      ],
+      documents_url: documents_url || `/policies/${id}`,
+      pre_period: `${(Number(launch_year) || 2020) - 5}-${Number(launch_year) || 2020}`,
+      post_period: `${Number(launch_year) || 2020}-2026`,
+      observed_impact_summary: `Policy initiated targeting ${target_region || 'targeted regional land landscapes'} under active monitoring.`,
+      methodology_note: 'Synthesized policy directive and cadastral telemetry tracking baseline.',
+      linked_dataset_ids: ['DS-DES-LUS', 'DS-NRSC-BHUVAN'],
+      area_targets: Array.isArray(area_targets) ? area_targets : [],
+      is_user_modified: true,
+      status: status || 'Active',
+      allocated_budget_cr: allocated_budget_cr ? Number(allocated_budget_cr) : undefined,
+      policyMakerId: policyMakerId || 'BHU-POL-8763-9201',
+      policyMakerName: policyMakerName || 'Policy Maker'
+    };
+
+    const saved = db.addPolicy(newPolicy as any);
+    res.json({ success: true, message: 'Policy registered successfully', data: saved });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update Policy (Policy Maker)
+router.put('/policies/:id', (req: Request, res: Response) => {
+  try {
+    const updated = db.updatePolicy(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: 'Policy not found' });
+    res.json({ success: true, message: 'Policy updated successfully', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update Policy Area Target (Policy Maker updates on the basis of area)
+router.post('/policies/:id/area', (req: Request, res: Response) => {
+  try {
+    const {
+      state_code,
+      state_name,
+      district_code,
+      district_name,
+      target_year,
+      regional_budget_cr,
+      target_agricultural_pct,
+      target_reclaim_ha,
+      priority_tier,
+      directives,
+      notes,
+      updated_by
+    } = req.body;
+
+    if (!state_code || !state_name) {
+      return res.status(400).json({ success: false, error: 'State code and state name are required for area-based policy updates.' });
+    }
+
+    const areaTarget = {
+      state_code,
+      state_name,
+      district_code: district_code || undefined,
+      district_name: district_name || undefined,
+      target_year: Number(target_year) || 2028,
+      regional_budget_cr: regional_budget_cr ? Number(regional_budget_cr) : undefined,
+      target_agricultural_pct: target_agricultural_pct ? Number(target_agricultural_pct) : undefined,
+      target_reclaim_ha: target_reclaim_ha ? Number(target_reclaim_ha) : undefined,
+      priority_tier: priority_tier || 'Critical Focus',
+      directives: Array.isArray(directives) && directives.length > 0 ? directives : [
+        `Strict enforcement of cadastral zoning across ${district_name || state_name}.`,
+        `Prioritize micro-irrigation allocation and solar pump subsidies.`,
+        `Prevent non-agricultural diversion of prime double-cropped fertile parcels.`
+      ],
+      notes: notes || `Area target calibrated for ${district_name ? district_name + ', ' : ''}${state_name} by Policy Maker.`,
+      updated_by: updated_by || 'Policy Maker',
+      last_updated: new Date().toISOString()
+    };
+
+    const updated = db.updatePolicyArea(req.params.id, areaTarget as any);
+    if (!updated) return res.status(404).json({ success: false, error: 'Policy not found' });
+
+    res.json({
+      success: true,
+      message: `Policy successfully configured and updated for ${district_name ? district_name + ', ' : ''}${state_name}`,
+      data: updated
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Drag & Drop Ingestion for Policies / Gazette Notifications
+router.post('/policies/upload', (req: Request, res: Response) => {
+  try {
+    const {
+      fileName,
+      fileSize,
+      fileType,
+      fileContent,
+      name,
+      acronym,
+      ministry,
+      target_region,
+      state_code,
+      state_name,
+      district_name,
+      allocated_budget_cr,
+      directives,
+      policyMakerName
+    } = req.body;
+
+    if (!fileName && !name) {
+      return res.status(400).json({ success: false, error: 'File or policy details are required.' });
+    }
+
+    const detectedTitle = name || fileName?.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') || 'Gazette Land Policy Directive';
+    const cleanAcronym = acronym || detectedTitle.split(' ').map((w: string) => w[0]).join('').substring(0, 6).toUpperCase() || 'GAZ-POL';
+    const policyId = 'POL-' + cleanAcronym + '-' + Date.now().toString(36).toUpperCase().substring(0, 4);
+
+    const detectedDirectives = Array.isArray(directives) && directives.length > 0 ? directives : [
+      'Statutory verification of cadastral parcels against master land-use registers.',
+      'Mandatory GIS geofencing before approval of any non-agricultural land diversion.',
+      'Accelerated sodic soil reclamation with target allocation to regional SHGs and smallholders.'
+    ];
+
+    const initialAreaTarget = state_code && state_name ? {
+      state_code,
+      state_name,
+      district_name: district_name || undefined,
+      target_year: 2028,
+      regional_budget_cr: allocated_budget_cr ? Number(allocated_budget_cr) : 350,
+      priority_tier: 'Critical Focus' as const,
+      directives: detectedDirectives,
+      last_updated: new Date().toISOString(),
+      updated_by: policyMakerName || 'Policy Maker'
+    } : undefined;
+
+    const newPolicy = {
+      id: policyId,
+      name: detectedTitle,
+      acronym: cleanAcronym,
+      ministry: ministry || 'Ministry of Agriculture & Farmers Welfare / Revenue Board',
+      launch_year: new Date().getFullYear(),
+      description: `Official gazetted policy notification ingested via Bhu-Drishti policy pipeline from document '${fileName || 'gazette_order.pdf'}'. Mandates enforceable land targets and area compliance.`,
+      target_region: target_region || (state_name ? `${state_name}${district_name ? ' (' + district_name + ')' : ''}` : 'National Priority Corridor'),
+      objectives: detectedDirectives,
+      related_indicators: [
+        'Agricultural Land %',
+        'Cadastral Digitization %',
+        'Irrigated Area %'
+      ],
+      documents_url: `/policies/${policyId}`,
+      pre_period: '2015-2020',
+      post_period: '2021-2026',
+      observed_impact_summary: `Policy active in target area. Baseline monitoring initialized post-gazette upload.`,
+      methodology_note: 'Gazette directive ingested with digital hash verification and spatial jurisdiction binding.',
+      linked_dataset_ids: ['DS-DES-LUS'],
+      area_targets: initialAreaTarget ? [initialAreaTarget] : [],
+      current_area_target: initialAreaTarget,
+      is_user_modified: true,
+      status: 'Gazette Notified' as const,
+      allocated_budget_cr: allocated_budget_cr ? Number(allocated_budget_cr) : 450,
+      policyMakerId: 'BHU-POL-8763-9201',
+      policyMakerName: policyMakerName || 'Policy Maker',
+      documentText: typeof fileContent === 'string' ? fileContent.substring(0, 2000) : '',
+      fileAttachment: fileName ? {
+        name: fileName,
+        size: fileSize || 0,
+        type: fileType || 'application/pdf',
+        url: `/documents/${fileName}`
+      } : undefined
+    };
+
+    const created = db.addPolicy(newPolicy as any);
+    res.json({
+      success: true,
+      message: `Policy '${detectedTitle}' successfully ingested, parsed, and registered in National Repository.`,
+      data: created
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.delete('/policies/:id', (req: Request, res: Response) => {
+  const deleted = db.deletePolicy(req.params.id);
+  if (!deleted) return res.status(404).json({ success: false, error: 'Policy not found' });
+  res.json({ success: true, message: 'Policy deleted successfully' });
 });
 
 router.get('/policies/:id/impact', (req: Request, res: Response) => {

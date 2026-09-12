@@ -5,6 +5,7 @@ import {
   Dataset,
   DataSource,
   Policy,
+  AreaTarget,
   ResearchPaper,
   Anomaly,
   AIQueryResponse,
@@ -297,9 +298,12 @@ export const api = {
     return json.data;
   },
 
-  async getPolicies(): Promise<Policy[]> {
+  async getPolicies(stateCode?: string, districtCode?: string): Promise<Policy[]> {
     try {
-      const res = await fetch(`${API_BASE}/policies`);
+      const params = new URLSearchParams();
+      if (stateCode && stateCode !== 'IN-ALL') params.append('state', stateCode);
+      if (districtCode && districtCode !== 'ALL') params.append('district', districtCode);
+      const res = await fetch(`${API_BASE}/policies?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
         return json.data;
@@ -308,6 +312,58 @@ export const api = {
       // fallback
     }
     return [];
+  },
+
+  async createPolicy(policy: Partial<Policy>): Promise<Policy> {
+    const res = await fetch(`${API_BASE}/policies`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(policy)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to create policy');
+    return json.data;
+  },
+
+  async updatePolicy(id: string, updates: Partial<Policy>): Promise<Policy> {
+    const res = await fetch(`${API_BASE}/policies/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update policy');
+    return json.data;
+  },
+
+  async updatePolicyArea(id: string, areaTarget: AreaTarget): Promise<Policy> {
+    const res = await fetch(`${API_BASE}/policies/${id}/area`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(areaTarget)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update policy area');
+    return json.data;
+  },
+
+  async uploadPolicyFile(payload: any): Promise<{ success: boolean; data: Policy; message: string }> {
+    const res = await fetch(`${API_BASE}/policies/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to upload policy document');
+    return json;
+  },
+
+  async deletePolicy(id: string): Promise<boolean> {
+    const res = await fetch(`${API_BASE}/policies/${id}`, {
+      method: 'DELETE'
+    });
+    const json = await res.json();
+    return json.success === true;
   },
 
   async getPolicyImpact(policyId: string, stateCode: string = 'IN-UP') {

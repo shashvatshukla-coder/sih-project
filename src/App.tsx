@@ -20,6 +20,7 @@ import { LandUseChangeView } from './components/analysis/LandUseChangeView';
 import { ComparisonTool } from './components/analysis/ComparisonTool';
 import { PolicyImpactAnalyzer } from './components/policy/PolicyImpactAnalyzer';
 import { PolicyDecisionDashboard } from './components/policy/PolicyDecisionDashboard';
+import { PolicyRepository } from './components/policy/PolicyRepository';
 import { ResearchLibrary } from './components/research/ResearchLibrary';
 import { DataIntegrationHub } from './components/datasets/DataIntegrationHub';
 import { ReportGenerator } from './components/reports/ReportGenerator';
@@ -93,6 +94,7 @@ const AppContent: React.FC = () => {
           {activePage === 'change' && <LandUseChangeView />}
           {activePage === 'comparison' && <ComparisonTool />}
           {activePage === 'policy' && <PolicyImpactAnalyzer />}
+          {activePage === 'policies' && <PolicyRepository />}
           {activePage === 'decision-support' && <PolicyDecisionDashboard />}
           {activePage === 'research' && <ResearchLibrary />}
           {activePage === 'case-studies' && <ResearchLibrary />}
