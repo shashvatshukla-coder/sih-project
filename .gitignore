@@ -47,3 +47,5 @@ out/
 *.sw?
 .venv/
 ml/models/lulc_2005_to_2011.pkl ml/models/lulc_2011_to_2015.pkl
+data/raw/
+data/processed/
