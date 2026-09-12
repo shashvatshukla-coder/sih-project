@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 import { api } from '../../services/api';
+import { MASTER_ADMIN_EMAIL } from '../../lib/firebase';
 import {
   Search,
   Moon,
@@ -20,7 +21,9 @@ import {
   Award,
   ShieldCheck,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  KeyRound,
+  Lock
 } from 'lucide-react';
 
 interface HeaderProps {
@@ -40,7 +43,8 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
     isDarkMode,
     toggleDarkMode,
     setIsSearchOpen,
-    setActivePage
+    setActivePage,
+    isMasterUser
   } = useApp();
 
   const [roleMenuOpen, setRoleMenuOpen] = useState(false);
@@ -199,7 +203,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
             </button>
           ) : (
             <button
-              onClick={() => setIsAuthModalOpen(true)}
+              onClick={() => setActivePage('login')}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold shadow-xs transition-all cursor-pointer"
             >
               <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
@@ -220,7 +224,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                 />
               </svg>
-              <span>Sign in with Google</span>
+              <span>Login Page</span>
             </button>
           )}
 
@@ -281,19 +285,43 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
                   <span>Google Account Credentials</span>
                 </button>
+                <button
+                  onClick={() => {
+                    setRoleMenuOpen(false);
+                    setActivePage('login');
+                  }}
+                  className="w-full flex items-center gap-2 p-2 rounded-xl text-xs text-emerald-700 dark:text-emerald-300 bg-emerald-50/70 dark:bg-emerald-950/40 hover:bg-emerald-100 transition-colors font-semibold"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Login / Switch Role Portal</span>
+                </button>
               </div>
 
               {/* Role Switcher */}
               <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
-                <p className="px-3 pb-1 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Platform Role
-                </p>
+                <div className="flex items-center justify-between px-3 pb-1">
+                  <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Platform Role
+                  </p>
+                  {isMasterUser && (
+                    <span className="text-[9px] font-bold px-1 rounded bg-amber-100 text-amber-800">
+                      Master Key
+                    </span>
+                  )}
+                </div>
                 {roles.map((r) => {
                   const Icon = r.icon;
+                  const isRestrictedRole = r.id === 'inspector' || r.id === 'admin';
+                  const isLockedForCurrent = isRestrictedRole && !isMasterUser;
+
                   return (
                     <button
                       key={r.id}
                       onClick={() => {
+                        if (isLockedForCurrent) {
+                          alert(`Access Denied: Inspection Directorate is reserved for Master Account (${MASTER_ADMIN_EMAIL}).`);
+                          return;
+                        }
                         setUserRole(r.id);
                         if (r.id === 'inspector') {
                           setActivePage('inspection');
@@ -303,6 +331,8 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                       className={`w-full flex items-center justify-between p-2 rounded-xl text-xs transition-colors ${
                         userRole === r.id
                           ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 font-bold'
+                          : isLockedForCurrent
+                          ? 'opacity-40 cursor-not-allowed text-slate-400'
                           : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                       }`}
                     >
@@ -310,7 +340,11 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                         <Icon className="w-3.5 h-3.5" />
                         <span>{r.title}</span>
                       </div>
-                      {userRole === r.id && <Check className="w-3.5 h-3.5" />}
+                      {userRole === r.id ? (
+                        <Check className="w-3.5 h-3.5" />
+                      ) : isLockedForCurrent ? (
+                        <Lock className="w-3 h-3 text-slate-400" />
+                      ) : null}
                     </button>
                   );
                 })}

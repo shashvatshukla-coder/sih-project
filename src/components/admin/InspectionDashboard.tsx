@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
+import { MASTER_ADMIN_EMAIL } from '../../lib/firebase';
 import {
   UserRegistryRecord,
   InspectionStats,
@@ -50,7 +51,7 @@ const ALL_SYSTEM_FEATURES = [
 ];
 
 export const InspectionDashboard: React.FC = () => {
-  const { userProfile, userRole, setUserRole, setActivePage } = useApp();
+  const { userProfile, userRole, setUserRole, setActivePage, isMasterUser } = useApp();
 
   // State
   const [stats, setStats] = useState<InspectionStats | null>(null);
@@ -429,6 +430,43 @@ export const InspectionDashboard: React.FC = () => {
     r.authors.some(a => a.toLowerCase().includes(researchSearch.toLowerCase())) ||
     r.abstract.toLowerCase().includes(researchSearch.toLowerCase())
   );
+
+  if (!isMasterUser) {
+    return (
+      <div className="min-h-[500px] flex flex-col items-center justify-center p-8 text-center max-w-2xl mx-auto space-y-4">
+        <div className="w-16 h-16 rounded-2xl bg-amber-100 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-amber-600 dark:text-amber-400 flex items-center justify-center shadow-lg">
+          <Lock className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            Inspection Directorate Access Restricted
+          </h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+            Inspection Directorate and Universal Override controls are reserved exclusively for Master Account{' '}
+            <span className="font-mono font-bold text-slate-900 dark:text-white">{MASTER_ADMIN_EMAIL}</span>.
+          </p>
+          <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs text-slate-500 text-left space-y-1">
+            <p><strong>Current Session:</strong> {userProfile?.name} ({userProfile?.email})</p>
+            <p><strong>Active Role:</strong> {userRole.toUpperCase()} (Standard User)</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-3 pt-2">
+          <button
+            onClick={() => setActivePage('login')}
+            className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer"
+          >
+            Go to Login Page
+          </button>
+          <button
+            onClick={() => setActivePage('dashboard')}
+            className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-all cursor-pointer"
+          >
+            Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6 text-left pb-16">

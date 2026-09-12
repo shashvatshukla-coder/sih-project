@@ -10,6 +10,15 @@ import {
   UserProfile
 } from '../types';
 import { api } from '../services/api';
+import {
+  auth,
+  googleProvider,
+  signInWithPopup,
+  signOut as firebaseSignOut,
+  onAuthStateChanged,
+  isMasterAccount,
+  MASTER_ADMIN_EMAIL
+} from '../lib/firebase';
 
 export interface SavedItem {
   id: string;
@@ -36,8 +45,10 @@ interface AppContextType {
   userProfile: UserProfile;
   setUserProfile: (profile: UserProfile) => void;
   dedicatedFixedId: string;
-  loginWithGoogle: (customData?: Partial<UserProfile>) => Promise<void>;
-  logout: () => void;
+  loginWithGoogle: (customData?: Partial<UserProfile>, requestedRole?: UserRole) => Promise<UserProfile>;
+  loginWithFirebasePopup: (requestedRole?: UserRole) => Promise<UserProfile>;
+  logout: () => Promise<void>;
+  changeUserRole: (role: UserRole) => void;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
   isIdCardModalOpen: boolean;
@@ -46,6 +57,7 @@ interface AppContextType {
   toggleDarkMode: () => void;
   isSearchOpen: boolean;
   setIsSearchOpen: (open: boolean) => void;
+  isMasterUser: boolean;
 
   states: State[];
   allDistricts: District[];
@@ -83,21 +95,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
 
-  // Dedicated Fixed ID & Google Authenticated Profile
-  const DEFAULT_PROFILE: UserProfile = {
+  // Dedicated Fixed ID & Master Profile Defaults
+  const MASTER_PROFILE: UserProfile = {
     id: 'usr_g_shashvat81',
     dedicatedFixedId: 'BHU-RES-8763-9201', // Fixed permanent Cadastral Researcher UID
-    email: 'shashvatshukla81@gmail.com',
+    email: MASTER_ADMIN_EMAIL,
     name: 'Dr. Shashvat Shukla',
     avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Shashvat%20Shukla&backgroundColor=059669',
     role: 'researcher',
     affiliation: 'National Land Records & Geospatial Intelligence Directorate',
-    designation: 'Senior Cadastral Research Scientist',
+    designation: 'Chief Director of Inspection & Cadastral Research',
     institutionType: 'ICAR / Indian Council of Agricultural Research & NIC',
     orcid: '0009-0004-8763-9201',
     isGoogleVerified: true,
     issuedAt: '2026-01-15T09:00:00.000Z',
-    authProvider: 'google'
+    authProvider: 'google',
+    isMasterSuperAdmin: true,
+    is_inspection_verified: true,
+    features_granted: ['full_inspection', 'policy_moderation', 'research_curation', 'user_rights_calibration', 'all_roles_switch']
   };
 
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
@@ -106,58 +121,153 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (saved) {
         const parsed = JSON.parse(saved);
         if (!parsed.dedicatedFixedId) parsed.dedicatedFixedId = 'BHU-RES-8763-9201';
+        parsed.isMasterSuperAdmin = isMasterAccount(parsed.email);
         return parsed;
       }
     } catch {}
-    return DEFAULT_PROFILE;
+    return MASTER_PROFILE;
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isIdCardModalOpen, setIsIdCardModalOpen] = useState<boolean>(false);
 
   const dedicatedFixedId = userProfile?.dedicatedFixedId || 'BHU-RES-8763-9201';
+  const isMasterUser = isMasterAccount(userProfile?.email);
 
-  const loginWithGoogle = async (customData?: Partial<UserProfile>) => {
+  // Listen to Firebase auth state changes if available
+  useEffect(() => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (firebaseUser && firebaseUser.email) {
+        const isMaster = isMasterAccount(firebaseUser.email);
+        const fixedUid = isMaster ? 'BHU-RES-8763-9201' : (userProfile?.dedicatedFixedId || `BHU-USR-${firebaseUser.uid.substring(0, 8).toUpperCase()}`);
+        try {
+          const verified = await api.verifyGoogleAuth({
+            email: firebaseUser.email,
+            name: firebaseUser.displayName || (isMaster ? 'Dr. Shashvat Shukla' : 'Verified Google User'),
+            avatar: firebaseUser.photoURL || undefined,
+            fixedId: fixedUid,
+            requestedRole: userRole
+          });
+          setUserProfile(verified);
+          setUserRole(verified.role);
+          localStorage.setItem('bhu_user_profile', JSON.stringify(verified));
+        } catch (e) {
+          console.error('Failed to sync Firebase user with backend profile:', e);
+        }
+      }
+    });
+
+    return () => unsubscribe();
+  }, []);
+
+  const loginWithGoogle = async (customData?: Partial<UserProfile>, requestedRole?: UserRole): Promise<UserProfile> => {
+    const targetEmail = customData?.email || userProfile?.email || MASTER_ADMIN_EMAIL;
+    const isMaster = isMasterAccount(targetEmail);
+
+    let effectiveRole: UserRole = requestedRole || customData?.role || 'researcher';
+    if ((effectiveRole === 'inspector' || effectiveRole === 'admin') && !isMaster) {
+      effectiveRole = 'researcher'; // Unprivileged users restricted to researcher, policymaker, or public
+    }
+
     try {
       const verified = await api.verifyGoogleAuth({
-        email: customData?.email || userProfile?.email || 'shashvatshukla81@gmail.com',
-        name: customData?.name || userProfile?.name || 'Dr. Shashvat Shukla',
+        email: targetEmail,
+        name: customData?.name || userProfile?.name || (isMaster ? 'Dr. Shashvat Shukla' : 'Verified Researcher'),
         avatar: customData?.avatar,
-        fixedId: customData?.dedicatedFixedId || dedicatedFixedId
+        fixedId: customData?.dedicatedFixedId || (isMaster ? 'BHU-RES-8763-9201' : undefined),
+        requestedRole: effectiveRole
       });
       setUserProfile(verified);
       setUserRole(verified.role);
       localStorage.setItem('bhu_user_profile', JSON.stringify(verified));
+      return verified;
     } catch {
-      const updated: UserProfile = {
-        ...DEFAULT_PROFILE,
-        ...customData,
-        dedicatedFixedId,
+      const fallback: UserProfile = {
+        id: 'usr_' + Date.now().toString(36),
+        dedicatedFixedId: isMaster ? 'BHU-RES-8763-9201' : `BHU-${effectiveRole.substring(0, 3).toUpperCase()}-9021`,
+        email: targetEmail,
+        name: customData?.name || (isMaster ? 'Dr. Shashvat Shukla' : 'Authorized User'),
+        avatar: customData?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(targetEmail)}&backgroundColor=${isMaster ? '059669' : '1e40af'}`,
+        role: effectiveRole,
+        affiliation: isMaster ? 'National Land Records & Geospatial Intelligence Directorate' : 'State Cadastral Research Institute',
+        designation: isMaster ? 'Chief Director of Inspection & Cadastral Research' : 'Cadastral Researcher',
         isGoogleVerified: true,
-        authProvider: 'google'
+        issuedAt: new Date().toISOString(),
+        authProvider: 'google',
+        isMasterSuperAdmin: isMaster,
+        is_inspection_verified: isMaster
       };
-      setUserProfile(updated);
-      setUserRole(updated.role);
-      localStorage.setItem('bhu_user_profile', JSON.stringify(updated));
+      setUserProfile(fallback);
+      setUserRole(fallback.role);
+      localStorage.setItem('bhu_user_profile', JSON.stringify(fallback));
+      return fallback;
     }
   };
 
-  const logout = () => {
+  const loginWithFirebasePopup = async (requestedRole?: UserRole): Promise<UserProfile> => {
+    try {
+      const cred = await signInWithPopup(auth, googleProvider);
+      const email = cred.user.email || '';
+      const isMaster = isMasterAccount(email);
+
+      let effectiveRole: UserRole = requestedRole || 'researcher';
+      if ((effectiveRole === 'inspector' || effectiveRole === 'admin') && !isMaster) {
+        effectiveRole = 'researcher';
+      }
+
+      const verified = await api.verifyGoogleAuth({
+        email: email,
+        name: cred.user.displayName || (isMaster ? 'Dr. Shashvat Shukla' : 'Google User'),
+        avatar: cred.user.photoURL || undefined,
+        fixedId: isMaster ? 'BHU-RES-8763-9201' : `BHU-${effectiveRole.substring(0, 3).toUpperCase()}-${cred.user.uid.substring(0, 8).toUpperCase()}`,
+        requestedRole: effectiveRole
+      });
+
+      setUserProfile(verified);
+      setUserRole(verified.role);
+      localStorage.setItem('bhu_user_profile', JSON.stringify(verified));
+      return verified;
+    } catch (err: any) {
+      console.warn('Firebase popup sign-in encountered error or popup blocker, falling back to simulated Google auth flow:', err);
+      // Clean fallback if popup is blocked by sandbox iFrame
+      return await loginWithGoogle(undefined, requestedRole);
+    }
+  };
+
+  const logout = async () => {
+    try {
+      await firebaseSignOut(auth);
+    } catch {}
     const guest: UserProfile = {
       id: 'guest',
-      dedicatedFixedId: dedicatedFixedId,
+      dedicatedFixedId: 'BHU-PUB-0000-0000',
       email: '',
-      name: 'Guest User',
+      name: 'Guest Explorer',
       role: 'public',
-      affiliation: 'Public Explorer',
+      affiliation: 'Public Citizen Explorer',
       designation: 'Citizen Observer',
       isGoogleVerified: false,
       issuedAt: new Date().toISOString(),
-      authProvider: 'guest'
+      authProvider: 'guest',
+      isMasterSuperAdmin: false,
+      is_inspection_verified: false
     };
     setUserProfile(guest);
     setUserRole('public');
     localStorage.removeItem('bhu_user_profile');
+  };
+
+  const changeUserRole = (newRole: UserRole) => {
+    // Only master account can switch to inspection or admin
+    if ((newRole === 'inspector' || newRole === 'admin') && !isMasterUser) {
+      alert('Access Restricted: Inspection Directorate is strictly reserved for Chief Inspection Director shashvatshukla81@gmail.com');
+      return;
+    }
+    setUserRole(newRole);
+    setUserProfile(prev => ({
+      ...prev,
+      role: newRole
+    }));
   };
 
   const [states, setStates] = useState<State[]>([]);
@@ -344,7 +454,10 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUserProfile,
         dedicatedFixedId,
         loginWithGoogle,
+        loginWithFirebasePopup,
         logout,
+        changeUserRole,
+        isMasterUser,
         isAuthModalOpen,
         setIsAuthModalOpen,
         isIdCardModalOpen,

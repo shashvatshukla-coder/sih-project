@@ -24,7 +24,8 @@ export type PageId =
   | 'case-studies'
   | 'collaboration'
   | 'news-events'
-  | 'inspection';
+  | 'inspection'
+  | 'login';
 
 export interface State {
   state_code: string;
@@ -219,6 +220,7 @@ export interface UserProfile {
   isGoogleVerified: boolean;
   issuedAt: string;
   authProvider: 'google' | 'institutional' | 'guest';
+  isMasterSuperAdmin?: boolean;
   is_starred?: boolean;
   is_inspection_verified?: boolean;
   inspection_notes?: string;

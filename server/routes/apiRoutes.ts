@@ -677,28 +677,47 @@ router.get('/auth/google/url', (req: Request, res: Response) => {
 });
 
 router.post('/auth/google/verify', (req: Request, res: Response) => {
-  const { email, name, avatar, fixedId } = req.body;
-  const userEmail = email || 'shashvatshukla81@gmail.com';
-  const userName = name || 'Dr. Shashvat Shukla';
+  const { email, name, avatar, fixedId, requestedRole } = req.body;
+  const userEmail = (email || 'shashvatshukla81@gmail.com').trim().toLowerCase();
+  const userName = name || (userEmail === 'shashvatshukla81@gmail.com' ? 'Dr. Shashvat Shukla' : 'Authorized User');
+
+  // Master Admin verification
+  const isMaster = userEmail === 'shashvatshukla81@gmail.com';
+
+  // Role validation:
+  // General users can only be 'researcher', 'policymaker', or 'public'.
+  // Only shashvatshukla81@gmail.com can log in as 'inspector' or 'admin' or switch between ANY role.
+  let assignedRole = requestedRole || 'researcher';
+  if ((assignedRole === 'inspector' || assignedRole === 'admin') && !isMaster) {
+    assignedRole = 'researcher'; // Demote unprivileged attempts to researcher
+  }
 
   // Compute or preserve dedicated fixed researcher ID
-  // e.g. BHU-RES-8763-9201 or hash-derived
-  const dedicatedId = fixedId || 'BHU-RES-8763-9201';
+  const dedicatedId = fixedId || (isMaster ? 'BHU-RES-8763-9201' : `BHU-${assignedRole.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}-${Math.floor(1000 + Math.random() * 9000)}`);
 
   const profile = {
     id: 'usr_g_' + Buffer.from(userEmail).toString('base64').substring(0, 10).replace(/[^a-zA-Z0-9]/g, ''),
     dedicatedFixedId: dedicatedId,
     email: userEmail,
     name: userName,
-    avatar: avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName)}&backgroundColor=059669`,
-    role: 'researcher',
-    affiliation: 'National Land Records & Geospatial Intelligence Directorate',
-    designation: 'Senior Cadastral Research Scientist',
-    institutionType: 'ICAR / Indian Council of Agricultural Research & NIC',
-    orcid: '0009-0004-8763-9201',
+    avatar: avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(userName)}&backgroundColor=${isMaster ? '059669' : '1e40af'}`,
+    role: assignedRole,
+    affiliation: isMaster
+      ? 'National Land Records & Geospatial Intelligence Directorate'
+      : (assignedRole === 'policymaker' ? 'NITI Aayog & State Land Planning Commission' : 'State Cadastral Research Institute'),
+    designation: isMaster
+      ? 'Chief Director of Inspection & Cadastral Research'
+      : (assignedRole === 'policymaker' ? 'Senior Land Policy Advisor' : (assignedRole === 'public' ? 'Citizen Observer' : 'Cadastral Researcher')),
+    institutionType: isMaster ? 'Ministry of Agriculture & Farmers Welfare / NIC' : 'State Agricultural University / Planning Dept',
+    orcid: isMaster ? '0009-0004-8763-9201' : undefined,
     isGoogleVerified: true,
     issuedAt: new Date().toISOString(),
-    authProvider: 'google'
+    authProvider: 'google' as const,
+    isMasterSuperAdmin: isMaster,
+    is_inspection_verified: isMaster,
+    features_granted: isMaster
+      ? ['full_inspection', 'policy_moderation', 'research_curation', 'user_rights_calibration', 'all_roles_switch']
+      : (assignedRole === 'policymaker' ? ['policy_authoring', 'target_setting', 'draft_submission'] : ['research_authoring', 'document_upload', 'dataset_analytics'])
   };
 
   res.json({ success: true, data: profile });

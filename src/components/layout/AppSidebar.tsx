@@ -17,7 +17,8 @@ import {
   Sparkles,
   Sprout,
   Award,
-  ShieldCheck
+  ShieldCheck,
+  KeyRound
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -33,7 +34,7 @@ export const AppSidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   setMobileOpen
 }) => {
-  const { activePage, setActivePage, userRole, dedicatedFixedId, setIsIdCardModalOpen } = useApp();
+  const { activePage, setActivePage, userRole, dedicatedFixedId, setIsIdCardModalOpen, isMasterUser } = useApp();
 
   interface NavItem {
     id: PageId;
@@ -42,7 +43,7 @@ export const AppSidebar: React.FC<SidebarProps> = ({
     badge?: string;
   }
 
-  // Bharat LandNet navigation with Inspection Directorate
+  // Bharat LandNet navigation with Inspection Directorate and Login Page
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'datasets', label: 'Datasets', icon: Database },
@@ -54,7 +55,8 @@ export const AppSidebar: React.FC<SidebarProps> = ({
     { id: 'decision-support', label: 'Policy Innovation Lab', icon: Lightbulb },
     { id: 'collaboration', label: 'Collaboration Hub', icon: Users },
     { id: 'news-events', label: 'News & Events', icon: Newspaper },
-    { id: 'inspection', label: 'Inspection Directorate', icon: ShieldCheck, badge: 'Control' }
+    { id: 'inspection', label: 'Inspection Directorate', icon: ShieldCheck, badge: isMasterUser ? 'Master' : 'Protected' },
+    { id: 'login', label: 'Login & Roles', icon: KeyRound, badge: 'Auth' }
   ];
 
   const handleNav = (id: PageId) => {
