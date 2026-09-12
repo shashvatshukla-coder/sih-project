@@ -20,9 +20,12 @@ export const GoogleAuthModal: React.FC = () => {
     setIsAuthModalOpen,
     userProfile,
     loginWithGoogle,
+    loginWithFirebasePopup,
     logout,
     dedicatedFixedId,
-    setIsIdCardModalOpen
+    setIsIdCardModalOpen,
+    setActivePage,
+    userRole
   } = useApp();
 
   const [loading, setLoading] = useState(false);
@@ -30,6 +33,7 @@ export const GoogleAuthModal: React.FC = () => {
   const [customEmail, setCustomEmail] = useState(userProfile?.email || 'shashvatshukla81@gmail.com');
   const [customName, setCustomName] = useState(userProfile?.name || 'Dr. Shashvat Shukla');
   const [isEditing, setIsEditing] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
 
   if (!isAuthModalOpen) return null;
 
@@ -39,18 +43,35 @@ export const GoogleAuthModal: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const handleFirebasePopup = async () => {
+    try {
+      setLoading(true);
+      setAuthError(null);
+      await loginWithFirebasePopup(userRole);
+      setIsAuthModalOpen(false);
+    } catch (err: any) {
+      setAuthError(err.message || 'Firebase Google Sign-In failed');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleInstantGoogleSignIn = async () => {
     try {
       setLoading(true);
-      await loginWithGoogle({
-        email: customEmail.trim() || 'shashvatshukla81@gmail.com',
-        name: customName.trim() || 'Dr. Shashvat Shukla',
-        role: 'researcher',
-        dedicatedFixedId: dedicatedFixedId
-      });
+      setAuthError(null);
+      await loginWithGoogle(
+        {
+          email: customEmail.trim() || 'shashvatshukla81@gmail.com',
+          name: customName.trim() || 'Dr. Shashvat Shukla',
+          role: userRole,
+          dedicatedFixedId: dedicatedFixedId
+        },
+        userRole
+      );
       setIsAuthModalOpen(false);
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      setAuthError(e.message || 'Sign in failed');
     } finally {
       setLoading(false);
     }
@@ -258,11 +279,18 @@ export const GoogleAuthModal: React.FC = () => {
             )}
           </div>
 
+          {/* Error Message if Any */}
+          {authError && (
+            <div className="p-3 rounded-xl bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-200 text-xs">
+              {authError}
+            </div>
+          )}
+
           {/* Google Sign-in Buttons */}
           <div className="space-y-2.5 pt-1">
-            {/* Primary Google Button */}
+            {/* Firebase Google Popup Button */}
             <button
-              onClick={handleInstantGoogleSignIn}
+              onClick={handleFirebasePopup}
               disabled={loading}
               className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-100 font-semibold shadow-xs hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
             >
@@ -285,17 +313,27 @@ export const GoogleAuthModal: React.FC = () => {
                   d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
                 />
               </svg>
-              <span>{userProfile?.isGoogleVerified ? 'Re-authorize Google Account' : 'Continue with Google'}</span>
+              <span>{loading ? 'Authenticating...' : 'Sign in with Google (Firebase)'}</span>
             </button>
 
-            {/* Launch Dedicated OAuth Popup Button */}
+            {/* Instant Direct Verification */}
             <button
-              onClick={handleOAuthPopupSignIn}
+              onClick={handleInstantGoogleSignIn}
               disabled={loading}
-              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-medium transition-colors"
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 text-[11px] font-medium transition-colors"
             >
-              <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
-              <span>Open Google OAuth Consent Window (Popup)</span>
+              <span>Quick Verify as {customEmail}</span>
+            </button>
+
+            {/* Navigate to Dedicated Role & Login Portal */}
+            <button
+              onClick={() => {
+                setIsAuthModalOpen(false);
+                setActivePage('login');
+              }}
+              className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-[11px] font-semibold hover:bg-emerald-100 transition-colors"
+            >
+              <span>Open Dedicated Role Selector & Login Portal →</span>
             </button>
           </div>
 

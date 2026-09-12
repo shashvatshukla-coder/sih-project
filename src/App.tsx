@@ -27,6 +27,7 @@ import { ReportGenerator } from './components/reports/ReportGenerator';
 import { MyWorkspace } from './components/workspace/MyWorkspace';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { InspectionDashboard } from './components/admin/InspectionDashboard';
+import { LoginPage } from './components/auth/LoginPage';
 import { ShieldCheck } from 'lucide-react';
 import { BrandLogo } from './components/common/BrandLogo';
 import { LoadingSplash } from './components/common/LoadingSplash';
@@ -106,6 +107,7 @@ const AppContent: React.FC = () => {
           {activePage === 'workspace' && <MyWorkspace />}
           {activePage === 'admin' && <AdminDashboard />}
           {activePage === 'inspection' && <InspectionDashboard />}
+          {activePage === 'login' && <LoginPage />}
         </main>
 
         {/* Standard Government Research Platform Footer */}

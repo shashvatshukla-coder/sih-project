@@ -450,7 +450,7 @@ export const api = {
     return '/auth/google/callback';
   },
 
-  async verifyGoogleAuth(data: { email?: string; name?: string; avatar?: string; fixedId?: string }): Promise<UserProfile> {
+  async verifyGoogleAuth(data: { email?: string; name?: string; avatar?: string; fixedId?: string; requestedRole?: string }): Promise<UserProfile> {
     const res = await fetch(`${API_BASE}/auth/google/verify`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
