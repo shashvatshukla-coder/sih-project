@@ -8,6 +8,9 @@ export class LandAIService {
     if (query.includes('amethi') || query.includes('gauriganj') || query.includes('gaurigang') || query.includes('tiloi') || query.includes('musafirkhana') || query.includes('अमेठी') || query.includes('गौरीगंज')) {
       return { geoType: 'district', geoName: 'Amethi (Gauriganj)', districtCode: 'UP-AMT', stateCode: 'IN-UP', totalArea: 2329 };
     }
+    if (query.includes('ghaziabad') || query.includes('गाजियाबाद') || query.includes('modinagar') || query.includes('loni')) {
+      return { geoType: 'district', geoName: 'Ghaziabad', districtCode: 'UP-GZB', stateCode: 'IN-UP', totalArea: 1179 };
+    }
     if (query.includes('gorakhpur') || query.includes('गोरखपुर')) {
       return { geoType: 'district', geoName: 'Gorakhpur', districtCode: 'UP-GKP', stateCode: 'IN-UP', totalArea: 3321 };
     }
@@ -96,6 +99,20 @@ export class LandAIService {
         'Gauriganj administrative headquarters development expanding collectorate, vikas bhawan, and housing infrastructure',
         'Sharda Sahayak canal command area modernization and PMKSY tubewells bringing gross irrigation to 89.4%',
         'Perennial surface water retention across village ponds, tals, and Gomti river sub-basin tributaries'
+      ];
+    } else if (geo.districtCode === 'UP-GZB') {
+      series = [
+        { year: 2005, agricultural: 58.0, forest: 1.8, builtup: 27.0, water: 3.4, barren: 5.5, irrigated: 92.5, degraded: 8.4 },
+        { year: 2010, agricultural: 52.0, forest: 1.9, builtup: 33.5, water: 3.2, barren: 4.8, irrigated: 93.8, degraded: 7.9 },
+        { year: 2015, agricultural: 45.5, forest: 2.0, builtup: 41.5, water: 3.0, barren: 4.0, irrigated: 95.0, degraded: 7.2 },
+        { year: 2020, agricultural: 40.0, forest: 2.2, builtup: 48.0, water: 2.8, barren: 3.3, irrigated: 96.2, degraded: 6.8 },
+        { year: 2025, agricultural: 35.5, forest: 2.3, builtup: 54.0, water: 2.7, barren: 2.8, irrigated: 97.0, degraded: 6.4 }
+      ];
+      anomalies = ['Ghaziabad: Intensive peri-urban agricultural conversion into urban residential & industrial logistics (+27.0 pp built-up surge, Z = +3.18)'];
+      potentialDrivers = [
+        'Delhi-Meerut Expressway, Rapid Rail Transit System (RRTS), and metro line extensions',
+        'Loni and Sahibabad industrial corridor expansion transforming former cropland',
+        'Upper Ganga Canal command area maintaining high irrigated share at 97.0%'
       ];
     } else if (geo.districtCode === 'UP-GBN') {
       series = [

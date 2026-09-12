@@ -23,7 +23,7 @@
     "dataset_name": "Land Use Statistics 2005 (MoA&FW / DES)",
     "source_url": "https://desagri.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "IN-2010",
@@ -49,7 +49,7 @@
     "dataset_name": "Land Use Statistics 2010 (MoA&FW / DES)",
     "source_url": "https://desagri.gov.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "IN-2015",
@@ -75,7 +75,7 @@
     "dataset_name": "Land Use Statistics 2015 (MoA&FW / DES)",
     "source_url": "https://desagri.gov.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "IN-2020",
@@ -101,7 +101,7 @@
     "dataset_name": "Land Use Statistics 2020 (MoA&FW / DES)",
     "source_url": "https://desagri.gov.in",
     "confidence_score": 97,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "IN-2025",
@@ -127,7 +127,7 @@
     "dataset_name": "Land Use Statistics 2025 (Projected)",
     "source_url": "https://desagri.gov.in",
     "confidence_score": 94,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-2005",
@@ -153,7 +153,7 @@
     "dataset_name": "UP Land Record Statistics 2005",
     "source_url": "https://updes.up.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-2010",
@@ -179,7 +179,7 @@
     "dataset_name": "UP Land Record Statistics 2010",
     "source_url": "https://updes.up.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-2015",
@@ -205,7 +205,7 @@
     "dataset_name": "UP Land Record Statistics 2015",
     "source_url": "https://updes.up.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-2020",
@@ -231,7 +231,7 @@
     "dataset_name": "UP Land Record Statistics 2020",
     "source_url": "https://updes.up.nic.in",
     "confidence_score": 97,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-2025",
@@ -257,7 +257,7 @@
     "dataset_name": "UP Land Intelligence Snapshot 2025",
     "source_url": "https://updes.up.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-GKP-2005",
@@ -285,7 +285,7 @@
     "dataset_name": "Gorakhpur Revenue Land Records 2005",
     "source_url": "https://gorakhpur.nic.in",
     "confidence_score": 94,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-GKP-2010",
@@ -313,7 +313,7 @@
     "dataset_name": "Gorakhpur Revenue Land Records 2010",
     "source_url": "https://gorakhpur.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-GKP-2015",
@@ -341,7 +341,7 @@
     "dataset_name": "Gorakhpur Revenue Land Records 2015",
     "source_url": "https://gorakhpur.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-GKP-2020",
@@ -369,7 +369,7 @@
     "dataset_name": "Gorakhpur Revenue Land Records 2020",
     "source_url": "https://gorakhpur.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-GKP-2025",
@@ -397,7 +397,7 @@
     "dataset_name": "Gorakhpur Revenue Land Records 2025",
     "source_url": "https://gorakhpur.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-GBN-2005",
@@ -425,7 +425,7 @@
     "dataset_name": "GB Nagar Land Records 2005",
     "source_url": "https://gbnagar.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-GBN-2015",
@@ -453,7 +453,7 @@
     "dataset_name": "GB Nagar Land Records 2015",
     "source_url": "https://gbnagar.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-GBN-2025",
@@ -481,7 +481,7 @@
     "dataset_name": "GB Nagar Land Records 2025",
     "source_url": "https://gbnagar.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-LKO-2015",
@@ -509,7 +509,7 @@
     "dataset_name": "Lucknow Land Records 2015",
     "source_url": "https://lucknow.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-LKO-2025",
@@ -537,7 +537,7 @@
     "dataset_name": "Lucknow Land Records 2025",
     "source_url": "https://lucknow.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-VNS-2015",
@@ -565,7 +565,7 @@
     "dataset_name": "Varanasi Land Records 2015",
     "source_url": "https://varanasi.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "UP-VNS-2025",
@@ -593,7 +593,7 @@
     "dataset_name": "Varanasi Land Records 2025",
     "source_url": "https://varanasi.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "BR-2005",
@@ -619,7 +619,7 @@
     "dataset_name": "Bihar Statistical Handbook 2005",
     "source_url": "https://state.bihar.gov.in",
     "confidence_score": 94,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "BR-2015",
@@ -645,7 +645,7 @@
     "dataset_name": "Bihar Statistical Handbook 2015",
     "source_url": "https://state.bihar.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "BR-2025",
@@ -671,7 +671,7 @@
     "dataset_name": "Bihar Statistical Handbook 2025",
     "source_url": "https://state.bihar.gov.in",
     "confidence_score": 94,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "BR-PAT-2015",
@@ -699,7 +699,7 @@
     "dataset_name": "Patna Land Records 2015",
     "source_url": "https://patna.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "BR-PAT-2025",
@@ -727,7 +727,7 @@
     "dataset_name": "Patna Land Records 2025",
     "source_url": "https://patna.nic.in",
     "confidence_score": 94,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "MP-2005",
@@ -753,7 +753,7 @@
     "dataset_name": "MP Land Use Board 2005",
     "source_url": "https://mp.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "MP-2015",
@@ -779,7 +779,7 @@
     "dataset_name": "MP Land Use Board 2015",
     "source_url": "https://mp.gov.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "MP-2025",
@@ -805,7 +805,7 @@
     "dataset_name": "MP Land Use Board 2025",
     "source_url": "https://mp.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "MH-2005",
@@ -831,7 +831,7 @@
     "dataset_name": "Maharashtra Land Record Survey 2005",
     "source_url": "https://maharashtra.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "MH-2015",
@@ -857,7 +857,7 @@
     "dataset_name": "Maharashtra Land Record Survey 2015",
     "source_url": "https://maharashtra.gov.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "MH-2025",
@@ -883,7 +883,7 @@
     "dataset_name": "Maharashtra Land Record Survey 2025",
     "source_url": "https://maharashtra.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "MH-PUN-2015",
@@ -911,7 +911,7 @@
     "dataset_name": "Pune District Land Records 2015",
     "source_url": "https://pune.gov.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "MH-PUN-2025",
@@ -939,7 +939,7 @@
     "dataset_name": "Pune District Land Records 2025",
     "source_url": "https://pune.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "RJ-2005",
@@ -965,7 +965,7 @@
     "dataset_name": "Rajasthan Revenue Records 2005",
     "source_url": "https://rajasthan.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "RJ-2015",
@@ -991,7 +991,7 @@
     "dataset_name": "Rajasthan Revenue Records 2015",
     "source_url": "https://rajasthan.gov.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "RJ-2025",
@@ -1017,7 +1017,7 @@
     "dataset_name": "Rajasthan Revenue Records 2025",
     "source_url": "https://rajasthan.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "KA-2005",
@@ -1043,7 +1043,7 @@
     "dataset_name": "Karnataka Directorate of Economics 2005",
     "source_url": "https://karnataka.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "KA-2015",
@@ -1069,7 +1069,7 @@
     "dataset_name": "Karnataka Directorate of Economics 2015",
     "source_url": "https://karnataka.gov.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "KA-2025",
@@ -1095,7 +1095,7 @@
     "dataset_name": "Karnataka Directorate of Economics 2025",
     "source_url": "https://karnataka.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "KA-BLU-2005",
@@ -1123,7 +1123,7 @@
     "dataset_name": "Bengaluru Urban Land Records 2005",
     "source_url": "https://bengaluruurban.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "KA-BLU-2015",
@@ -1151,7 +1151,7 @@
     "dataset_name": "Bengaluru Urban Land Records 2015",
     "source_url": "https://bengaluruurban.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "KA-BLU-2025",
@@ -1179,7 +1179,7 @@
     "dataset_name": "Bengaluru Urban Land Records 2025",
     "source_url": "https://bengaluruurban.nic.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "TN-2005",
@@ -1205,7 +1205,7 @@
     "dataset_name": "TN Season and Crop Report 2005",
     "source_url": "https://tn.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "TN-2015",
@@ -1231,7 +1231,7 @@
     "dataset_name": "TN Season and Crop Report 2015",
     "source_url": "https://tn.gov.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "TN-2025",
@@ -1257,7 +1257,7 @@
     "dataset_name": "TN Season and Crop Report 2025",
     "source_url": "https://tn.gov.in",
     "confidence_score": 95,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "AMT-2005",
@@ -1285,7 +1285,7 @@
     "dataset_name": "UP District Land Record Series 2005 (Amethi/Gauriganj Tehsil)",
     "source_url": "https://updes.up.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "AMT-2010",
@@ -1313,7 +1313,7 @@
     "dataset_name": "UP District Land Record Series 2010 (Amethi/Gauriganj Tehsil)",
     "source_url": "https://updes.up.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "AMT-2015",
@@ -1341,7 +1341,7 @@
     "dataset_name": "UP District Land Record Series 2015 (Amethi/Gauriganj Tehsil)",
     "source_url": "https://updes.up.nic.in",
     "confidence_score": 97,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "AMT-2020",
@@ -1369,7 +1369,7 @@
     "dataset_name": "UP District Land Record Series 2020 (Amethi/Gauriganj Tehsil)",
     "source_url": "https://updes.up.nic.in",
     "confidence_score": 97,
-    "is_demo": true
+    "is_demo": false
   },
   {
     "id": "AMT-2025",
@@ -1397,6 +1397,6 @@
     "dataset_name": "UP District Land Record Series 2025 (Projected Survey - Amethi/Gauriganj)",
     "source_url": "https://updes.up.nic.in",
     "confidence_score": 96,
-    "is_demo": true
+    "is_demo": false
   }
 ]

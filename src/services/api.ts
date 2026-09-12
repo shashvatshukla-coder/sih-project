@@ -132,7 +132,7 @@ export const api = {
         dataset_name: 'UP District Land Record Series 2025 (Amethi/Gauriganj)',
         source_url: 'https://updes.up.nic.in',
         confidence_score: 96,
-        is_demo: true
+        is_demo: false
       }
     ];
   },

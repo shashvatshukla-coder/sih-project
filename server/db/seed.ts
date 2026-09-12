@@ -19,7 +19,7 @@ async function main() {
   console.log('  Bhu-Drishti PostgreSQL Database Seeding Pipeline');
   console.log('================================================================');
 
-  const databaseUrl = process.env.DATABASE_URL;
+  const databaseUrl = process.env.DIRECT_URL || process.env.DATABASE_URL;
   if (!databaseUrl) {
     console.error('❌ Error: DATABASE_URL environment variable is missing.');
     console.error('Please configure DATABASE_URL in your .env or provide a valid PostgreSQL connection string.');
@@ -27,11 +27,13 @@ async function main() {
   }
 
   const { PrismaClient } = await import('@prisma/client');
-  const prisma = new PrismaClient();
+  const prisma = new PrismaClient({
+    datasourceUrl: databaseUrl
+  });
 
   try {
     await prisma.$connect();
-    console.log('✅ Connected to PostgreSQL database successfully.');
+    console.log(`✅ Connected to PostgreSQL database successfully via ${process.env.DIRECT_URL ? 'DIRECT_URL' : 'DATABASE_URL'}.`);
 
     // 1. Load Seed Data from JSON
     const statesData = loadJson<any[]>('states.json');
@@ -252,8 +254,8 @@ async function main() {
       });
     }
 
-    // 6. Seed Policies & Anomalies
-    console.log('\n⏳ Seeding Policies & Anomalies...');
+    // 6. Seed Policies, Research Papers & Anomalies
+    console.log('\n⏳ Seeding Policies, Research Papers & Anomalies...');
     for (const pol of policiesData) {
       await prisma.policy.upsert({
         where: { id: pol.id },
@@ -293,35 +295,74 @@ async function main() {
       });
     }
 
+    for (const pap of researchData) {
+      await prisma.researchPaper.upsert({
+        where: { id: pap.id },
+        update: {
+          title: pap.title,
+          authors: pap.authors,
+          journal: pap.journal || pap.publisher || 'Peer-Reviewed Journal',
+          year: Number(pap.year || 2024),
+          doi_url: pap.source_url || pap.doi_url || '',
+          abstract: pap.abstract || '',
+          key_findings: pap.key_findings || [],
+          geographic_focus: pap.geography || pap.research_area || 'India',
+          tags: pap.tags || []
+        },
+        create: {
+          id: pap.id,
+          title: pap.title,
+          authors: pap.authors,
+          journal: pap.journal || pap.publisher || 'Peer-Reviewed Journal',
+          year: Number(pap.year || 2024),
+          doi_url: pap.source_url || pap.doi_url || '',
+          abstract: pap.abstract || '',
+          key_findings: pap.key_findings || [],
+          geographic_focus: pap.geography || pap.research_area || 'India',
+          tags: pap.tags || []
+        }
+      });
+    }
+
     for (const anom of anomaliesData) {
+      const distCode = anom.district_code || (anom.geography_type === 'state' ? anom.state_code : 'ALL');
+      const distName = anom.geography_name || anom.district_name || 'All Districts';
+      const yearVal = anom.year || (anom.year_range ? parseInt(anom.year_range.slice(-4)) || 2025 : 2025);
+      const descVal = anom.observed_value
+        ? `${anom.indicator || 'Anomaly'}: ${anom.observed_value}. ${anom.methodology || ''}`
+        : (anom.description || '');
+      const factors = Array.isArray(anom.possible_factors)
+        ? anom.possible_factors.join('; ')
+        : (anom.recommended_action || 'Review regional land zoning and satellite monitoring');
+
       await prisma.anomaly.upsert({
         where: { id: anom.id },
         update: {
-          district_code: anom.district_code,
-          district_name: anom.district_name,
+          district_code: distCode,
+          district_name: distName,
           state_code: anom.state_code,
-          year: anom.year,
-          anomaly_type: anom.anomaly_type,
-          severity: anom.severity,
-          description: anom.description,
-          detected_value: anom.detected_value,
-          expected_value: anom.expected_value,
-          confidence_score: anom.confidence_score,
-          recommended_action: anom.recommended_action
+          year: yearVal,
+          anomaly_type: anom.indicator || anom.anomaly_type || 'LULC Deviation',
+          severity: anom.severity || 'Medium',
+          description: descVal,
+          detected_value: Number(anom.deviation_zscore || anom.detected_value || 0),
+          expected_value: 0.0,
+          confidence_score: Number(anom.confidence || anom.confidence_score || 90),
+          recommended_action: factors
         },
         create: {
           id: anom.id,
-          district_code: anom.district_code,
-          district_name: anom.district_name,
+          district_code: distCode,
+          district_name: distName,
           state_code: anom.state_code,
-          year: anom.year,
-          anomaly_type: anom.anomaly_type,
-          severity: anom.severity,
-          description: anom.description,
-          detected_value: anom.detected_value,
-          expected_value: anom.expected_value,
-          confidence_score: anom.confidence_score,
-          recommended_action: anom.recommended_action
+          year: yearVal,
+          anomaly_type: anom.indicator || anom.anomaly_type || 'LULC Deviation',
+          severity: anom.severity || 'Medium',
+          description: descVal,
+          detected_value: Number(anom.deviation_zscore || anom.detected_value || 0),
+          expected_value: 0.0,
+          confidence_score: Number(anom.confidence || anom.confidence_score || 90),
+          recommended_action: factors
         }
       });
     }
