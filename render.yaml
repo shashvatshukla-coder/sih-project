@@ -3,7 +3,7 @@ services:
     name: bhu-drishti-api
     runtime: node
     plan: free
-    buildCommand: npm ci --omit=dev
+    buildCommand: npm ci && npm run build
     startCommand: npm start
     healthCheckPath: /health
     autoDeployTrigger: commit
