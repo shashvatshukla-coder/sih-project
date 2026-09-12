@@ -178,7 +178,6 @@ class Database {
     if (src) {
       src.status = 'Connected';
       src.last_synced = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' IST';
-      src.records_imported += Math.floor(Math.random() * 500) + 50;
       this.logAudit('SYNC_DATA_SOURCE', 'Admin', { source_id: id, records_now: src.records_imported });
 
       if (this.prisma) {
