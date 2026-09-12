@@ -4,6 +4,8 @@ import { AppSidebar } from './components/layout/AppSidebar';
 import { TopHeader } from './components/layout/TopHeader';
 import { FilterBar } from './components/layout/FilterBar';
 import { GlobalSearchModal } from './components/layout/GlobalSearchModal';
+import { GoogleAuthModal } from './components/auth/GoogleAuthModal';
+import { ResearcherIdCardModal } from './components/auth/ResearcherIdCardModal';
 
 // Views
 import { HomePage } from './pages/HomePage';
@@ -31,7 +33,7 @@ const AppContent: React.FC = () => {
   const { activePage } = useApp();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [showSplash, setShowSplash] = useState(true);
+  const [showSplash, setShowSplash] = useState(false);
 
   // Determine if filter bar should be shown (kept clean on dashboard)
   const showFilterBar = ['statistics', 'trends', 'change', 'comparison'].includes(activePage);
@@ -133,6 +135,12 @@ const AppContent: React.FC = () => {
 
       {/* Cmd+K Global Search Modal */}
       <GlobalSearchModal />
+
+      {/* Google Authentication & Researcher Verification Modal */}
+      <GoogleAuthModal />
+
+      {/* Dedicated Researcher Institutional ID Card Modal */}
+      <ResearcherIdCardModal />
     </div>
   );
 };

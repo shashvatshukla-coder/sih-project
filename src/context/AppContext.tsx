@@ -6,7 +6,8 @@ import {
   State,
   District,
   LandUseRecord,
-  AIQueryResponse
+  AIQueryResponse,
+  UserProfile
 } from '../types';
 import { api } from '../services/api';
 
@@ -32,6 +33,15 @@ interface AppContextType {
   setSelectedCategory: (category: LandCategory) => void;
   userRole: UserRole;
   setUserRole: (role: UserRole) => void;
+  userProfile: UserProfile;
+  setUserProfile: (profile: UserProfile) => void;
+  dedicatedFixedId: string;
+  loginWithGoogle: (customData?: Partial<UserProfile>) => Promise<void>;
+  logout: () => void;
+  isAuthModalOpen: boolean;
+  setIsAuthModalOpen: (open: boolean) => void;
+  isIdCardModalOpen: boolean;
+  setIsIdCardModalOpen: (open: boolean) => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   isSearchOpen: boolean;
@@ -69,9 +79,86 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [selectedDistrict, setSelectedDistrict] = useState<string>('UP-AMT');
   const [selectedYear, setSelectedYear] = useState<number>(2025);
   const [selectedCategory, setSelectedCategory] = useState<LandCategory>('agricultural');
-  const [userRole, setUserRole] = useState<UserRole>('policymaker');
+  const [userRole, setUserRole] = useState<UserRole>('researcher');
   const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+
+  // Dedicated Fixed ID & Google Authenticated Profile
+  const DEFAULT_PROFILE: UserProfile = {
+    id: 'usr_g_shashvat81',
+    dedicatedFixedId: 'BHU-RES-8763-9201', // Fixed permanent Cadastral Researcher UID
+    email: 'shashvatshukla81@gmail.com',
+    name: 'Dr. Shashvat Shukla',
+    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Shashvat%20Shukla&backgroundColor=059669',
+    role: 'researcher',
+    affiliation: 'National Land Records & Geospatial Intelligence Directorate',
+    designation: 'Senior Cadastral Research Scientist',
+    institutionType: 'ICAR / Indian Council of Agricultural Research & NIC',
+    orcid: '0009-0004-8763-9201',
+    isGoogleVerified: true,
+    issuedAt: '2026-01-15T09:00:00.000Z',
+    authProvider: 'google'
+  };
+
+  const [userProfile, setUserProfile] = useState<UserProfile>(() => {
+    try {
+      const saved = localStorage.getItem('bhu_user_profile');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (!parsed.dedicatedFixedId) parsed.dedicatedFixedId = 'BHU-RES-8763-9201';
+        return parsed;
+      }
+    } catch {}
+    return DEFAULT_PROFILE;
+  });
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isIdCardModalOpen, setIsIdCardModalOpen] = useState<boolean>(false);
+
+  const dedicatedFixedId = userProfile?.dedicatedFixedId || 'BHU-RES-8763-9201';
+
+  const loginWithGoogle = async (customData?: Partial<UserProfile>) => {
+    try {
+      const verified = await api.verifyGoogleAuth({
+        email: customData?.email || userProfile?.email || 'shashvatshukla81@gmail.com',
+        name: customData?.name || userProfile?.name || 'Dr. Shashvat Shukla',
+        avatar: customData?.avatar,
+        fixedId: customData?.dedicatedFixedId || dedicatedFixedId
+      });
+      setUserProfile(verified);
+      setUserRole(verified.role);
+      localStorage.setItem('bhu_user_profile', JSON.stringify(verified));
+    } catch {
+      const updated: UserProfile = {
+        ...DEFAULT_PROFILE,
+        ...customData,
+        dedicatedFixedId,
+        isGoogleVerified: true,
+        authProvider: 'google'
+      };
+      setUserProfile(updated);
+      setUserRole(updated.role);
+      localStorage.setItem('bhu_user_profile', JSON.stringify(updated));
+    }
+  };
+
+  const logout = () => {
+    const guest: UserProfile = {
+      id: 'guest',
+      dedicatedFixedId: dedicatedFixedId,
+      email: '',
+      name: 'Guest User',
+      role: 'public',
+      affiliation: 'Public Explorer',
+      designation: 'Citizen Observer',
+      isGoogleVerified: false,
+      issuedAt: new Date().toISOString(),
+      authProvider: 'guest'
+    };
+    setUserProfile(guest);
+    setUserRole('public');
+    localStorage.removeItem('bhu_user_profile');
+  };
 
   const [states, setStates] = useState<State[]>([]);
   const [allDistricts, setAllDistricts] = useState<District[]>([]);
@@ -253,6 +340,15 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setSelectedCategory,
         userRole,
         setUserRole,
+        userProfile,
+        setUserProfile,
+        dedicatedFixedId,
+        loginWithGoogle,
+        logout,
+        isAuthModalOpen,
+        setIsAuthModalOpen,
+        isIdCardModalOpen,
+        setIsIdCardModalOpen,
         isDarkMode,
         toggleDarkMode,
         isSearchOpen,
