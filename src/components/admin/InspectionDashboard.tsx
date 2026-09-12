@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
-import { MASTER_ADMIN_EMAIL } from '../../lib/firebase';
+import { MASTER_ADMIN_EMAIL } from '../../lib/auth';
 import {
   UserRegistryRecord,
   InspectionStats,

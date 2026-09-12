@@ -95,7 +95,7 @@ export const ResearchLibrary: React.FC = () => {
               </span>
               <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 text-blue-600" />
-                Google Verified
+                Profile Verified
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-slate-500">
@@ -348,4 +348,3 @@ export const ResearchLibrary: React.FC = () => {
     </div>
   );
 };
-

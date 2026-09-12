@@ -9,7 +9,6 @@ import {
   ResearchPaper,
   Anomaly,
   AIQueryResponse,
-  UserProfile,
   UserRegistryRecord,
   InspectionStats
 } from '../types';
@@ -436,28 +435,6 @@ export const api = {
     });
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Failed to upload document');
-    return json.data;
-  },
-
-  async getGoogleAuthUrl(): Promise<string> {
-    try {
-      const res = await fetch(`${API_BASE}/auth/google/url`);
-      if (res.ok) {
-        const json = await res.json();
-        return json.url;
-      }
-    } catch {}
-    return '/auth/google/callback';
-  },
-
-  async verifyGoogleAuth(data: { email?: string; name?: string; avatar?: string; fixedId?: string; requestedRole?: string }): Promise<UserProfile> {
-    const res = await fetch(`${API_BASE}/auth/google/verify`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data)
-    });
-    const json = await res.json();
-    if (!res.ok) throw new Error(json.error || 'Google verification failed');
     return json.data;
   },
 

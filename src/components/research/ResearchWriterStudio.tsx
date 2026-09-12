@@ -310,7 +310,7 @@ Quantitative ground-truth audits across Gauriganj show significant shifts in the
               </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                <span>Google Verified Scholar</span>
+                <span>Verified Scholar</span>
               </span>
             </div>
             <p className="text-[11px] text-slate-500 flex items-center gap-1.5">

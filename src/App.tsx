@@ -4,7 +4,7 @@ import { AppSidebar } from './components/layout/AppSidebar';
 import { TopHeader } from './components/layout/TopHeader';
 import { FilterBar } from './components/layout/FilterBar';
 import { GlobalSearchModal } from './components/layout/GlobalSearchModal';
-import { GoogleAuthModal } from './components/auth/GoogleAuthModal';
+import { AccountModal } from './components/auth/AccountModal';
 import { ResearcherIdCardModal } from './components/auth/ResearcherIdCardModal';
 
 // Views
@@ -142,8 +142,8 @@ const AppContent: React.FC = () => {
       {/* Cmd+K Global Search Modal */}
       <GlobalSearchModal />
 
-      {/* Google Authentication & Researcher Verification Modal */}
-      <GoogleAuthModal />
+      {/* Account and session modal */}
+      <AccountModal />
 
       {/* Dedicated Researcher Institutional ID Card Modal */}
       <ResearcherIdCardModal />

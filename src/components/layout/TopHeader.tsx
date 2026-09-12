@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 import { api } from '../../services/api';
-import { MASTER_ADMIN_EMAIL } from '../../lib/firebase';
+import { MASTER_ADMIN_EMAIL } from '../../lib/auth';
 import {
   Search,
   Moon,
@@ -162,14 +162,14 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                 </div>
                 <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
                   <p className="font-semibold">Dedicated Researcher UID</p>
-                  <p className="text-[11px] opacity-80">{dedicatedFixedId} bound to Google profile.</p>
+                  <p className="text-[11px] opacity-80">{dedicatedFixedId} bound to your profile.</p>
                 </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Google User Profile & Role Switcher */}
+        {/* User Profile & Role Switcher */}
         <div className="relative">
           {userProfile?.isGoogleVerified ? (
             <button
@@ -191,9 +191,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[110px]">
                     {userProfile.name}
                   </p>
-                  <span className="text-[9px] font-bold px-1 rounded bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-                    G
-                  </span>
+                  <span className="text-[9px] font-bold px-1 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">ID</span>
                 </div>
                 <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate capitalize">
                   {currentRoleObj.title}
@@ -206,24 +204,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
               onClick={() => setActivePage('login')}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold shadow-xs transition-all cursor-pointer"
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.36 7.31 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.97 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                />
-              </svg>
+              <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>Login Page</span>
             </button>
           )}
@@ -237,7 +218,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                     {userProfile?.name}
                   </p>
                   <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
-                    Google
+                    Signed in
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 truncate">{userProfile?.email}</p>
@@ -283,7 +264,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   className="w-full flex items-center gap-2 p-2 rounded-xl text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Google Account Credentials</span>
+                  <span>Account details</span>
                 </button>
                 <button
                   onClick={() => {
@@ -360,7 +341,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   className="w-full flex items-center gap-2 p-2 rounded-xl text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors font-semibold"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out of Google</span>
+                  <span>Sign out</span>
                 </button>
               </div>
             </div>
@@ -370,4 +351,3 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
     </header>
   );
 };
-

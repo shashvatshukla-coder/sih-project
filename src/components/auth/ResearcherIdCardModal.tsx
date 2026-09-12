@@ -150,7 +150,7 @@ export const ResearcherIdCardModal: React.FC = () => {
                     {userProfile?.name || 'Verified User'}
                   </h3>
                   <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30">
-                    Google Verified
+                    Profile Verified
                   </span>
                 </div>
                 <p className={`text-xs font-semibold ${roleConfig.accentColor}`}>
