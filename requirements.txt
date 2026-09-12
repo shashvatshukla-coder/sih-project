@@ -1,0 +1,56 @@
+# ==========================================
+# BHUMI UDYOG - Data & ML Requirements
+# Python 3.12
+# ==========================================
+
+# ---------- Data Processing ----------
+numpy
+pandas
+scipy
+openpyxl
+pyarrow
+
+# ---------- GIS / Geospatial ----------
+geopandas
+shapely
+pyproj
+pyogrio
+fiona
+rasterio
+folium
+contextily
+
+# ---------- Machine Learning ----------
+scikit-learn
+xgboost
+
+# ---------- Visualization ----------
+matplotlib
+seaborn
+plotly
+
+# ---------- Jupyter / Development ----------
+jupyter
+notebook
+ipykernel
+
+# ---------- Database ----------
+SQLAlchemy
+psycopg2-binary
+geoalchemy2
+
+# ---------- API / Backend ----------
+fastapi
+uvicorn
+python-multipart
+
+# ---------- Configuration ----------
+python-dotenv
+
+# ---------- HTTP / Data Collection ----------
+requests
+httpx
+
+# ---------- Utilities ----------
+tqdm
+joblib
