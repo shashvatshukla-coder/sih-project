@@ -916,4 +916,56 @@ router.post('/inspection/research/reorder', (req: Request, res: Response) => {
   }
 });
 
+// 11. Dashboard Live Control & Overrides (Inspection Directorate)
+router.get('/inspection/dashboard-data', (req: Request, res: Response) => {
+  try {
+    const data = db.getDashboardData();
+    res.json({ success: true, data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/inspection/dashboard-data', (req: Request, res: Response) => {
+  try {
+    const updated = db.updateDashboardData(req.body);
+    res.json({ success: true, message: 'Dashboard configuration calibrated successfully', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/inspection/reset-dashboard-data', (req: Request, res: Response) => {
+  try {
+    const resetData = db.resetDashboardData();
+    res.json({ success: true, message: 'Dashboard restored to official national baseline', data: resetData });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 12. Land Use Records Override by Inspection Directorate
+router.put('/land-use/records/:id', (req: Request, res: Response) => {
+  try {
+    const updated = db.updateLandUseRecord(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: 'Land use record not found' });
+    res.json({ success: true, message: 'Cadastral record calibrated successfully', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/land-use/override', (req: Request, res: Response) => {
+  try {
+    const { state_code, district_code, year, updates } = req.body;
+    if (!state_code || !year || !updates) {
+      return res.status(400).json({ success: false, error: 'state_code, year, and updates are required' });
+    }
+    const record = db.updateLandUseRecordByLocation(state_code, district_code, Number(year), updates);
+    res.json({ success: true, message: 'Land use figures updated across national registry', data: record });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 export default router;

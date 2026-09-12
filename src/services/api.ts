@@ -698,5 +698,71 @@ export const api = {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Failed to reorder research');
     return json.data;
+  },
+
+  // Dashboard Live Overrides & Calibration
+  async getDashboardData(): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/inspection/dashboard-data`);
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch (e) {
+      console.warn('Failed to load dashboard data from API, will use client state');
+    }
+    return null;
+  },
+
+  async updateDashboardData(updates: any): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/inspection/dashboard-data`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error || 'Failed to update dashboard data');
+      return json.data;
+    } catch (e) {
+      console.warn('Dashboard data update API call failed, saved locally');
+      return updates;
+    }
+  },
+
+  async resetDashboardData(): Promise<any> {
+    const res = await fetch(`${API_BASE}/inspection/reset-dashboard-data`, {
+      method: 'POST'
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to reset dashboard data');
+    return json.data;
+  },
+
+  async overrideLandUseRecord(stateCode: string, districtCode: string | undefined, year: number, updates: Partial<LandUseRecord>): Promise<LandUseRecord> {
+    const res = await fetch(`${API_BASE}/land-use/override`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        state_code: stateCode,
+        district_code: districtCode,
+        year,
+        updates
+      })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to calibrate land use figures');
+    return json.data;
+  },
+
+  async updateLandUseRecordById(id: string, updates: Partial<LandUseRecord>): Promise<LandUseRecord> {
+    const res = await fetch(`${API_BASE}/land-use/records/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update land use record');
+    return json.data;
   }
 };

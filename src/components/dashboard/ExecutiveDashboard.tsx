@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
+import { DashboardEditorModal } from './DashboardEditorModal';
+import { LandRecordEditorModal } from './LandRecordEditorModal';
 import {
   Database,
   FileText,
@@ -19,7 +21,16 @@ import {
   Sparkles,
   ExternalLink,
   ChevronRight,
-  Quote
+  Quote,
+  Sliders,
+  Edit2,
+  Trash2,
+  RotateCcw,
+  Check,
+  CheckCircle2,
+  ShieldCheck,
+  Save,
+  Clock
 } from 'lucide-react';
 
 interface BannerSlide {
@@ -33,7 +44,7 @@ interface BannerSlide {
   author: string;
 }
 
-const BANNER_SLIDES: BannerSlide[] = [
+const DEFAULT_BANNER_SLIDES: BannerSlide[] = [
   {
     id: 1,
     image: '/banners/slide1_rainbow.png',
@@ -91,25 +102,256 @@ export const ExecutiveDashboard: React.FC = () => {
     states,
     selectedState,
     setSelectedState,
-    setActivePage
+    selectedDistrict,
+    selectedYear,
+    currentRecord,
+    setActivePage,
+    isInspectionAuthorized,
+    userProfile,
+    dashboardConfig,
+    isDashboardEditMode,
+    setIsDashboardEditMode,
+    updateDashboardKPI,
+    updateDashboardInsight,
+    addDashboardInsight,
+    deleteDashboardInsight,
+    updateDashboardPublication,
+    addDashboardPublication,
+    deleteDashboardPublication,
+    updatePolicyExperiment,
+    addPolicyExperiment,
+    deletePolicyExperiment,
+    updateUpcomingEvent,
+    addUpcomingEvent,
+    deleteUpcomingEvent,
+    resetDashboardToBaseline
   } = useApp();
 
   const [selectedLayer, setSelectedLayer] = useState<string>('land-use');
   const [mapZoom, setMapZoom] = useState<number>(1);
   const [currentSlide, setCurrentSlide] = useState<number>(0);
 
+  // Inspection control modals
+  const [isDashboardEditorOpen, setIsDashboardEditorOpen] = useState(false);
+  const [isLandRecordEditorOpen, setIsLandRecordEditorOpen] = useState(false);
+  const [saveToast, setSaveToast] = useState<string | null>(null);
+
+  // In-line Quick Editing States for KPI Cards
+  const [editingCard, setEditingCard] = useState<string | null>(null);
+  const [cardCountInput, setCardCountInput] = useState('');
+  const [cardSubtitleInput, setCardSubtitleInput] = useState('');
+
+  // Quick Inline Add States
+  const [isAddingInsight, setIsAddingInsight] = useState(false);
+  const [newInsightMetric, setNewInsightMetric] = useState('');
+  const [newInsightDesc, setNewInsightDesc] = useState('');
+
+  const [isAddingPub, setIsAddingPub] = useState(false);
+  const [newPubTitle, setNewPubTitle] = useState('');
+  const [newPubAuthor, setNewPubAuthor] = useState('');
+
+  const [isAddingExp, setIsAddingExp] = useState(false);
+  const [newExpTitle, setNewExpTitle] = useState('');
+  const [newExpState, setNewExpState] = useState('Uttar Pradesh');
+
+  const [isAddingEvent, setIsAddingEvent] = useState(false);
+  const [newEventTitle, setNewEventTitle] = useState('');
+  const [newEventDate, setNewEventDate] = useState('');
+
   // Auto-advance slides continuously every 4.8 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % BANNER_SLIDES.length);
+      setCurrentSlide((prev) => (prev + 1) % DEFAULT_BANNER_SLIDES.length);
     }, 4800);
     return () => clearInterval(interval);
   }, []);
 
-  const activeSlideData = BANNER_SLIDES[currentSlide];
+  // Compute active slides with custom inspection overrides
+  const activeSlidesList = DEFAULT_BANNER_SLIDES.map(defaultSlide => {
+    const override = dashboardConfig.bannerSlides?.find(s => s.id === defaultSlide.id);
+    if (!override) return defaultSlide;
+    return {
+      ...defaultSlide,
+      badge: override.badge || defaultSlide.badge,
+      title: override.headline || defaultSlide.title,
+      highlight: override.highlight || defaultSlide.highlight,
+      subtitle: override.subtitle || defaultSlide.subtitle,
+      quote: override.quote || defaultSlide.quote,
+      author: override.author || defaultSlide.author
+    };
+  });
+
+  const activeSlideData = activeSlidesList[currentSlide] || DEFAULT_BANNER_SLIDES[0];
+
+  const triggerToast = (msg: string) => {
+    setSaveToast(msg);
+    setTimeout(() => setSaveToast(null), 3000);
+  };
+
+  const handleStartEditingCard = (key: 'datasets' | 'research' | 'policies' | 'layers' | 'users', e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingCard(key);
+    setCardCountInput(dashboardConfig.kpiCards[key].count);
+    setCardSubtitleInput(dashboardConfig.kpiCards[key].subtitle);
+  };
+
+  const handleSaveCard = (key: 'datasets' | 'research' | 'policies' | 'layers' | 'users', e: React.MouseEvent) => {
+    e.stopPropagation();
+    updateDashboardKPI(key, cardCountInput, cardSubtitleInput);
+    setEditingCard(null);
+    triggerToast(`Updated ${dashboardConfig.kpiCards[key].label} count!`);
+  };
+
+  const handleSaveNewInsight = () => {
+    if (!newInsightMetric || !newInsightDesc) return;
+    addDashboardInsight({
+      metric: newInsightMetric,
+      description: newInsightDesc,
+      icon: 'TrendingUp'
+    });
+    setNewInsightMetric('');
+    setNewInsightDesc('');
+    setIsAddingInsight(false);
+    triggerToast('Added new Key Insight!');
+  };
+
+  const handleSaveNewPub = () => {
+    if (!newPubTitle) return;
+    addDashboardPublication({
+      title: newPubTitle,
+      author: newPubAuthor || 'National Cadastral Directorate',
+      year: new Date().getFullYear().toString()
+    });
+    setNewPubTitle('');
+    setNewPubAuthor('');
+    setIsAddingPub(false);
+    triggerToast('Added new Research Publication!');
+  };
+
+  const handleSaveNewExp = () => {
+    if (!newExpTitle) return;
+    addPolicyExperiment({
+      title: newExpTitle,
+      state: newExpState,
+      duration: '6 months',
+      status: 'Ongoing'
+    });
+    setNewExpTitle('');
+    setIsAddingExp(false);
+    triggerToast('Added new Policy Experiment!');
+  };
+
+  const handleSaveNewEvent = () => {
+    if (!newEventTitle) return;
+    addUpcomingEvent({
+      title: newEventTitle,
+      date: newEventDate || 'Upcoming',
+      location: 'New Delhi'
+    });
+    setNewEventTitle('');
+    setNewEventDate('');
+    setIsAddingEvent(false);
+    triggerToast('Added new National Event!');
+  };
+
+  // State cadastral figures
+  const currentStateObj = states.find(s => s.state_code === selectedState);
+  const currentAgPct = currentRecord?.agricultural_pct ?? 68.2;
+  const currentForestPct = currentRecord?.forest_pct ?? 14.1;
+  const currentBuiltupPct = currentRecord?.builtup_pct ?? 8.4;
+  const currentWaterPct = currentRecord?.waterbodies_pct ?? 4.2;
+  const currentBarrenPct = currentRecord?.barren_pct ?? 3.1;
+  const currentOtherPct = currentRecord?.other_pct ?? 2.0;
+  const currentTotalHa = currentRecord?.total_area_ha ?? 307000;
 
   return (
     <div className="space-y-6 text-left pb-10">
+      {/* =========================================================================
+          0. NOTIFICATION TOAST
+      ========================================================================= */}
+      {saveToast && (
+        <div className="fixed top-20 right-6 z-50 animate-in slide-in-from-top-4 flex items-center gap-2.5 px-4 py-3 rounded-2xl bg-emerald-900 text-white border border-emerald-500 shadow-2xl text-xs font-bold">
+          <CheckCircle2 className="w-4 h-4 text-emerald-300" />
+          <span>{saveToast}</span>
+        </div>
+      )}
+
+      {/* =========================================================================
+          0. INSPECTION DIRECTORATE MASTER CONTROL PANEL (For Inspection Role)
+      ========================================================================= */}
+      {isInspectionAuthorized && (
+        <div className="p-4 md:p-5 rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border-2 border-emerald-500/50 shadow-xl text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div className="flex items-start md:items-center gap-3.5">
+            <div className="w-11 h-11 rounded-2xl bg-emerald-600 border border-emerald-400/50 flex items-center justify-center shrink-0 shadow-md">
+              <ShieldCheck className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="text-[10px] uppercase font-black tracking-widest px-2.5 py-0.5 rounded-full bg-emerald-500 text-emerald-950 font-mono shadow-sm">
+                  INSPECTION DIRECTORATE MASTER CONTROL
+                </span>
+                <span className="text-[11px] font-mono text-emerald-300 font-bold">
+                  {userProfile.name} • {userProfile.dedicatedFixedId}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 mt-1 font-medium">
+                You have unrestricted administrative authority to inspect and edit <strong>all dashboard data</strong>, cadastral statistics, metrics, and policy modules.
+              </p>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto justify-end">
+            {/* Live Inline Edit Toggle */}
+            <button
+              onClick={() => setIsDashboardEditMode(!isDashboardEditMode)}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold flex items-center gap-2 transition-all shadow-sm ${
+                isDashboardEditMode
+                  ? 'bg-amber-500 hover:bg-amber-600 text-slate-950 ring-2 ring-amber-300'
+                  : 'bg-white/10 hover:bg-white/20 text-white border border-white/20'
+              }`}
+              title="Toggle in-line editing controls on cards and sections"
+            >
+              <Edit2 className="w-3.5 h-3.5" />
+              <span>{isDashboardEditMode ? 'Live Edit Active' : 'Live In-line Edit'}</span>
+            </button>
+
+            {/* Comprehensive Dashboard Editor Modal */}
+            <button
+              onClick={() => setIsDashboardEditorOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 border border-emerald-400/40"
+            >
+              <Sliders className="w-3.5 h-3.5" />
+              <span>Full Dashboard Editor</span>
+            </button>
+
+            {/* Calibrate Cadastral Statistics */}
+            <button
+              onClick={() => setIsLandRecordEditorOpen(true)}
+              className="px-3.5 py-2 rounded-xl bg-teal-700 hover:bg-teal-600 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-2 border border-teal-500/40"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Calibrate Cadastral Data</span>
+            </button>
+
+            {/* Reset to Baseline */}
+            <button
+              onClick={async () => {
+                if (confirm('Revert all dashboard metrics to Government baseline standards?')) {
+                  await resetDashboardToBaseline();
+                  triggerToast('Reverted dashboard to Government baseline values!');
+                }
+              }}
+              className="px-3 py-2 rounded-xl bg-red-950/40 hover:bg-red-900/60 text-red-300 border border-red-500/30 text-xs font-bold transition-all flex items-center gap-1.5"
+              title="Reset metrics to default"
+            >
+              <RotateCcw className="w-3.5 h-3.5" />
+              <span>Reset Baseline</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* =========================================================================
           1. ALIVE HERO PANORAMIC CAROUSEL WITH DYNAMIC THOUGHTS & ANIMATIONS
       ========================================================================= */}
@@ -117,7 +359,7 @@ export const ExecutiveDashboard: React.FC = () => {
         className="relative overflow-hidden rounded-3xl bg-slate-950 border border-slate-200/50 dark:border-slate-800 shadow-lg group min-h-[280px] md:min-h-[320px] flex items-center"
       >
         {/* Render all background images with vivid clarity, smooth opacity transitions & Ken Burns zoom */}
-        {BANNER_SLIDES.map((slide, idx) => (
+        {activeSlidesList.map((slide, idx) => (
           <div
             key={slide.id}
             className={`absolute inset-0 transition-opacity duration-1000 ease-in-out ${
@@ -131,16 +373,27 @@ export const ExecutiveDashboard: React.FC = () => {
               }`}
               style={{ backgroundImage: `url('${slide.image}')` }}
             />
-            {/* Gentle, Transparent Vignette (keeps the artwork vivid and colorful) */}
+            {/* Vignette */}
             <div className="absolute inset-0 bg-gradient-to-r from-black/60 via-black/30 to-black/40" />
             <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-black/20" />
           </div>
         ))}
 
-        {/* Slide Content Layer with Glassmorphism for Crystal-Clear Readability */}
+        {/* Slide Content Layer */}
         <div className="relative z-10 p-6 md:p-8 w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           {/* Left Text Card - Frosted Glass Box */}
-          <div className="max-w-xl text-left space-y-2 p-5 rounded-2xl bg-black/35 backdrop-blur-md border border-white/20 shadow-2xl">
+          <div className="max-w-xl text-left space-y-2 p-5 rounded-2xl bg-black/35 backdrop-blur-md border border-white/20 shadow-2xl relative">
+            {isInspectionAuthorized && (
+              <button
+                onClick={() => setIsDashboardEditorOpen(true)}
+                className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/20 hover:bg-white/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1 transition-all"
+                title="Edit Carousel Content"
+              >
+                <Edit2 className="w-3 h-3" />
+                <span>Edit Slide</span>
+              </button>
+            )}
+
             {/* Badge */}
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/30 backdrop-blur-md border border-emerald-300/50 text-emerald-200 text-[11px] font-extrabold tracking-wide uppercase shadow-sm">
               <Sparkles className="w-3.5 h-3.5 animate-spin text-emerald-300" style={{ animationDuration: '6s' }} />
@@ -177,10 +430,11 @@ export const ExecutiveDashboard: React.FC = () => {
 
         {/* Carousel Slide Indicators */}
         <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md border border-white/20 shadow-md">
-          {BANNER_SLIDES.map((slide, idx) => (
+          {activeSlidesList.map((slide, idx) => (
             <div
               key={slide.id}
-              className={`h-1.5 rounded-full transition-all duration-500 ${
+              onClick={() => setCurrentSlide(idx)}
+              className={`h-1.5 rounded-full transition-all duration-500 cursor-pointer ${
                 idx === currentSlide
                   ? 'w-8 bg-emerald-400 shadow-sm shadow-emerald-400/80'
                   : 'w-1.5 bg-white/40'
@@ -189,117 +443,312 @@ export const ExecutiveDashboard: React.FC = () => {
           ))}
 
           <span className="text-[9px] text-emerald-300 font-mono font-bold ml-1">
-            0{currentSlide + 1} / 0{BANNER_SLIDES.length}
+            0{currentSlide + 1} / 0{activeSlidesList.length}
           </span>
         </div>
       </div>
 
       {/* =========================================================================
-          2. 5 PASTEL KPI CARDS ROW
+          2. 5 PASTEL KPI CARDS ROW (Controlled via dashboardConfig)
       ========================================================================= */}
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
         {/* Card 1: Datasets */}
         <div
-          onClick={() => setActivePage('datasets')}
-          className="p-4 rounded-2xl bg-[#eef8f2] dark:bg-emerald-950/30 border border-[#d2edd9] dark:border-emerald-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
+          onClick={() => {
+            if (!editingCard) setActivePage('datasets');
+          }}
+          className="relative p-4 rounded-2xl bg-[#eef8f2] dark:bg-emerald-950/30 border border-[#d2edd9] dark:border-emerald-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
         >
+          {isInspectionAuthorized && (
+            <button
+              onClick={(e) => handleStartEditingCard('datasets', e)}
+              className="absolute top-2 right-2 p-1 rounded-md bg-emerald-200/80 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 opacity-80 hover:opacity-100 transition-opacity"
+              title="Edit Datasets count"
+            >
+              <Edit2 className="w-3 h-3" />
+            </button>
+          )}
+
           <div className="w-11 h-11 rounded-2xl bg-[#227248] text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
             <Database className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
-              12,450
-            </p>
-            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
-              Datasets
-            </p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-              From 35+ Departments
-            </p>
+
+          <div className="min-w-0 flex-1">
+            {editingCard === 'datasets' ? (
+              <div className="space-y-1" onClick={e => e.stopPropagation()}>
+                <input
+                  type="text"
+                  value={cardCountInput}
+                  onChange={e => setCardCountInput(e.target.value)}
+                  className="w-full px-1.5 py-0.5 text-sm font-black rounded border border-emerald-400 bg-white dark:bg-slate-800"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={cardSubtitleInput}
+                  onChange={e => setCardSubtitleInput(e.target.value)}
+                  className="w-full px-1.5 py-0.5 text-[10px] rounded border border-emerald-400 bg-white dark:bg-slate-800"
+                />
+                <button
+                  onClick={(e) => handleSaveCard('datasets', e)}
+                  className="px-2 py-0.5 rounded bg-emerald-600 text-white text-[10px] font-bold"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
+                  {dashboardConfig.kpiCards.datasets.count}
+                </p>
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+                  {dashboardConfig.kpiCards.datasets.label}
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  {dashboardConfig.kpiCards.datasets.subtitle}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
         {/* Card 2: Research Publications */}
         <div
-          onClick={() => setActivePage('research')}
-          className="p-4 rounded-2xl bg-[#eef5fc] dark:bg-blue-950/30 border border-[#d2e4f7] dark:border-blue-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
+          onClick={() => {
+            if (!editingCard) setActivePage('research');
+          }}
+          className="relative p-4 rounded-2xl bg-[#eef5fc] dark:bg-blue-950/30 border border-[#d2e4f7] dark:border-blue-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
         >
+          {isInspectionAuthorized && (
+            <button
+              onClick={(e) => handleStartEditingCard('research', e)}
+              className="absolute top-2 right-2 p-1 rounded-md bg-blue-200/80 dark:bg-blue-900 text-blue-800 dark:text-blue-200 opacity-80 hover:opacity-100 transition-opacity"
+              title="Edit Research count"
+            >
+              <Edit2 className="w-3 h-3" />
+            </button>
+          )}
+
           <div className="w-11 h-11 rounded-2xl bg-[#1d63b8] text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
             <FileText className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
-              3,250
-            </p>
-            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
-              Research Publications
-            </p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-              Across 500+ Institutions
-            </p>
+
+          <div className="min-w-0 flex-1">
+            {editingCard === 'research' ? (
+              <div className="space-y-1" onClick={e => e.stopPropagation()}>
+                <input
+                  type="text"
+                  value={cardCountInput}
+                  onChange={e => setCardCountInput(e.target.value)}
+                  className="w-full px-1.5 py-0.5 text-sm font-black rounded border border-blue-400 bg-white dark:bg-slate-800"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={cardSubtitleInput}
+                  onChange={e => setCardSubtitleInput(e.target.value)}
+                  className="w-full px-1.5 py-0.5 text-[10px] rounded border border-blue-400 bg-white dark:bg-slate-800"
+                />
+                <button
+                  onClick={(e) => handleSaveCard('research', e)}
+                  className="px-2 py-0.5 rounded bg-blue-600 text-white text-[10px] font-bold"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
+                  {dashboardConfig.kpiCards.research.count}
+                </p>
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+                  {dashboardConfig.kpiCards.research.label}
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  {dashboardConfig.kpiCards.research.subtitle}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
         {/* Card 3: Policy Documents */}
         <div
-          onClick={() => setActivePage('policy')}
-          className="p-4 rounded-2xl bg-[#fdf2ec] dark:bg-orange-950/30 border border-[#fae0d1] dark:border-orange-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
+          onClick={() => {
+            if (!editingCard) setActivePage('policy');
+          }}
+          className="relative p-4 rounded-2xl bg-[#fdf2ec] dark:bg-orange-950/30 border border-[#fae0d1] dark:border-orange-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
         >
+          {isInspectionAuthorized && (
+            <button
+              onClick={(e) => handleStartEditingCard('policies', e)}
+              className="absolute top-2 right-2 p-1 rounded-md bg-orange-200/80 dark:bg-orange-900 text-orange-800 dark:text-orange-200 opacity-80 hover:opacity-100 transition-opacity"
+              title="Edit Policy count"
+            >
+              <Edit2 className="w-3 h-3" />
+            </button>
+          )}
+
           <div className="w-11 h-11 rounded-2xl bg-[#d45d29] text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
             <Shield className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
-              1,200
-            </p>
-            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
-              Policy Documents
-            </p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-              Central & State
-            </p>
+
+          <div className="min-w-0 flex-1">
+            {editingCard === 'policies' ? (
+              <div className="space-y-1" onClick={e => e.stopPropagation()}>
+                <input
+                  type="text"
+                  value={cardCountInput}
+                  onChange={e => setCardCountInput(e.target.value)}
+                  className="w-full px-1.5 py-0.5 text-sm font-black rounded border border-orange-400 bg-white dark:bg-slate-800"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={cardSubtitleInput}
+                  onChange={e => setCardSubtitleInput(e.target.value)}
+                  className="w-full px-1.5 py-0.5 text-[10px] rounded border border-orange-400 bg-white dark:bg-slate-800"
+                />
+                <button
+                  onClick={(e) => handleSaveCard('policies', e)}
+                  className="px-2 py-0.5 rounded bg-orange-600 text-white text-[10px] font-bold"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
+                  {dashboardConfig.kpiCards.policies.count}
+                </p>
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+                  {dashboardConfig.kpiCards.policies.label}
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  {dashboardConfig.kpiCards.policies.subtitle}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
         {/* Card 4: Geospatial Layers */}
         <div
-          onClick={() => setActivePage('map')}
-          className="p-4 rounded-2xl bg-[#f6effa] dark:bg-purple-950/30 border border-[#edd9f6] dark:border-purple-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
+          onClick={() => {
+            if (!editingCard) setActivePage('map');
+          }}
+          className="relative p-4 rounded-2xl bg-[#f6effa] dark:bg-purple-950/30 border border-[#edd9f6] dark:border-purple-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
         >
+          {isInspectionAuthorized && (
+            <button
+              onClick={(e) => handleStartEditingCard('layers', e)}
+              className="absolute top-2 right-2 p-1 rounded-md bg-purple-200/80 dark:bg-purple-900 text-purple-800 dark:text-purple-200 opacity-80 hover:opacity-100 transition-opacity"
+              title="Edit Layers count"
+            >
+              <Edit2 className="w-3 h-3" />
+            </button>
+          )}
+
           <div className="w-11 h-11 rounded-2xl bg-[#8338a8] text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
             <MapPin className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
-              8,700
-            </p>
-            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
-              Geospatial Layers
-            </p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-              Nationwide Coverage
-            </p>
+
+          <div className="min-w-0 flex-1">
+            {editingCard === 'layers' ? (
+              <div className="space-y-1" onClick={e => e.stopPropagation()}>
+                <input
+                  type="text"
+                  value={cardCountInput}
+                  onChange={e => setCardCountInput(e.target.value)}
+                  className="w-full px-1.5 py-0.5 text-sm font-black rounded border border-purple-400 bg-white dark:bg-slate-800"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={cardSubtitleInput}
+                  onChange={e => setCardSubtitleInput(e.target.value)}
+                  className="w-full px-1.5 py-0.5 text-[10px] rounded border border-purple-400 bg-white dark:bg-slate-800"
+                />
+                <button
+                  onClick={(e) => handleSaveCard('layers', e)}
+                  className="px-2 py-0.5 rounded bg-purple-600 text-white text-[10px] font-bold"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
+                  {dashboardConfig.kpiCards.layers.count}
+                </p>
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+                  {dashboardConfig.kpiCards.layers.label}
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  {dashboardConfig.kpiCards.layers.subtitle}
+                </p>
+              </>
+            )}
           </div>
         </div>
 
         {/* Card 5: Registered Users */}
         <div
-          onClick={() => setActivePage('workspace')}
-          className="p-4 rounded-2xl bg-[#eefaf6] dark:bg-teal-950/30 border border-[#cff2e6] dark:border-teal-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group col-span-2 sm:col-span-1"
+          onClick={() => {
+            if (!editingCard) setActivePage('workspace');
+          }}
+          className="relative p-4 rounded-2xl bg-[#eefaf6] dark:bg-teal-950/30 border border-[#cff2e6] dark:border-teal-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group col-span-2 sm:col-span-1"
         >
+          {isInspectionAuthorized && (
+            <button
+              onClick={(e) => handleStartEditingCard('users', e)}
+              className="absolute top-2 right-2 p-1 rounded-md bg-teal-200/80 dark:bg-teal-900 text-teal-800 dark:text-teal-200 opacity-80 hover:opacity-100 transition-opacity"
+              title="Edit Users count"
+            >
+              <Edit2 className="w-3 h-3" />
+            </button>
+          )}
+
           <div className="w-11 h-11 rounded-2xl bg-[#1b8a6b] text-white flex items-center justify-center shrink-0 shadow-2xs group-hover:scale-105 transition-transform">
             <Users className="w-5 h-5" />
           </div>
-          <div className="min-w-0">
-            <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
-              2,450
-            </p>
-            <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
-              Registered Users
-            </p>
-            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-              Researchers | Policymakers
-            </p>
+
+          <div className="min-w-0 flex-1">
+            {editingCard === 'users' ? (
+              <div className="space-y-1" onClick={e => e.stopPropagation()}>
+                <input
+                  type="text"
+                  value={cardCountInput}
+                  onChange={e => setCardCountInput(e.target.value)}
+                  className="w-full px-1.5 py-0.5 text-sm font-black rounded border border-teal-400 bg-white dark:bg-slate-800"
+                  autoFocus
+                />
+                <input
+                  type="text"
+                  value={cardSubtitleInput}
+                  onChange={e => setCardSubtitleInput(e.target.value)}
+                  className="w-full px-1.5 py-0.5 text-[10px] rounded border border-teal-400 bg-white dark:bg-slate-800"
+                />
+                <button
+                  onClick={(e) => handleSaveCard('users', e)}
+                  className="px-2 py-0.5 rounded bg-teal-600 text-white text-[10px] font-bold"
+                >
+                  Save
+                </button>
+              </div>
+            ) : (
+              <>
+                <p className="text-lg md:text-xl font-black text-slate-900 dark:text-white leading-none">
+                  {dashboardConfig.kpiCards.users.count}
+                </p>
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5 truncate">
+                  {dashboardConfig.kpiCards.users.label}
+                </p>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                  {dashboardConfig.kpiCards.users.subtitle}
+                </p>
+              </>
+            )}
           </div>
         </div>
       </div>
@@ -309,7 +758,7 @@ export const ExecutiveDashboard: React.FC = () => {
       ========================================================================= */}
       <div className="grid grid-cols-12 gap-6 items-start">
         {/* =======================================================================
-            LEFT COLUMN: INTERACTIVE LAND USE MAP (Col-span 5)
+            LEFT COLUMN: INTERACTIVE LAND USE MAP & CADASTRAL CALIBRATION (Col-span 5)
         ======================================================================= */}
         <div className="col-span-12 lg:col-span-5 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
           <div>
@@ -319,14 +768,23 @@ export const ExecutiveDashboard: React.FC = () => {
                   Interactive Land Use Map
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Explore geospatial data across India
+                  Official Cadastral breakdown for {currentStateObj?.state_name || selectedState}
                 </p>
               </div>
+
+              {isInspectionAuthorized && (
+                <button
+                  onClick={() => setIsLandRecordEditorOpen(true)}
+                  className="px-2.5 py-1 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[11px] font-bold flex items-center gap-1.5 hover:bg-emerald-200 transition-colors"
+                >
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Calibrate Figures</span>
+                </button>
+              )}
             </div>
 
             {/* Map Frame with Leaflet Satellite Raster & Custom Polygon Preview */}
             <div className="relative mt-4 w-full h-72 rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center group">
-              {/* Satellite / Terrain GIS Map Background */}
               <img
                 src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80"
                 alt="India Geospatial Map"
@@ -334,7 +792,6 @@ export const ExecutiveDashboard: React.FC = () => {
                 style={{ filter: 'saturate(1.4) hue-rotate(25deg)' }}
               />
 
-              {/* Map SVG Overlay with state highlight */}
               <div className="absolute inset-0 bg-emerald-950/20 backdrop-brightness-95 pointer-events-none" />
 
               {/* Zoom Controls */}
@@ -357,24 +814,40 @@ export const ExecutiveDashboard: React.FC = () => {
               <div className="absolute bottom-3 right-3 p-2.5 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 text-[10px] space-y-1.5 shadow-sm text-left">
                 <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
                   <span className="w-2.5 h-2.5 rounded bg-[#84cc16]" />
-                  <span>Agricultural Land</span>
+                  <span>Agricultural Land ({currentAgPct}%)</span>
                 </div>
                 <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
                   <span className="w-2.5 h-2.5 rounded bg-[#16a34a]" />
-                  <span>Forest Land</span>
+                  <span>Forest Land ({currentForestPct}%)</span>
                 </div>
                 <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
                   <span className="w-2.5 h-2.5 rounded bg-[#dc2626]" />
-                  <span>Urban Area</span>
+                  <span>Urban Area ({currentBuiltupPct}%)</span>
                 </div>
                 <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
                   <span className="w-2.5 h-2.5 rounded bg-[#2563eb]" />
-                  <span>Water Bodies</span>
+                  <span>Water Bodies ({currentWaterPct}%)</span>
                 </div>
                 <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
                   <span className="w-2.5 h-2.5 rounded bg-[#eab308]" />
-                  <span>Other Land</span>
+                  <span>Other Land ({currentOtherPct + currentBarrenPct}%)</span>
                 </div>
+              </div>
+            </div>
+
+            {/* Live Cadastral Breakdown Stats Bar */}
+            <div className="mt-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
+              <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                <span>Total Recorded Area: <strong>{currentTotalHa.toLocaleString()} Ha</strong></span>
+                <span className="text-emerald-600 dark:text-emerald-400 font-mono">Series {selectedYear}</span>
+              </div>
+              <div className="w-full h-2 rounded-full overflow-hidden flex bg-slate-200 dark:bg-slate-700">
+                <div style={{ width: `${currentAgPct}%` }} className="bg-[#84cc16]" title={`Agricultural: ${currentAgPct}%`} />
+                <div style={{ width: `${currentForestPct}%` }} className="bg-[#16a34a]" title={`Forest: ${currentForestPct}%`} />
+                <div style={{ width: `${currentBuiltupPct}%` }} className="bg-[#dc2626]" title={`Builtup: ${currentBuiltupPct}%`} />
+                <div style={{ width: `${currentWaterPct}%` }} className="bg-[#2563eb]" title={`Water: ${currentWaterPct}%`} />
+                <div style={{ width: `${currentBarrenPct}%` }} className="bg-[#eab308]" title={`Barren: ${currentBarrenPct}%`} />
+                <div style={{ width: `${currentOtherPct}%` }} className="bg-purple-500" title={`Other: ${currentOtherPct}%`} />
               </div>
             </div>
           </div>
@@ -427,7 +900,7 @@ export const ExecutiveDashboard: React.FC = () => {
         </div>
 
         {/* =======================================================================
-            MIDDLE COLUMN: KEY INSIGHTS (Col-span 3)
+            MIDDLE COLUMN: KEY INSIGHTS (Controlled via dashboardConfig)
         ======================================================================= */}
         <div className="col-span-12 lg:col-span-3 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs flex flex-col justify-between space-y-4">
           <div>
@@ -438,81 +911,113 @@ export const ExecutiveDashboard: React.FC = () => {
                   Key Insights
                 </h2>
               </div>
-              <button
-                onClick={() => setActivePage('trends')}
-                className="text-xs font-bold text-[#1b5e3a] hover:underline"
-              >
-                View All
-              </button>
+              <div className="flex items-center gap-2">
+                {isInspectionAuthorized && (
+                  <button
+                    onClick={() => setIsAddingInsight(!isAddingInsight)}
+                    className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 transition-colors"
+                    title="Add Insight"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setActivePage('trends')}
+                  className="text-xs font-bold text-[#1b5e3a] hover:underline"
+                >
+                  View All
+                </button>
+              </div>
             </div>
+
+            {/* Quick Add Form */}
+            {isAddingInsight && (
+              <div className="my-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                <input
+                  type="text"
+                  placeholder="Metric (e.g. +14%)"
+                  value={newInsightMetric}
+                  onChange={e => setNewInsightMetric(e.target.value)}
+                  className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold"
+                />
+                <input
+                  type="text"
+                  placeholder="Description"
+                  value={newInsightDesc}
+                  onChange={e => setNewInsightDesc(e.target.value)}
+                  className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => setIsAddingInsight(false)}
+                    className="px-2 py-1 text-[11px] font-bold text-slate-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveNewInsight}
+                    className="px-3 py-1 rounded bg-emerald-600 text-white text-[11px] font-bold"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            )}
 
             {/* Metric Items List */}
             <div className="mt-4 space-y-4">
-              {/* Item 1 */}
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                  <TrendingUp className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-base font-extrabold text-slate-900 dark:text-white leading-none">
-                    +12%
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 leading-snug">
-                    Increase in digitized land records (2020-2025)
-                  </p>
-                </div>
-              </div>
+              {dashboardConfig.keyInsights.map((item, idx) => (
+                <div key={item.id} className="flex items-start justify-between gap-2 group">
+                  <div className="flex items-start gap-3 flex-1 min-w-0">
+                    <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
+                      {idx % 4 === 0 ? <TrendingUp className="w-4 h-4" /> : idx % 4 === 1 ? <Sprout className="w-4 h-4" /> : idx % 4 === 2 ? <Users className="w-4 h-4" /> : <Target className="w-4 h-4" />}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-base font-extrabold text-slate-900 dark:text-white leading-none">
+                        {item.metric}
+                      </p>
+                      <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 leading-snug">
+                        {item.description}
+                      </p>
+                    </div>
+                  </div>
 
-              {/* Item 2 */}
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                  <Sprout className="w-4 h-4" />
+                  {isInspectionAuthorized && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          const newMet = prompt('Edit Metric:', item.metric);
+                          const newDes = prompt('Edit Description:', item.description);
+                          if (newMet && newDes) {
+                            updateDashboardInsight(item.id, { metric: newMet, description: newDes });
+                            triggerToast('Updated Insight!');
+                          }
+                        }}
+                        className="p-1 rounded text-slate-400 hover:text-emerald-600"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          deleteDashboardInsight(item.id);
+                          triggerToast('Deleted Insight!');
+                        }}
+                        className="p-1 rounded text-slate-400 hover:text-red-500"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <p className="text-base font-extrabold text-slate-900 dark:text-white leading-none">
-                    28%
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 leading-snug">
-                    India's land under forest cover
-                  </p>
-                </div>
-              </div>
-
-              {/* Item 3 */}
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                  <Users className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-base font-extrabold text-slate-900 dark:text-white leading-none">
-                    3.2M
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 leading-snug">
-                    Land disputes resolved through digital platforms
-                  </p>
-                </div>
-              </div>
-
-              {/* Item 4 */}
-              <div className="flex items-start gap-3">
-                <div className="w-9 h-9 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 mt-0.5 shadow-2xs">
-                  <Target className="w-4 h-4" />
-                </div>
-                <div>
-                  <p className="text-base font-extrabold text-slate-900 dark:text-white leading-none">
-                    65+
-                  </p>
-                  <p className="text-xs text-slate-600 dark:text-slate-300 font-medium mt-1 leading-snug">
-                    Policy experiments in progress across states
-                  </p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </div>
 
         {/* =======================================================================
-            RIGHT COLUMN: RESEARCH PUBLICATIONS & ONGOING EXPERIMENTS (Col-span 4)
+            RIGHT COLUMN: RESEARCH PUBLICATIONS & ONGOING EXPERIMENTS
         ======================================================================= */}
         <div className="col-span-12 lg:col-span-4 space-y-5">
           {/* Card 1: Recent Research Publications */}
@@ -524,35 +1029,108 @@ export const ExecutiveDashboard: React.FC = () => {
                   Recent Research Publications
                 </h2>
               </div>
-              <button
-                onClick={() => setActivePage('research')}
-                className="text-xs font-bold text-[#1b5e3a] hover:underline"
-              >
-                View All
-              </button>
+              <div className="flex items-center gap-2">
+                {isInspectionAuthorized && (
+                  <button
+                    onClick={() => setIsAddingPub(!isAddingPub)}
+                    className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 transition-colors"
+                    title="Add Publication"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setActivePage('research')}
+                  className="text-xs font-bold text-[#1b5e3a] hover:underline"
+                >
+                  View All
+                </button>
+              </div>
             </div>
 
+            {/* Quick Add Form */}
+            {isAddingPub && (
+              <div className="my-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                <input
+                  type="text"
+                  placeholder="Paper Title"
+                  value={newPubTitle}
+                  onChange={e => setNewPubTitle(e.target.value)}
+                  className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold"
+                />
+                <input
+                  type="text"
+                  placeholder="Author / Institution"
+                  value={newPubAuthor}
+                  onChange={e => setNewPubAuthor(e.target.value)}
+                  className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => setIsAddingPub(false)}
+                    className="px-2 py-1 text-[11px] font-bold text-slate-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveNewPub}
+                    className="px-3 py-1 rounded bg-emerald-600 text-white text-[11px] font-bold"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="mt-3 space-y-3">
-              {[
-                { title: 'AI-based Land Dispute Prediction in India', author: 'IIT Bombay', year: '2024' },
-                { title: 'Impact of Digital Land Records on Rural Governance', author: 'IIM Ahmedabad', year: '2024' },
-                { title: 'Urban Land Use Change Analysis using Satellite Data', author: 'ISRO', year: '2023' },
-                { title: 'Land Consolidation Models for Sustainable Agriculture', author: 'ICAR', year: '2023' }
-              ].map((pub, idx) => (
+              {dashboardConfig.recentPublications.map((pub) => (
                 <div
-                  key={idx}
-                  onClick={() => setActivePage('research')}
-                  className="flex items-start gap-2.5 p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors"
+                  key={pub.id}
+                  className="flex items-start justify-between gap-2 p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
                 >
-                  <FileText className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
-                  <div className="min-w-0 text-left">
-                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug hover:text-emerald-600 transition-colors">
-                      {pub.title}
-                    </p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">
-                      {pub.author} | {pub.year}
-                    </p>
+                  <div
+                    onClick={() => setActivePage('research')}
+                    className="flex items-start gap-2.5 min-w-0 text-left flex-1 cursor-pointer"
+                  >
+                    <FileText className="w-4 h-4 text-slate-400 mt-0.5 shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug hover:text-emerald-600 transition-colors">
+                        {pub.title}
+                      </p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">
+                        {pub.author} | {pub.year}
+                      </p>
+                    </div>
                   </div>
+
+                  {isInspectionAuthorized && (
+                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => {
+                          const newTit = prompt('Edit Paper Title:', pub.title);
+                          const newAut = prompt('Edit Author:', pub.author);
+                          if (newTit) {
+                            updateDashboardPublication(pub.id, { title: newTit, author: newAut || pub.author });
+                            triggerToast('Updated Publication!');
+                          }
+                        }}
+                        className="p-1 rounded text-slate-400 hover:text-emerald-600"
+                        title="Edit"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => {
+                          deleteDashboardPublication(pub.id);
+                          triggerToast('Deleted Publication!');
+                        }}
+                        className="p-1 rounded text-slate-400 hover:text-red-500"
+                        title="Delete"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -567,26 +1145,69 @@ export const ExecutiveDashboard: React.FC = () => {
                   Ongoing Policy Experiments
                 </h2>
               </div>
-              <button
-                onClick={() => setActivePage('decision-support')}
-                className="text-xs font-bold text-[#1b5e3a] hover:underline"
-              >
-                View All
-              </button>
+              <div className="flex items-center gap-2">
+                {isInspectionAuthorized && (
+                  <button
+                    onClick={() => setIsAddingExp(!isAddingExp)}
+                    className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 transition-colors"
+                    title="Add Experiment"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                  </button>
+                )}
+                <button
+                  onClick={() => setActivePage('decision-support')}
+                  className="text-xs font-bold text-[#1b5e3a] hover:underline"
+                >
+                  View All
+                </button>
+              </div>
             </div>
 
+            {/* Quick Add Form */}
+            {isAddingExp && (
+              <div className="my-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+                <input
+                  type="text"
+                  placeholder="Experiment Title"
+                  value={newExpTitle}
+                  onChange={e => setNewExpTitle(e.target.value)}
+                  className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold"
+                />
+                <input
+                  type="text"
+                  placeholder="State (e.g. Uttar Pradesh)"
+                  value={newExpState}
+                  onChange={e => setNewExpState(e.target.value)}
+                  className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+                />
+                <div className="flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => setIsAddingExp(false)}
+                    className="px-2 py-1 text-[11px] font-bold text-slate-500"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSaveNewExp}
+                    className="px-3 py-1 rounded bg-emerald-600 text-white text-[11px] font-bold"
+                  >
+                    Add
+                  </button>
+                </div>
+              </div>
+            )}
+
             <div className="mt-3 space-y-3">
-              {[
-                { title: 'Digital Land Record Verification', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-                { title: 'Community Land Mapping Initiative', state: 'Maharashtra', duration: '1 year', status: 'Evaluation', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-                { title: 'Urban Land Use Policy Reform', state: 'Karnataka', duration: '6 months', status: 'Planning', color: 'bg-blue-100 text-blue-800 border-blue-200' }
-              ].map((exp, idx) => (
+              {dashboardConfig.policyExperiments.map((exp) => (
                 <div
-                  key={idx}
-                  onClick={() => setActivePage('decision-support')}
-                  className="flex items-center justify-between gap-2 p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 cursor-pointer transition-colors"
+                  key={exp.id}
+                  className="flex items-center justify-between gap-2 p-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors group"
                 >
-                  <div className="flex items-start gap-2.5 min-w-0 text-left">
+                  <div
+                    onClick={() => setActivePage('decision-support')}
+                    className="flex items-start gap-2.5 min-w-0 text-left flex-1 cursor-pointer"
+                  >
                     <span className="w-2 h-2 rounded-full bg-emerald-500 mt-1.5 shrink-0" />
                     <div className="min-w-0">
                       <p className="text-xs font-bold text-slate-800 dark:text-slate-200 leading-snug">
@@ -597,9 +1218,41 @@ export const ExecutiveDashboard: React.FC = () => {
                       </p>
                     </div>
                   </div>
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${exp.color} shrink-0`}>
-                    {exp.status}
-                  </span>
+
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-emerald-100 text-emerald-800 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800">
+                      {exp.status}
+                    </span>
+
+                    {isInspectionAuthorized && (
+                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <button
+                          onClick={() => {
+                            const newTit = prompt('Edit Experiment Title:', exp.title);
+                            const newSt = prompt('Edit State:', exp.state);
+                            if (newTit) {
+                              updatePolicyExperiment(exp.id, { title: newTit, state: newSt || exp.state });
+                              triggerToast('Updated Policy Experiment!');
+                            }
+                          }}
+                          className="p-1 rounded text-slate-400 hover:text-emerald-600"
+                          title="Edit"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => {
+                            deletePolicyExperiment(exp.id);
+                            triggerToast('Deleted Policy Experiment!');
+                          }}
+                          className="p-1 rounded text-slate-400 hover:text-red-500"
+                          title="Delete"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -648,7 +1301,7 @@ export const ExecutiveDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* Upcoming Events Card (Col-span 4) */}
+        {/* Upcoming Events Card (Col-span 4 - Controlled via dashboardConfig) */}
         <div className="col-span-12 lg:col-span-4 p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-xs text-left">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
             <div className="flex items-center gap-2">
@@ -657,27 +1310,123 @@ export const ExecutiveDashboard: React.FC = () => {
                 Upcoming Events
               </h2>
             </div>
-            <button
-              onClick={() => setActivePage('reports')}
-              className="text-xs font-bold text-[#1b5e3a] hover:underline"
-            >
-              View All
-            </button>
+            <div className="flex items-center gap-2">
+              {isInspectionAuthorized && (
+                <button
+                  onClick={() => setIsAddingEvent(!isAddingEvent)}
+                  className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 transition-colors"
+                  title="Add Event"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                </button>
+              )}
+              <button
+                onClick={() => setActivePage('reports')}
+                className="text-xs font-bold text-[#1b5e3a] hover:underline"
+              >
+                View All
+              </button>
+            </div>
           </div>
 
-          <div className="mt-3 flex items-start gap-3 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50">
-            <Calendar className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
-            <div className="min-w-0">
-              <p className="text-xs font-bold text-slate-900 dark:text-white leading-snug">
-                National Workshop on Land Governance
-              </p>
-              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
-                15 Oct 2025 | New Delhi
-              </p>
+          {/* Quick Add Form */}
+          {isAddingEvent && (
+            <div className="my-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
+              <input
+                type="text"
+                placeholder="Event Title"
+                value={newEventTitle}
+                onChange={e => setNewEventTitle(e.target.value)}
+                className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold"
+              />
+              <input
+                type="text"
+                placeholder="Date (e.g. 15 Oct 2025)"
+                value={newEventDate}
+                onChange={e => setNewEventDate(e.target.value)}
+                className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
+              />
+              <div className="flex items-center justify-end gap-2">
+                <button
+                  onClick={() => setIsAddingEvent(false)}
+                  className="px-2 py-1 text-[11px] font-bold text-slate-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSaveNewEvent}
+                  className="px-3 py-1 rounded bg-emerald-600 text-white text-[11px] font-bold"
+                >
+                  Add
+                </button>
+              </div>
             </div>
+          )}
+
+          <div className="mt-3 space-y-2.5">
+            {dashboardConfig.upcomingEvents.map((evt) => (
+              <div
+                key={evt.id}
+                className="flex items-start justify-between gap-2 p-2 rounded-xl bg-slate-50 dark:bg-slate-800/50 group"
+              >
+                <div className="flex items-start gap-3 min-w-0">
+                  <Calendar className="w-4 h-4 text-slate-500 mt-0.5 shrink-0" />
+                  <div className="min-w-0 text-left">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white leading-snug">
+                      {evt.title}
+                    </p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      {evt.date} | {evt.location}
+                    </p>
+                  </div>
+                </div>
+
+                {isInspectionAuthorized && (
+                  <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                      onClick={() => {
+                        const newTit = prompt('Edit Event Title:', evt.title);
+                        const newDt = prompt('Edit Date:', evt.date);
+                        if (newTit) {
+                          updateUpcomingEvent(evt.id, { title: newTit, date: newDt || evt.date });
+                          triggerToast('Updated Event!');
+                        }
+                      }}
+                      className="p-1 rounded text-slate-400 hover:text-emerald-600"
+                      title="Edit"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => {
+                        deleteUpcomingEvent(evt.id);
+                        triggerToast('Deleted Event!');
+                      }}
+                      className="p-1 rounded text-slate-400 hover:text-red-500"
+                      title="Delete"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         </div>
       </div>
+
+      {/* =========================================================================
+          5. INSPECTION MODALS
+      ========================================================================= */}
+      <DashboardEditorModal
+        isOpen={isDashboardEditorOpen}
+        onClose={() => setIsDashboardEditorOpen(false)}
+      />
+
+      <LandRecordEditorModal
+        isOpen={isLandRecordEditorOpen}
+        onClose={() => setIsLandRecordEditorOpen(false)}
+      />
     </div>
   );
 };
