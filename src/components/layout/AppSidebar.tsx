@@ -16,7 +16,8 @@ import {
   ChevronRight,
   Sparkles,
   Sprout,
-  Award
+  Award,
+  ShieldCheck
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -32,7 +33,7 @@ export const AppSidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   setMobileOpen
 }) => {
-  const { activePage, setActivePage, dedicatedFixedId, setIsIdCardModalOpen } = useApp();
+  const { activePage, setActivePage, userRole, dedicatedFixedId, setIsIdCardModalOpen } = useApp();
 
   interface NavItem {
     id: PageId;
@@ -41,7 +42,7 @@ export const AppSidebar: React.FC<SidebarProps> = ({
     badge?: string;
   }
 
-  // Exact 10 items matching Bharat LandNet navigation
+  // Bharat LandNet navigation with Inspection Directorate
   const navItems: NavItem[] = [
     { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'datasets', label: 'Datasets', icon: Database },
@@ -52,7 +53,8 @@ export const AppSidebar: React.FC<SidebarProps> = ({
     { id: 'trends', label: 'Analytics Tools', icon: TrendingUp },
     { id: 'decision-support', label: 'Policy Innovation Lab', icon: Lightbulb },
     { id: 'collaboration', label: 'Collaboration Hub', icon: Users },
-    { id: 'news-events', label: 'News & Events', icon: Newspaper }
+    { id: 'news-events', label: 'News & Events', icon: Newspaper },
+    { id: 'inspection', label: 'Inspection Directorate', icon: ShieldCheck, badge: 'Control' }
   ];
 
   const handleNav = (id: PageId) => {

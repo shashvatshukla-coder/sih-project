@@ -17,7 +17,8 @@ import {
   Fingerprint,
   PlusCircle,
   Award,
-  Layers
+  Layers,
+  Star
 } from 'lucide-react';
 import { ResearchUploadModal } from './ResearchUploadModal';
 import { ResearchWriterStudio } from './ResearchWriterStudio';
@@ -239,6 +240,18 @@ export const ResearchLibrary: React.FC = () => {
                         {paper.isUserAuthored && (
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300">
                             Researcher Authored
+                          </span>
+                        )}
+                        {paper.is_starred && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700">
+                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                            <span>Editor's Choice</span>
+                          </span>
+                        )}
+                        {paper.is_inspection_verified && (
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700">
+                            <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                            <span>Inspection Certified</span>
                           </span>
                         )}
                       </div>

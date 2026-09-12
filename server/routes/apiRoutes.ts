@@ -268,8 +268,8 @@ router.post('/data-sources/:id/sync', (req: Request, res: Response) => {
 
 // Policies
 router.get('/policies', (req: Request, res: Response) => {
-  const { state, district } = req.query;
-  res.json({ success: true, data: db.getPolicies(state as string, district as string) });
+  const { state, district, includeHidden } = req.query;
+  res.json({ success: true, data: db.getPolicies(state as string, district as string, includeHidden === 'true') });
 });
 
 router.get('/policies/:id', (req: Request, res: Response) => {
@@ -518,9 +518,15 @@ router.get('/policies/:id/impact', (req: Request, res: Response) => {
 
 // Research Papers
 router.get('/research', (req: Request, res: Response) => {
-  const { search, tag } = req.query;
-  const papers = db.getResearchPapers(search as string, tag as string);
+  const { search, tag, includeHidden } = req.query;
+  const papers = db.getResearchPapers(search as string, tag as string, includeHidden === 'true');
   res.json({ success: true, count: papers.length, data: papers });
+});
+
+router.delete('/research/:id', (req: Request, res: Response) => {
+  const deleted = db.deleteResearchPaper(req.params.id);
+  if (!deleted) return res.status(404).json({ success: false, error: 'Research paper not found' });
+  res.json({ success: true, message: 'Research paper deleted successfully' });
 });
 
 router.get('/research/:id', (req: Request, res: Response) => {
@@ -762,6 +768,131 @@ router.post('/admin/upload', (req: Request, res: Response) => {
 
 router.get('/admin/audit-logs', (req: Request, res: Response) => {
   res.json({ success: true, data: db.getAuditLogs() });
+});
+
+// ==========================================
+// Inspection Directorate & Ombudsman Routes
+// ==========================================
+
+// 1. Get registry census statistics
+router.get('/inspection/stats', (req: Request, res: Response) => {
+  try {
+    const stats = db.getInspectionStats();
+    res.json({ success: true, data: stats });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 2. Get registered users list
+router.get('/inspection/users', (req: Request, res: Response) => {
+  try {
+    const users = db.getUsers();
+    res.json({ success: true, count: users.length, data: users });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 3. Update user role
+router.put('/inspection/users/:id/role', (req: Request, res: Response) => {
+  try {
+    const { role } = req.body;
+    if (!role) return res.status(400).json({ success: false, error: 'Role is required' });
+    const updated = db.updateUserRole(req.params.id, role);
+    if (!updated) return res.status(404).json({ success: false, error: 'User not found' });
+    res.json({ success: true, message: `User role updated to ${role}`, data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 4. Update user features / powers
+router.put('/inspection/users/:id/features', (req: Request, res: Response) => {
+  try {
+    const { features_granted } = req.body;
+    if (!Array.isArray(features_granted)) {
+      return res.status(400).json({ success: false, error: 'features_granted must be an array' });
+    }
+    const updated = db.updateUserFeatures(req.params.id, features_granted);
+    if (!updated) return res.status(404).json({ success: false, error: 'User not found' });
+    res.json({ success: true, message: 'User granted capabilities updated', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 5. Star / Verify user (e.g. certify researcher)
+router.put('/inspection/users/:id/star', (req: Request, res: Response) => {
+  try {
+    const { is_starred, is_inspection_verified, inspection_notes } = req.body;
+    const updated = db.toggleUserStar(req.params.id, is_starred, is_inspection_verified, inspection_notes);
+    if (!updated) return res.status(404).json({ success: false, error: 'User not found' });
+    res.json({ success: true, message: 'User inspection verification status updated', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 6. Delete user
+router.delete('/inspection/users/:id', (req: Request, res: Response) => {
+  try {
+    const deleted = db.deleteUser(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: 'User not found' });
+    res.json({ success: true, message: 'User record removed from registry' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7. Inspect Policy (Star, Verify, Hide/Show, Reorder, Add Notes)
+router.put('/inspection/policies/:id/inspect', (req: Request, res: Response) => {
+  try {
+    const updated = db.inspectPolicy(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: 'Policy not found' });
+    res.json({ success: true, message: 'Policy inspection verdict saved', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 8. Reorder Policies
+router.post('/inspection/policies/reorder', (req: Request, res: Response) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ success: false, error: 'orderedIds must be an array' });
+    }
+    const policies = db.reorderPolicies(orderedIds);
+    res.json({ success: true, message: 'Policies reordered successfully', data: policies });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9. Inspect Research Paper (Star, Verify, Hide/Show, Reorder, Add Notes)
+router.put('/inspection/research/:id/inspect', (req: Request, res: Response) => {
+  try {
+    const updated = db.inspectResearch(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: 'Research paper not found' });
+    res.json({ success: true, message: 'Research paper inspection status saved', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10. Reorder Research Papers
+router.post('/inspection/research/reorder', (req: Request, res: Response) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ success: false, error: 'orderedIds must be an array' });
+    }
+    const papers = db.reorderResearch(orderedIds);
+    res.json({ success: true, message: 'Research papers reordered successfully', data: papers });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 export default router;

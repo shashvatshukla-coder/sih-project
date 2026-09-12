@@ -57,7 +57,8 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
     { id: 'researcher', title: 'Researcher', desc: 'Author research, drag-and-drop upload, econometric metrics', icon: GraduationCap },
     { id: 'policymaker', title: 'Policy Maker', desc: 'Decision support, priority zone alerts, policy briefs', icon: Scale },
     { id: 'public', title: 'Public User', desc: 'High-level summaries, interactive choropleths, open data', icon: Users },
-    { id: 'admin', title: 'Administrator', desc: 'Dataset ingest pipeline, column mapper, data provenance audit', icon: Shield }
+    { id: 'admin', title: 'Administrator', desc: 'Dataset ingest pipeline, column mapper, data provenance audit', icon: Shield },
+    { id: 'inspector', title: 'Inspection Directorate', desc: 'Full ombudsman control, census statistics, star/verify, priority & power oversight', icon: ShieldCheck }
   ];
 
   const currentRoleObj = roles.find(r => r.id === userRole) || roles[0];
@@ -294,6 +295,9 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                       key={r.id}
                       onClick={() => {
                         setUserRole(r.id);
+                        if (r.id === 'inspector') {
+                          setActivePage('inspection');
+                        }
                         setRoleMenuOpen(false);
                       }}
                       className={`w-full flex items-center justify-between p-2 rounded-xl text-xs transition-colors ${

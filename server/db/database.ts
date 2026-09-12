@@ -1,4 +1,4 @@
-import { State, District, LandUseRecord, Dataset, DataSource, Policy, AreaTarget, ResearchPaper, Anomaly } from './schema.ts';
+import { State, District, LandUseRecord, Dataset, DataSource, Policy, AreaTarget, ResearchPaper, Anomaly, UserRegistryRecord, InspectionStats } from './schema.ts';
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -41,6 +41,7 @@ class Database {
   private dataSources: DataSource[] = [];
   private policies: Policy[] = [];
   private research: ResearchPaper[] = [];
+  private users: UserRegistryRecord[] = [];
   private anomalies: Anomaly[] = [];
   private aiQueries: any[] = [];
   private auditLogs: any[] = [];
@@ -68,8 +69,295 @@ class Database {
       this.policies = loadJson<Policy[]>('policies.json');
       this.research = loadJson<ResearchPaper[]>('research.json');
       this.anomalies = loadJson<Anomaly[]>('anomalies.json');
+
+      // Initialize default inspection order & star status on existing seed
+      this.policies.forEach((p, idx) => {
+        if (p.priority_order === undefined) p.priority_order = idx + 1;
+        if (p.is_starred === undefined) p.is_starred = idx < 2;
+        if (p.is_inspection_verified === undefined) p.is_inspection_verified = true;
+      });
+
+      this.research.forEach((r, idx) => {
+        if (r.priority_order === undefined) r.priority_order = idx + 1;
+        if (r.is_starred === undefined) r.is_starred = idx < 2;
+        if (r.is_inspection_verified === undefined) r.is_inspection_verified = true;
+      });
+
+      this.users = [
+        {
+          id: 'usr-pol-01',
+          dedicatedFixedId: 'BHU-POL-8763-9201',
+          email: 'rajesh.verma.ias@nic.in',
+          name: 'Shri Rajesh Verma, IAS',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Rajesh%20Verma&backgroundColor=d97706',
+          role: 'policymaker',
+          affiliation: 'Ministry of Agriculture & Farmers Welfare, GoI',
+          designation: 'Joint Secretary (Natural Resource & Land Policy)',
+          institutionType: 'Central Government Department',
+          isGoogleVerified: true,
+          is_starred: true,
+          is_inspection_verified: true,
+          inspection_notes: 'Accredited Policy Maker for Central Scheme Interventions.',
+          features_granted: ['publish_policy', 'upload_gazette', 'calibrate_area', 'export_raw', 'ai_grounding'],
+          status: 'active',
+          registeredAt: '2025-11-10T10:00:00Z',
+          lastActiveAt: '2026-03-12T04:20:00Z'
+        },
+        {
+          id: 'usr-pol-02',
+          dedicatedFixedId: 'BHU-POL-4412-1092',
+          email: 'ananya.sen@niti.gov.in',
+          name: 'Dr. Ananya Sen',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Ananya%20Sen&backgroundColor=b45309',
+          role: 'policymaker',
+          affiliation: 'NITI Aayog (Agriculture & Land Vertical)',
+          designation: 'Senior Lead Policy Economist',
+          institutionType: 'National Policy Think Tank',
+          isGoogleVerified: true,
+          is_starred: true,
+          is_inspection_verified: true,
+          inspection_notes: 'Verified policy researcher with Cabinet note clearance.',
+          features_granted: ['publish_policy', 'upload_gazette', 'calibrate_area', 'author_research', 'ai_grounding'],
+          status: 'active',
+          registeredAt: '2026-01-05T08:30:00Z',
+          lastActiveAt: '2026-03-11T16:40:00Z'
+        },
+        {
+          id: 'usr-pol-03',
+          dedicatedFixedId: 'BHU-POL-7719-2041',
+          email: 'sudhir.kumar@up.gov.in',
+          name: 'Shri Sudhir Kumar',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Sudhir%20Kumar&backgroundColor=ca8a04',
+          role: 'policymaker',
+          affiliation: 'Board of Revenue, Government of Uttar Pradesh',
+          designation: 'Commissioner of Land Records & Surveys',
+          institutionType: 'State Revenue Department',
+          isGoogleVerified: false,
+          is_starred: false,
+          is_inspection_verified: true,
+          inspection_notes: 'State cadre land governance official.',
+          features_granted: ['publish_policy', 'upload_gazette', 'calibrate_area'],
+          status: 'active',
+          registeredAt: '2026-01-20T11:15:00Z',
+          lastActiveAt: '2026-03-10T12:00:00Z'
+        },
+        {
+          id: 'usr-adm-01',
+          dedicatedFixedId: 'BHU-ADM-0012-9912',
+          email: 'vikram.malhotra@nic.in',
+          name: 'Vikram Malhotra',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Vikram%20Malhotra&backgroundColor=2563eb',
+          role: 'admin',
+          affiliation: 'National Informatics Centre (NIC) Geospatial Data Center',
+          designation: 'Senior Technical Director & DB Administrator',
+          institutionType: 'Government Informatics',
+          isGoogleVerified: true,
+          is_starred: true,
+          is_inspection_verified: true,
+          inspection_notes: 'System Root & Supabase/PostgreSQL Data Pipeline Controller.',
+          features_granted: ['publish_policy', 'upload_gazette', 'calibrate_area', 'author_research', 'ingest_data', 'export_raw', 'delete_content', 'ai_grounding'],
+          status: 'active',
+          registeredAt: '2025-09-01T09:00:00Z',
+          lastActiveAt: '2026-03-12T06:10:00Z'
+        },
+        {
+          id: 'usr-adm-02',
+          dedicatedFixedId: 'BHU-ADM-5531-8840',
+          email: 'priya.sharma@nrsc.gov.in',
+          name: 'Priya Sharma',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Priya%20Sharma&backgroundColor=1d4ed8',
+          role: 'admin',
+          affiliation: 'National Remote Sensing Centre (NRSC / ISRO)',
+          designation: 'Lead Cadastral Telemetry Engineer',
+          institutionType: 'Space & Remote Sensing Agency',
+          isGoogleVerified: true,
+          is_starred: false,
+          is_inspection_verified: true,
+          inspection_notes: 'Bhuvan LULC spatial layer ingestion admin.',
+          features_granted: ['ingest_data', 'export_raw', 'ai_grounding'],
+          status: 'active',
+          registeredAt: '2025-10-14T14:20:00Z',
+          lastActiveAt: '2026-03-09T18:00:00Z'
+        },
+        {
+          id: 'usr-res-01',
+          dedicatedFixedId: 'BHU-RES-8763-9201',
+          email: 'shashvatshukla81@gmail.com',
+          name: 'Dr. Shashvat Shukla',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Shashvat%20Shukla&backgroundColor=059669',
+          role: 'researcher',
+          affiliation: 'National Land Records & Geospatial Intelligence Directorate',
+          designation: 'Senior Cadastral Research Scientist',
+          institutionType: 'ICAR / Indian Council of Agricultural Research & NIC',
+          orcid: '0009-0004-8763-9201',
+          isGoogleVerified: true,
+          is_starred: true,
+          is_inspection_verified: true,
+          inspection_notes: '⭐ Certified Research Fellow by Cadastral Inspection Directorate. Highest clearance for multi-decadal LULC synthesis.',
+          features_granted: ['author_research', 'upload_paper', 'export_raw', 'ai_grounding', 'calibrate_area'],
+          status: 'active',
+          registeredAt: '2026-01-15T09:00:00Z',
+          lastActiveAt: '2026-03-12T07:15:00Z'
+        },
+        {
+          id: 'usr-res-02',
+          dedicatedFixedId: 'BHU-RES-3391-7721',
+          email: 'arvind.swaminathan@icar.gov.in',
+          name: 'Dr. Arvind Swaminathan',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Arvind%20Swaminathan&backgroundColor=15803d',
+          role: 'researcher',
+          affiliation: 'Indian Agricultural Research Institute (IARI), New Delhi',
+          designation: 'Principal Scientist (Soil Health & Agronomy)',
+          institutionType: 'National Agricultural Research System',
+          orcid: '0000-0002-3391-7721',
+          isGoogleVerified: true,
+          is_starred: true,
+          is_inspection_verified: true,
+          inspection_notes: 'Verified field survey investigator for Gangetic alluvial soils.',
+          features_granted: ['author_research', 'upload_paper', 'export_raw'],
+          status: 'active',
+          registeredAt: '2025-12-01T10:00:00Z',
+          lastActiveAt: '2026-03-11T11:20:00Z'
+        },
+        {
+          id: 'usr-res-03',
+          dedicatedFixedId: 'BHU-RES-6624-5109',
+          email: 'kavita.deshmukh@iirs.gov.in',
+          name: 'Dr. Kavita Deshmukh',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Kavita%20Deshmukh&backgroundColor=166534',
+          role: 'researcher',
+          affiliation: 'Indian Institute of Remote Sensing (IIRS / ISRO)',
+          designation: 'Scientist / Engineer-SF (Photogrammetry)',
+          institutionType: 'ISRO Research Institute',
+          orcid: '0000-0003-6624-5109',
+          isGoogleVerified: false,
+          is_starred: false,
+          is_inspection_verified: true,
+          inspection_notes: 'Satellite spectral change detection researcher.',
+          features_granted: ['author_research', 'upload_paper'],
+          status: 'active',
+          registeredAt: '2026-02-10T15:30:00Z',
+          lastActiveAt: '2026-03-08T09:45:00Z'
+        },
+        {
+          id: 'usr-res-04',
+          dedicatedFixedId: 'BHU-RES-9182-3401',
+          email: 'tanvi.rao@jnu.ac.in',
+          name: 'Prof. Tanvi Rao',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Tanvi%20Rao&backgroundColor=047857',
+          role: 'researcher',
+          affiliation: 'Centre for the Study of Regional Development, JNU',
+          designation: 'Professor of Rural Land Economics',
+          institutionType: 'Central University',
+          orcid: '0000-0001-9182-3401',
+          isGoogleVerified: true,
+          is_starred: false,
+          is_inspection_verified: true,
+          inspection_notes: 'Longitudinal agricultural census researcher.',
+          features_granted: ['author_research', 'upload_paper', 'export_raw'],
+          status: 'active',
+          registeredAt: '2026-01-28T13:00:00Z',
+          lastActiveAt: '2026-03-07T14:10:00Z'
+        },
+        {
+          id: 'usr-pub-01',
+          dedicatedFixedId: 'BHU-PUB-1029-4481',
+          email: 'ramesh.patel.fpo@gmail.com',
+          name: 'Ramesh Patel',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Ramesh%20Patel&backgroundColor=64748b',
+          role: 'public',
+          affiliation: 'Gauriganj Farmer Producer Organization (FPO)',
+          designation: 'Secretary & Lead Smallholder Representative',
+          institutionType: 'Civil Society / Agritech Cooperative',
+          isGoogleVerified: true,
+          is_starred: false,
+          is_inspection_verified: true,
+          inspection_notes: 'Verified grassroot agricultural stakeholder.',
+          features_granted: ['view_public_data', 'export_summary'],
+          status: 'active',
+          registeredAt: '2026-02-01T08:00:00Z',
+          lastActiveAt: '2026-03-12T02:30:00Z'
+        },
+        {
+          id: 'usr-pub-02',
+          dedicatedFixedId: 'BHU-PUB-5541-7712',
+          email: 'meera.krishnan@civicdatalab.in',
+          name: 'Meera Krishnan',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Meera%20Krishnan&backgroundColor=475569',
+          role: 'public',
+          affiliation: 'Open Land Governance Initiative',
+          designation: 'Community Data Analyst',
+          institutionType: 'Civic Tech Foundation',
+          isGoogleVerified: false,
+          is_starred: false,
+          is_inspection_verified: false,
+          inspection_notes: 'Public open-data explorer.',
+          features_granted: ['view_public_data'],
+          status: 'active',
+          registeredAt: '2026-02-18T10:45:00Z',
+          lastActiveAt: '2026-03-05T17:00:00Z'
+        },
+        {
+          id: 'usr-pub-03',
+          dedicatedFixedId: 'BHU-PUB-8812-9901',
+          email: 'alok.ranjan@gramsevak.org',
+          name: 'Alok Ranjan',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Alok%20Ranjan&backgroundColor=334155',
+          role: 'public',
+          affiliation: 'Gram Swaraj Panchayat Council',
+          designation: 'Village Land Resource Monitor',
+          institutionType: 'Rural Local Body',
+          isGoogleVerified: true,
+          is_starred: false,
+          is_inspection_verified: true,
+          inspection_notes: 'Gram Panchayat citizen observer.',
+          features_granted: ['view_public_data', 'export_summary'],
+          status: 'active',
+          registeredAt: '2026-02-25T14:10:00Z',
+          lastActiveAt: '2026-03-11T09:15:00Z'
+        },
+        {
+          id: 'usr-ins-01',
+          dedicatedFixedId: 'BHU-INS-0001-9999',
+          email: 'devendra.jha@bhu-drishti.gov.in',
+          name: 'Shri Devendra Nath Jha',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Devendra%20Jha&backgroundColor=dc2626',
+          role: 'inspector',
+          affiliation: 'National Cadastral Inspection Directorate & Ombudsman',
+          designation: 'Chief Inspector General of Land Records & Policy Governance',
+          institutionType: 'Statutory Ombudsman & Inspectorate',
+          isGoogleVerified: true,
+          is_starred: true,
+          is_inspection_verified: true,
+          inspection_notes: 'Chief Cadastral Inspector with plenipotentiary oversight over all platform content, policies, research certifications, and role authorizations.',
+          features_granted: ['all_access', 'publish_policy', 'upload_gazette', 'calibrate_area', 'author_research', 'ingest_data', 'export_raw', 'delete_content', 'ai_grounding', 'inspect_users', 'star_verify', 'reorder_content'],
+          status: 'active',
+          registeredAt: '2025-08-15T00:00:00Z',
+          lastActiveAt: '2026-03-12T07:20:00Z'
+        },
+        {
+          id: 'usr-ins-02',
+          dedicatedFixedId: 'BHU-INS-0002-8888',
+          email: 'sunita.rao@bhu-drishti.gov.in',
+          name: 'Smt. Sunita Rao',
+          avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Sunita%20Rao&backgroundColor=b91c1c',
+          role: 'inspector',
+          affiliation: 'National Cadastral Inspection Directorate & Ombudsman',
+          designation: 'Joint Inspector of Geospatial Provenance',
+          institutionType: 'Statutory Ombudsman & Inspectorate',
+          isGoogleVerified: true,
+          is_starred: true,
+          is_inspection_verified: true,
+          inspection_notes: 'Joint Inspector certifying cadastral research rigor and gazette parity.',
+          features_granted: ['all_access', 'publish_policy', 'upload_gazette', 'calibrate_area', 'author_research', 'ingest_data', 'export_raw', 'delete_content', 'ai_grounding', 'inspect_users', 'star_verify', 'reorder_content'],
+          status: 'active',
+          registeredAt: '2025-09-01T00:00:00Z',
+          lastActiveAt: '2026-03-12T05:50:00Z'
+        }
+      ];
+
       this.lastSyncTime = new Date().toISOString();
-      console.log(`[Database] In-memory seed initialized (${this.states.length} states, ${this.districts.length} districts, ${this.records.length} records, ${this.datasets.length} datasets).`);
+      console.log(`[Database] In-memory seed initialized (${this.states.length} states, ${this.districts.length} districts, ${this.records.length} records, ${this.datasets.length} datasets, ${this.users.length} registered users).`);
     } catch (err) {
       console.error('[Database] Failed to load JSON seed data:', err);
     }
@@ -493,8 +781,11 @@ class Database {
     return src;
   }
 
-  public getPolicies(stateCode?: string, districtCode?: string): Policy[] {
+  public getPolicies(stateCode?: string, districtCode?: string, includeHidden: boolean = false): Policy[] {
     let list = [...this.policies];
+    if (!includeHidden) {
+      list = list.filter(p => !p.is_hidden);
+    }
     if (stateCode && stateCode !== 'IN-ALL') {
       const sc = stateCode.toLowerCase();
       list = list.map(p => {
@@ -502,6 +793,15 @@ class Database {
         return areaTarget ? { ...p, current_area_target: areaTarget } : p;
       });
     }
+
+    // Sort by priority order, then starred
+    list.sort((a, b) => {
+      const orderA = a.priority_order !== undefined ? a.priority_order : 999;
+      const orderB = b.priority_order !== undefined ? b.priority_order : 999;
+      if (orderA !== orderB) return orderA - orderB;
+      return (b.is_starred ? 1 : 0) - (a.is_starred ? 1 : 0);
+    });
+
     return list;
   }
 
@@ -609,8 +909,11 @@ class Database {
     return false;
   }
 
-  public getResearchPapers(search?: string, tag?: string): ResearchPaper[] {
+  public getResearchPapers(search?: string, tag?: string, includeHidden: boolean = false): ResearchPaper[] {
     let result = [...this.research];
+    if (!includeHidden) {
+      result = result.filter(p => !p.is_hidden);
+    }
     if (tag && tag !== 'All') {
       result = result.filter(p => p.tags.some(t => t.toLowerCase() === tag.toLowerCase()));
     }
@@ -623,6 +926,15 @@ class Database {
         p.geography.toLowerCase().includes(q)
       );
     }
+
+    // Sort by priority order, then starred
+    result.sort((a, b) => {
+      const orderA = a.priority_order !== undefined ? a.priority_order : 999;
+      const orderB = b.priority_order !== undefined ? b.priority_order : 999;
+      if (orderA !== orderB) return orderA - orderB;
+      return (b.is_starred ? 1 : 0) - (a.is_starred ? 1 : 0);
+    });
+
     return result;
   }
 
@@ -650,6 +962,185 @@ class Database {
     }
 
     return paper;
+  }
+
+  // === Inspection & Ombudsman Directorate Methods ===
+
+  public getUsers(): UserRegistryRecord[] {
+    return this.users;
+  }
+
+  public getUserById(id: string): UserRegistryRecord | undefined {
+    return this.users.find(u => u.id === id || u.dedicatedFixedId === id || u.email.toLowerCase() === id.toLowerCase());
+  }
+
+  public getInspectionStats(): InspectionStats {
+    const total_registered = this.users.length;
+    const policymaker_count = this.users.filter(u => u.role === 'policymaker').length;
+    const administrator_count = this.users.filter(u => u.role === 'admin').length;
+    const public_count = this.users.filter(u => u.role === 'public').length;
+    const researcher_count = this.users.filter(u => u.role === 'researcher').length;
+    const inspector_count = this.users.filter(u => u.role === 'inspector').length;
+
+    const total_policies = this.policies.length;
+    const verified_policies_count = this.policies.filter(p => p.is_inspection_verified).length;
+    const starred_policies_count = this.policies.filter(p => p.is_starred).length;
+
+    const total_research = this.research.length;
+    const verified_research_count = this.research.filter(r => r.is_inspection_verified).length;
+    const starred_research_count = this.research.filter(r => r.is_starred).length;
+
+    const verified_researchers_count = this.users.filter(u => u.role === 'researcher' && u.is_inspection_verified).length;
+
+    return {
+      total_registered,
+      policymaker_count,
+      administrator_count,
+      public_count,
+      researcher_count,
+      inspector_count,
+      total_policies,
+      verified_policies_count,
+      starred_policies_count,
+      total_research,
+      verified_research_count,
+      starred_research_count,
+      verified_researchers_count
+    };
+  }
+
+  public updateUserRole(id: string, newRole: 'public' | 'researcher' | 'policymaker' | 'admin' | 'inspector'): UserRegistryRecord | undefined {
+    const user = this.getUserById(id);
+    if (!user) return undefined;
+    const prevRole = user.role;
+    user.role = newRole;
+    user.lastActiveAt = new Date().toISOString();
+    this.logAudit('CHANGE_USER_ROLE', 'ChiefInspector', { id, prevRole, newRole });
+    return user;
+  }
+
+  public updateUserFeatures(id: string, features_granted: string[]): UserRegistryRecord | undefined {
+    const user = this.getUserById(id);
+    if (!user) return undefined;
+    user.features_granted = features_granted;
+    user.lastActiveAt = new Date().toISOString();
+    this.logAudit('UPDATE_USER_FEATURES', 'ChiefInspector', { id, features_granted });
+    return user;
+  }
+
+  public toggleUserStar(id: string, is_starred?: boolean, is_inspection_verified?: boolean, inspection_notes?: string): UserRegistryRecord | undefined {
+    const user = this.getUserById(id);
+    if (!user) return undefined;
+    if (typeof is_starred === 'boolean') user.is_starred = is_starred;
+    if (typeof is_inspection_verified === 'boolean') user.is_inspection_verified = is_inspection_verified;
+    if (inspection_notes !== undefined) user.inspection_notes = inspection_notes;
+    user.lastActiveAt = new Date().toISOString();
+    this.logAudit('STAR_VERIFY_USER', 'ChiefInspector', {
+      id,
+      is_starred: user.is_starred,
+      is_inspection_verified: user.is_inspection_verified
+    });
+    return user;
+  }
+
+  public deleteUser(id: string): boolean {
+    const idx = this.users.findIndex(u => u.id === id || u.dedicatedFixedId === id);
+    if (idx >= 0) {
+      const removed = this.users.splice(idx, 1)[0];
+      this.logAudit('DELETE_USER', 'ChiefInspector', { id: removed.id, email: removed.email });
+      return true;
+    }
+    return false;
+  }
+
+  public inspectPolicy(id: string, updates: {
+    is_starred?: boolean;
+    is_inspection_verified?: boolean;
+    is_hidden?: boolean;
+    priority_order?: number;
+    inspection_notes?: string;
+    inspected_by?: string;
+  }): Policy | undefined {
+    const policy = this.getPolicyById(id);
+    if (!policy) return undefined;
+    if (typeof updates.is_starred === 'boolean') policy.is_starred = updates.is_starred;
+    if (typeof updates.is_inspection_verified === 'boolean') policy.is_inspection_verified = updates.is_inspection_verified;
+    if (typeof updates.is_hidden === 'boolean') policy.is_hidden = updates.is_hidden;
+    if (typeof updates.priority_order === 'number') policy.priority_order = updates.priority_order;
+    if (updates.inspection_notes !== undefined) policy.inspection_notes = updates.inspection_notes;
+    policy.inspected_by = updates.inspected_by || 'Chief Inspector';
+    policy.inspected_at = new Date().toISOString();
+
+    this.logAudit('INSPECT_POLICY', policy.inspected_by, {
+      id: policy.id,
+      is_starred: policy.is_starred,
+      is_inspection_verified: policy.is_inspection_verified,
+      is_hidden: policy.is_hidden,
+      priority_order: policy.priority_order
+    });
+    return policy;
+  }
+
+  public reorderPolicies(orderedIds: string[]): Policy[] {
+    orderedIds.forEach((id, index) => {
+      const policy = this.getPolicyById(id);
+      if (policy) {
+        policy.priority_order = index + 1;
+      }
+    });
+    this.policies.sort((a, b) => (a.priority_order || 999) - (b.priority_order || 999));
+    this.logAudit('REORDER_POLICIES', 'ChiefInspector', { order: orderedIds });
+    return this.policies;
+  }
+
+  public inspectResearch(id: string, updates: {
+    is_starred?: boolean;
+    is_inspection_verified?: boolean;
+    is_hidden?: boolean;
+    priority_order?: number;
+    inspection_notes?: string;
+    inspected_by?: string;
+  }): ResearchPaper | undefined {
+    const paper = this.getResearchPaperById(id);
+    if (!paper) return undefined;
+    if (typeof updates.is_starred === 'boolean') paper.is_starred = updates.is_starred;
+    if (typeof updates.is_inspection_verified === 'boolean') paper.is_inspection_verified = updates.is_inspection_verified;
+    if (typeof updates.is_hidden === 'boolean') paper.is_hidden = updates.is_hidden;
+    if (typeof updates.priority_order === 'number') paper.priority_order = updates.priority_order;
+    if (updates.inspection_notes !== undefined) paper.inspection_notes = updates.inspection_notes;
+    paper.inspected_by = updates.inspected_by || 'Chief Inspector';
+    paper.inspected_at = new Date().toISOString();
+
+    this.logAudit('INSPECT_RESEARCH', paper.inspected_by, {
+      id: paper.id,
+      is_starred: paper.is_starred,
+      is_inspection_verified: paper.is_inspection_verified,
+      is_hidden: paper.is_hidden,
+      priority_order: paper.priority_order
+    });
+    return paper;
+  }
+
+  public reorderResearch(orderedIds: string[]): ResearchPaper[] {
+    orderedIds.forEach((id, index) => {
+      const paper = this.getResearchPaperById(id);
+      if (paper) {
+        paper.priority_order = index + 1;
+      }
+    });
+    this.research.sort((a, b) => (a.priority_order || 999) - (b.priority_order || 999));
+    this.logAudit('REORDER_RESEARCH', 'ChiefInspector', { order: orderedIds });
+    return this.research;
+  }
+
+  public deleteResearchPaper(id: string): boolean {
+    const idx = this.research.findIndex(r => r.id === id);
+    if (idx >= 0) {
+      const removed = this.research.splice(idx, 1)[0];
+      this.logAudit('DELETE_RESEARCH', 'ChiefInspector', { id: removed.id, title: removed.title });
+      return true;
+    }
+    return false;
   }
 
   public getAnomalies(stateCode?: string): Anomaly[] {
