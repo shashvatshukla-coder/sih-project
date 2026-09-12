@@ -30,8 +30,8 @@ export const GoogleAuthModal: React.FC = () => {
 
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [customEmail, setCustomEmail] = useState(userProfile?.email || 'shashvatshukla81@gmail.com');
-  const [customName, setCustomName] = useState(userProfile?.name || 'Dr. Shashvat Shukla');
+  const [customEmail, setCustomEmail] = useState(userProfile?.email || '');
+  const [customName, setCustomName] = useState(userProfile?.name || '');
   const [isEditing, setIsEditing] = useState(false);
   const [authError, setAuthError] = useState<string | null>(null);
 
@@ -57,13 +57,17 @@ export const GoogleAuthModal: React.FC = () => {
   };
 
   const handleInstantGoogleSignIn = async () => {
+    if (!customEmail.trim()) {
+      setAuthError('Please enter an email address.');
+      return;
+    }
     try {
       setLoading(true);
       setAuthError(null);
       await loginWithGoogle(
         {
-          email: customEmail.trim() || 'shashvatshukla81@gmail.com',
-          name: customName.trim() || 'Dr. Shashvat Shukla',
+          email: customEmail.trim(),
+          name: customName.trim() || customEmail.split('@')[0],
           role: userRole,
           dedicatedFixedId: dedicatedFixedId
         },

@@ -678,11 +678,13 @@ router.get('/auth/google/url', (req: Request, res: Response) => {
 
 router.post('/auth/google/verify', (req: Request, res: Response) => {
   const { email, name, avatar, fixedId, requestedRole } = req.body;
-  const userEmail = (email || 'shashvatshukla81@gmail.com').trim().toLowerCase();
-  const userName = name || (userEmail === 'shashvatshukla81@gmail.com' ? 'Dr. Shashvat Shukla' : 'Authorized User');
+  if (!email || typeof email !== 'string' || !email.trim()) {
+    return res.status(400).json({ success: false, error: 'Valid Google email is required for authentication' });
+  }
 
-  // Master Admin verification
+  const userEmail = email.trim().toLowerCase();
   const isMaster = userEmail === 'shashvatshukla81@gmail.com';
+  const userName = name || (isMaster ? 'Dr. Shashvat Shukla' : userEmail.split('@')[0]);
 
   // Role validation:
   // General users can only be 'researcher', 'policymaker', or 'public'.
