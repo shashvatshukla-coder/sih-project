@@ -255,7 +255,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('bhu_user_profile', JSON.stringify(verified));
       return verified;
     } catch (err: any) {
-      console.warn('Firebase popup sign-in encountered error or popup blocker:', err);
+      console.warn('Firebase popup sign-in encountered error:', err);
+      if (err.code === 'auth/unauthorized-domain' || err.message?.includes('unauthorized-domain')) {
+        const domainErr = new Error(`Firebase Auth: Domain '${window.location.hostname}' is not in Firebase's Authorized Domains.`);
+        (domainErr as any).code = 'auth/unauthorized-domain';
+        (domainErr as any).hostname = window.location.hostname;
+        throw domainErr;
+      }
       throw err;
     }
   };

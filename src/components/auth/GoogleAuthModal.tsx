@@ -50,7 +50,12 @@ export const GoogleAuthModal: React.FC = () => {
       await loginWithFirebasePopup(userRole);
       setIsAuthModalOpen(false);
     } catch (err: any) {
-      setAuthError(err.message || 'Firebase Google Sign-In failed');
+      if (err.code === 'auth/unauthorized-domain' || err.message?.includes('unauthorized-domain')) {
+        setAuthError(`Domain '${window.location.hostname}' is not in Firebase's Authorized Domains list. Please use the instant Google sign-in below.`);
+        if (!customEmail) setCustomEmail(userRole === 'inspector' ? 'shashvatshukla81@gmail.com' : '');
+      } else {
+        setAuthError(err.message || 'Firebase Google Sign-In failed');
+      }
     } finally {
       setLoading(false);
     }
