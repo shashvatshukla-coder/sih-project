@@ -12,15 +12,57 @@ import {
   Download,
   Calendar,
   Building2,
-  FileCheck2,
-  ExternalLink
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 
 export const ResearcherIdCardModal: React.FC = () => {
-  const { isIdCardModalOpen, setIsIdCardModalOpen, userProfile, dedicatedFixedId } = useApp();
+  const { isIdCardModalOpen, setIsIdCardModalOpen, userProfile, dedicatedFixedId, setActivePage } = useApp();
   const [copied, setCopied] = useState(false);
 
   if (!isIdCardModalOpen) return null;
+
+  const role = userProfile?.role || 'researcher';
+
+  // Role-specific badge styling and labels
+  const roleConfig = {
+    inspector: {
+      cardTitle: 'National Cadastral Inspection Directorate Identification',
+      badgeLabel: 'CHIEF INSPECTOR GENERAL',
+      idLabel: 'DIRECTORATE AUDIT UID',
+      headerBg: 'from-slate-900 via-amber-950 to-slate-900',
+      badgeBorder: 'border-amber-500/40',
+      accentColor: 'text-amber-400',
+      badgeTagColor: 'bg-amber-500/20 text-amber-300 border-amber-500/40'
+    },
+    policymaker: {
+      cardTitle: 'National Land Policy Advisory Credential',
+      badgeLabel: 'POLICY COMMISSION CADRE',
+      idLabel: 'POLICY ADVISORY UID',
+      headerBg: 'from-slate-900 via-blue-950 to-slate-900',
+      badgeBorder: 'border-blue-500/40',
+      accentColor: 'text-blue-400',
+      badgeTagColor: 'bg-blue-500/20 text-blue-300 border-blue-500/40'
+    },
+    public: {
+      cardTitle: 'National Cadastral Public Access Credential',
+      badgeLabel: 'CITIZEN REGISTRY CADRE',
+      idLabel: 'CITIZEN ACCESS UID',
+      headerBg: 'from-slate-900 via-teal-950 to-slate-900',
+      badgeBorder: 'border-teal-500/40',
+      accentColor: 'text-teal-400',
+      badgeTagColor: 'bg-teal-500/20 text-teal-300 border-teal-500/40'
+    },
+    researcher: {
+      cardTitle: 'National Cadastral Researcher Identity Card',
+      badgeLabel: 'OFFICIAL RESEARCH CADRE',
+      idLabel: 'DEDICATED RESEARCHER UID',
+      headerBg: 'from-slate-900 via-slate-800 to-emerald-950',
+      badgeBorder: 'border-emerald-500/30',
+      accentColor: 'text-emerald-400',
+      badgeTagColor: 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40'
+    }
+  }[role];
 
   const handleCopyId = () => {
     navigator.clipboard.writeText(dedicatedFixedId);
@@ -30,6 +72,14 @@ export const ResearcherIdCardModal: React.FC = () => {
 
   const handlePrint = () => {
     window.print();
+  };
+
+  const handleEnterDashboard = () => {
+    setIsIdCardModalOpen(false);
+    if (role === 'inspector') setActivePage('inspection');
+    else if (role === 'policymaker') setActivePage('decision-support');
+    else if (role === 'researcher') setActivePage('research');
+    else setActivePage('dashboard');
   };
 
   return (
@@ -42,7 +92,7 @@ export const ResearcherIdCardModal: React.FC = () => {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 dark:border-slate-800">
           <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
             <Award className="w-4 h-4 text-emerald-600" />
-            <span>National Cadastral Researcher Identity Card</span>
+            <span>{roleConfig.cardTitle}</span>
           </div>
           <button
             onClick={() => setIsIdCardModalOpen(false)}
@@ -53,9 +103,9 @@ export const ResearcherIdCardModal: React.FC = () => {
         </div>
 
         {/* Physical Badge Layout */}
-        <div className="p-6">
-          <div className="relative overflow-hidden rounded-2xl border-2 border-emerald-500/30 bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white p-6 shadow-xl space-y-5">
-            {/* Background Holographic Watermark */}
+        <div className="p-6 space-y-4">
+          <div className={`relative overflow-hidden rounded-2xl border-2 ${roleConfig.badgeBorder} bg-gradient-to-br ${roleConfig.headerBg} text-white p-6 shadow-xl space-y-5`}>
+            {/* Background Holographic Glow */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
             <div className="absolute -bottom-10 -left-10 w-48 h-48 bg-teal-500/10 rounded-full blur-2xl pointer-events-none" />
 
@@ -67,26 +117,26 @@ export const ResearcherIdCardModal: React.FC = () => {
                 </div>
                 <div>
                   <h4 className="text-xs font-black tracking-widest text-emerald-400 uppercase">
-                    BHU-DRISHTI • GEOSPATIAL INTELLIGENCE
+                    BHU-DRISHTI &bull; BHARAT LANDNET
                   </h4>
                   <p className="text-[10px] text-slate-300 font-medium">
-                    National Land Records Modernization & Research Framework
+                    National Geospatial Land Intelligence Directorate
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/40">
-                  OFFICIAL CADRE
+                <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold border ${roleConfig.badgeTagColor}`}>
+                  {roleConfig.badgeLabel}
                 </span>
               </div>
             </div>
 
-            {/* Middle Section: Photo & Researcher Details */}
+            {/* Middle Section: Photo & User Details */}
             <div className="flex items-start gap-4 relative z-10">
               <div className="relative shrink-0">
                 <img
-                  src={userProfile?.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed=Shashvat&backgroundColor=059669'}
-                  alt="Researcher"
+                  src={userProfile?.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed=User&backgroundColor=059669'}
+                  alt="User"
                   className="w-20 h-20 rounded-xl object-cover ring-2 ring-emerald-400 shadow-md bg-white/10"
                 />
                 <div className="absolute -bottom-1 -right-1 p-0.5 rounded-full bg-emerald-500 text-white ring-2 ring-slate-900">
@@ -97,32 +147,32 @@ export const ResearcherIdCardModal: React.FC = () => {
               <div className="min-w-0 flex-1 space-y-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-base font-black text-white truncate">
-                    {userProfile?.name || 'Dr. Shashvat Shukla'}
+                    {userProfile?.name || 'Verified User'}
                   </h3>
                   <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-blue-500/20 text-blue-300 border border-blue-400/30">
                     Google Verified
                   </span>
                 </div>
-                <p className="text-xs font-semibold text-emerald-300">
-                  {userProfile?.designation || 'Senior Cadastral Research Scientist'}
+                <p className={`text-xs font-semibold ${roleConfig.accentColor}`}>
+                  {userProfile?.designation || 'Cadastral Specialist'}
                 </p>
                 <div className="flex items-center gap-1 text-[11px] text-slate-300 pt-0.5">
                   <Building2 className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                  <span className="truncate">{userProfile?.affiliation || 'ICAR & National Informatics Centre'}</span>
+                  <span className="truncate">{userProfile?.affiliation || 'National Cadastral Authority'}</span>
                 </div>
-                <p className="text-[10px] text-slate-400 truncate">
-                  Email: <span className="text-slate-200">{userProfile?.email || 'shashvatshukla81@gmail.com'}</span>
+                <p className="text-[10px] text-slate-400 truncate font-mono">
+                  Email: <span className="text-slate-200">{userProfile?.email || 'user@gmail.com'}</span>
                 </p>
               </div>
             </div>
 
             {/* Dedicated Fixed ID Highlight Ribbon */}
-            <div className="p-3 rounded-xl bg-black/40 border border-white/15 relative z-10 flex items-center justify-between">
+            <div className="p-3 rounded-xl bg-black/50 border border-white/15 relative z-10 flex items-center justify-between">
               <div>
                 <span className="block text-[9px] font-bold tracking-widest text-emerald-400 uppercase">
-                  DEDICATED FIXED RESEARCHER ID
+                  {roleConfig.idLabel}
                 </span>
-                <span className="font-mono text-base font-extrabold text-white tracking-widest">
+                <span className="font-mono text-base font-extrabold text-white tracking-widest select-all">
                   {dedicatedFixedId}
                 </span>
               </div>
@@ -140,35 +190,39 @@ export const ResearcherIdCardModal: React.FC = () => {
               <div className="space-y-0.5">
                 <p className="flex items-center gap-1">
                   <Calendar className="w-3 h-3 text-emerald-400" />
-                  <span>Valid Through: <strong className="text-slate-200">2026–2030 (Triennial Audit)</strong></span>
+                  <span>Valid Through: <strong className="text-slate-200">2026–2030 (Triennial Cycle)</strong></span>
                 </p>
                 <p className="flex items-center gap-1">
                   <Fingerprint className="w-3 h-3 text-emerald-400" />
-                  <span>Auth Scope: <strong className="text-slate-200">Full Research Upload & Authoring</strong></span>
+                  <span>Status: <strong className="text-emerald-300">Active &bull; Tamper-Proof Cryptographic ID</strong></span>
                 </p>
               </div>
               <div className="flex items-center gap-2 p-1.5 rounded-lg bg-white/10 border border-white/10">
                 <QrCode className="w-6 h-6 text-emerald-300" />
                 <div className="text-[8px] text-slate-300 leading-tight">
-                  <span className="font-bold text-white block">NIC-VERIFIED</span>
-                  <span>SCAN TO AUDIT</span>
+                  <span className="font-bold text-white block">NIC-AUDIT</span>
+                  <span>SCAN TO VERIFY</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Quick Actions */}
-          <div className="mt-5 flex items-center justify-between text-xs">
+          {/* Action Buttons */}
+          <div className="flex items-center gap-3 pt-2">
             <button
               onClick={handlePrint}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 font-semibold transition-colors"
+              className="py-2.5 px-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
             >
-              <Download className="w-4 h-4" />
-              <span>Export ID Card</span>
+              <Download className="w-3.5 h-3.5" />
+              <span>Export Badge</span>
             </button>
-            <p className="text-[11px] text-slate-500">
-              Issued under Ministry of Agriculture & Farmers' Welfare Guidelines
-            </p>
+            <button
+              onClick={handleEnterDashboard}
+              className="flex-1 py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition-all cursor-pointer"
+            >
+              <span>Enter Bharat LandNet Platform</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
           </div>
         </div>
       </div>

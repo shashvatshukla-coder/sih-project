@@ -14,7 +14,9 @@ import {
   Copy,
   Check,
   Info,
-  ExternalLink
+  ExternalLink,
+  IdCard,
+  CreditCard
 } from 'lucide-react';
 import { MASTER_ADMIN_EMAIL } from '../../lib/firebase';
 
@@ -25,7 +27,8 @@ export const LoginPage: React.FC = () => {
     logout,
     userProfile,
     isMasterUser,
-    setActivePage
+    setActivePage,
+    setIsIdCardModalOpen
   } = useApp();
 
   const [selectedRole, setSelectedRole] = useState<UserRole>('researcher');
@@ -36,6 +39,8 @@ export const LoginPage: React.FC = () => {
   const [unauthorizedDomain, setUnauthorizedDomain] = useState<string | null>(null);
   const [domainCopied, setDomainCopied] = useState(false);
   const [successNotice, setSuccessNotice] = useState<string | null>(null);
+
+  const isVercelHost = typeof window !== 'undefined' && window.location.hostname.includes('vercel.app');
 
   // Auto-fill email if Inspection Directorate is selected
   useEffect(() => {
@@ -80,13 +85,6 @@ export const LoginPage: React.FC = () => {
     setTimeout(() => setDomainCopied(false), 2500);
   };
 
-  const navigateToRoleDashboard = (role: UserRole) => {
-    if (role === 'inspector') setActivePage('inspection');
-    else if (role === 'policymaker') setActivePage('decision-support');
-    else if (role === 'researcher') setActivePage('research');
-    else setActivePage('dashboard');
-  };
-
   const handleDirectGoogleLogin = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
 
@@ -113,14 +111,14 @@ export const LoginPage: React.FC = () => {
 
       if (selectedRole === 'inspector' && profile.email.toLowerCase() !== MASTER_ADMIN_EMAIL.toLowerCase()) {
         setErrorMessage(
-          `Logged in as ${profile.email}. Note: Inspection Directorate is reserved for ${MASTER_ADMIN_EMAIL}. You have been assigned the Researcher role.`
+          `Logged in as ${profile.email}. Note: Inspection Directorate is reserved for ${MASTER_ADMIN_EMAIL}. You have been assigned the Researcher role with ID: ${profile.dedicatedFixedId}`
         );
       } else {
-        setSuccessNotice(`Welcome, ${profile.name}! Signed in as ${profile.role.toUpperCase()}.`);
-        setTimeout(() => {
-          navigateToRoleDashboard(profile.role);
-        }, 600);
+        setSuccessNotice(`Welcome, ${profile.name}! Your dedicated ID ${profile.dedicatedFixedId} has been generated.`);
       }
+
+      // Automatically open their generated ID card so they see their new official identity
+      setIsIdCardModalOpen(true);
     } catch (err: any) {
       setErrorMessage(err.message || 'Authentication failed. Please try again.');
     } finally {
@@ -139,14 +137,14 @@ export const LoginPage: React.FC = () => {
 
       if (selectedRole === 'inspector' && profile.email.toLowerCase() !== MASTER_ADMIN_EMAIL.toLowerCase()) {
         setErrorMessage(
-          `Logged in as ${profile.email}. Note: Inspection Directorate is reserved for ${MASTER_ADMIN_EMAIL}. You have been assigned the Researcher role.`
+          `Logged in as ${profile.email}. Note: Inspection Directorate is reserved for ${MASTER_ADMIN_EMAIL}. You have been assigned the Researcher role with ID: ${profile.dedicatedFixedId}`
         );
       } else {
-        setSuccessNotice(`Welcome, ${profile.name}! Signed in as ${profile.role.toUpperCase()}.`);
-        setTimeout(() => {
-          navigateToRoleDashboard(profile.role);
-        }, 600);
+        setSuccessNotice(`Welcome, ${profile.name}! Your dedicated ID ${profile.dedicatedFixedId} has been generated.`);
       }
+
+      // Open their ID badge
+      setIsIdCardModalOpen(true);
     } catch (err: any) {
       console.warn('Firebase popup attempt:', err);
       const isDomainError =
@@ -157,7 +155,6 @@ export const LoginPage: React.FC = () => {
       if (isDomainError) {
         setUnauthorizedDomain(window.location.hostname);
         setErrorMessage(null);
-        // Pre-fill email input to make immediate sign-in seamless
         if (!emailInput) {
           setEmailInput(selectedRole === 'inspector' ? MASTER_ADMIN_EMAIL : '');
         }
@@ -184,34 +181,32 @@ export const LoginPage: React.FC = () => {
             Sign In to Bharat LandNet
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            National Cadastral Land Intelligence Platform
+            National Cadastral Land Intelligence Platform &bull; Instant ID Generation
           </p>
         </div>
 
-        {/* Unauthorized Domain Explainer Banner */}
+        {/* Vercel or External Deployment Notice */}
+        {isVercelHost && (
+          <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/80 text-emerald-900 dark:text-emerald-200 text-xs flex items-center gap-2.5">
+            <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
+            <div className="leading-snug">
+              <span className="font-bold">Live Vercel Deployment</span>
+              <p className="text-[11px] text-emerald-700 dark:text-emerald-300">
+                Anyone can sign in with any Google email below to instantly generate their official Cadastral ID.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {/* Domain Notice (if user tried popup on an unregistered domain) */}
         {unauthorizedDomain && (
-          <div className="p-4 rounded-2xl bg-amber-50/90 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-slate-800 dark:text-slate-200 text-xs space-y-2.5 animate-in fade-in">
-            <div className="flex items-start gap-2 text-amber-800 dark:text-amber-300 font-semibold">
-              <Info className="w-4 h-4 shrink-0 mt-0.5" />
-              <span>Firebase Domain Authorization Notice</span>
+          <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 text-slate-800 dark:text-slate-200 text-xs space-y-2 animate-in fade-in">
+            <div className="flex items-start gap-2 text-blue-900 dark:text-blue-300 font-semibold">
+              <Info className="w-4 h-4 shrink-0 mt-0.5 text-blue-600" />
+              <span>Direct Sign-In Active for {unauthorizedDomain}</span>
             </div>
             <p className="text-[11px] text-slate-600 dark:text-slate-300 leading-relaxed">
-              Google OAuth popups require authorized hostnames in Firebase. This preview URL is not registered yet:
-            </p>
-            <div className="flex items-center gap-2 p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200 dark:border-amber-900/60 font-mono text-[11px] select-all">
-              <span className="truncate flex-1 text-slate-800 dark:text-slate-200">{unauthorizedDomain}</span>
-              <button
-                type="button"
-                onClick={handleCopyDomain}
-                className="px-2 py-1 rounded-lg bg-amber-100 dark:bg-amber-900/60 hover:bg-amber-200 text-amber-900 dark:text-amber-200 text-[10px] font-bold flex items-center gap-1 shrink-0 transition-colors cursor-pointer"
-                title="Copy hostname to add to Firebase Console"
-              >
-                {domainCopied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                <span>{domainCopied ? 'Copied' : 'Copy'}</span>
-              </button>
-            </div>
-            <p className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
-              You do not need to configure Firebase to continue. Simply enter your Google email below to sign in instantly!
+              Google OAuth popup requires Firebase whitelist registration. On Vercel, simply use the direct Google Account sign-in below — your official Cadastral ID will be generated and issued immediately!
             </p>
           </div>
         )}
@@ -234,13 +229,13 @@ export const LoginPage: React.FC = () => {
 
         {/* Active Session Display */}
         {userProfile?.isGoogleVerified ? (
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3">
+          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 space-y-3.5">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <img
                   src={userProfile.avatar || 'https://api.dicebear.com/7.x/initials/svg?seed=User'}
                   alt={userProfile.name}
-                  className="w-10 h-10 rounded-full border border-emerald-500 object-cover"
+                  className="w-11 h-11 rounded-full border-2 border-emerald-500 object-cover"
                 />
                 <div>
                   <div className="flex items-center gap-1.5">
@@ -256,6 +251,9 @@ export const LoginPage: React.FC = () => {
                   <p className="text-[11px] text-slate-500 truncate max-w-[190px]">
                     {userProfile.email}
                   </p>
+                  <p className="text-[10px] font-mono font-bold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    ID: {userProfile.dedicatedFixedId}
+                  </p>
                 </div>
               </div>
               <span className="text-[10px] uppercase font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-300 font-mono">
@@ -263,34 +261,49 @@ export const LoginPage: React.FC = () => {
               </span>
             </div>
 
-            <div className="flex gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex flex-col gap-2 pt-2 border-t border-slate-200 dark:border-slate-700">
               <button
-                onClick={() => navigateToRoleDashboard(userProfile.role)}
-                className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                onClick={() => setIsIdCardModalOpen(true)}
+                className="w-full py-2 px-3 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
               >
-                <span>Continue to Dashboard</span>
-                <ArrowRight className="w-3.5 h-3.5" />
+                <IdCard className="w-4 h-4 text-emerald-600" />
+                <span>View & Export Official ID Card</span>
               </button>
-              <button
-                onClick={async () => {
-                  await logout();
-                  setEmailInput('');
-                  setSuccessNotice('Signed out successfully.');
-                }}
-                className="py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
-                title="Sign Out"
-              >
-                <LogOut className="w-3.5 h-3.5" />
-                <span>Switch</span>
-              </button>
+
+              <div className="flex gap-2">
+                <button
+                  onClick={() => {
+                    if (userProfile.role === 'inspector') setActivePage('inspection');
+                    else if (userProfile.role === 'policymaker') setActivePage('decision-support');
+                    else if (userProfile.role === 'researcher') setActivePage('research');
+                    else setActivePage('dashboard');
+                  }}
+                  className="flex-1 py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <span>Enter Dashboard</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </button>
+                <button
+                  onClick={async () => {
+                    await logout();
+                    setEmailInput('');
+                    setSuccessNotice('Signed out successfully.');
+                  }}
+                  className="py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-xs font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  title="Sign Out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>Switch</span>
+                </button>
+              </div>
             </div>
           </div>
         ) : (
           <>
-            {/* Role Selection */}
+            {/* Step 1: Role Selection */}
             <div className="space-y-1.5">
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                1. Select Access Role
+                1. Select Cadastral Role
               </label>
               <div className="grid grid-cols-1 gap-1.5">
                 {roles.map((r) => {
@@ -346,22 +359,21 @@ export const LoginPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Sign-in Form */}
+            {/* Step 2: Google Account Input & ID Generation */}
             <div className="space-y-3 pt-1">
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                2. Authenticate with Google
+                2. Enter Google Email to Generate ID
               </label>
 
-              {/* Direct Google Account Sign-In Form (Guaranteed to work in all domains) */}
               <form onSubmit={handleDirectGoogleLogin} className="space-y-2.5">
                 <div>
                   <div className="flex items-center justify-between mb-1">
                     <span className="text-[11px] font-medium text-slate-600 dark:text-slate-400">
-                      Google Account Email
+                      Your Google Email
                     </span>
                     {selectedRole === 'inspector' ? (
                       <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
-                        Master ID Pre-set
+                        Chief Director Pre-set
                       </span>
                     ) : (
                       <button
@@ -369,20 +381,53 @@ export const LoginPage: React.FC = () => {
                         onClick={() => setEmailInput(MASTER_ADMIN_EMAIL)}
                         className="text-[10px] text-slate-400 hover:text-emerald-600 underline cursor-pointer"
                       >
-                        Use Master Email
+                        Use Master Account
                       </button>
                     )}
                   </div>
-                  <div className="relative">
-                    <input
-                      type="email"
-                      value={emailInput}
-                      onChange={(e) => setEmailInput(e.target.value)}
-                      placeholder="e.g. yourname@gmail.com"
-                      required
-                      className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-slate-900 transition-all font-mono"
-                    />
-                  </div>
+                  <input
+                    type="email"
+                    value={emailInput}
+                    onChange={(e) => setEmailInput(e.target.value)}
+                    placeholder="e.g. yourname@gmail.com"
+                    required
+                    className="w-full px-3 py-2 text-xs rounded-xl border border-slate-300 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 text-slate-900 dark:text-white focus:outline-hidden focus:ring-2 focus:ring-emerald-500 focus:bg-white dark:focus:bg-slate-900 transition-all font-mono"
+                  />
+                </div>
+
+                {/* 1-Click Preset Chips */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[10px] text-slate-400">Quick sign-in:</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRole('inspector');
+                      setEmailInput(MASTER_ADMIN_EMAIL);
+                    }}
+                    className="text-[10px] px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800 hover:bg-amber-100 transition-colors cursor-pointer"
+                  >
+                    👑 Dr. Shashvat Shukla
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRole('researcher');
+                      setEmailInput('researcher@cadastre.gov.in');
+                    }}
+                    className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 transition-colors cursor-pointer"
+                  >
+                    🔬 Researcher
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedRole('policymaker');
+                      setEmailInput('policy@niti.gov.in');
+                    }}
+                    className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-950/40 text-blue-800 dark:text-blue-300 border border-blue-200 dark:border-blue-800 hover:bg-blue-100 transition-colors cursor-pointer"
+                  >
+                    🏛️ Policy Maker
+                  </button>
                 </div>
 
                 <button
@@ -390,63 +435,40 @@ export const LoginPage: React.FC = () => {
                   disabled={loading || !emailInput.trim()}
                   className="w-full py-2.5 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-xs hover:shadow-md transition-all active:scale-[0.99] cursor-pointer disabled:opacity-50 flex items-center justify-center gap-2"
                 >
-                  <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
-                    <path
-                      fill="#ffffff"
-                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                    />
-                    <path
-                      fill="#ffffff"
-                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.36 7.31 24 12 24z"
-                    />
-                    <path
-                      fill="#ffffff"
-                      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.97 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
-                    />
-                    <path
-                      fill="#ffffff"
-                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                    />
-                  </svg>
-                  <span>{loading ? 'Authenticating...' : `Continue as ${roles.find(r => r.id === selectedRole)?.title}`}</span>
+                  <CreditCard className="w-3.5 h-3.5 shrink-0" />
+                  <span>{loading ? 'Generating ID & Authenticating...' : 'Sign In & Issue National ID Card'}</span>
                 </button>
               </form>
 
-              {/* Divider */}
-              <div className="relative flex items-center justify-center py-1">
-                <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
-                <span className="bg-white dark:bg-slate-900 px-2 text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
-                  Or
-                </span>
+              {/* Optional Popup Fallback */}
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={handleFirebasePopup}
+                  disabled={loading}
+                  className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/60 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-medium transition-all cursor-pointer"
+                >
+                  <svg className="w-3 h-3 shrink-0" viewBox="0 0 24 24">
+                    <path
+                      fill="#4285F4"
+                      d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
+                    />
+                    <path
+                      fill="#34A853"
+                      d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.36 7.31 24 12 24z"
+                    />
+                    <path
+                      fill="#FBBC05"
+                      d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.97 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
+                    />
+                    <path
+                      fill="#EA4335"
+                      d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
+                    />
+                  </svg>
+                  <span>Or use Google OAuth Popup (if domain authorized)</span>
+                </button>
               </div>
-
-              {/* Firebase Popup Button */}
-              <button
-                type="button"
-                onClick={handleFirebasePopup}
-                disabled={loading}
-                className="w-full flex items-center justify-center gap-2 py-2 px-3 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/80 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-xs font-medium shadow-2xs hover:shadow-xs transition-all active:scale-[0.99] cursor-pointer"
-              >
-                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24">
-                  <path
-                    fill="#4285F4"
-                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                  />
-                  <path
-                    fill="#34A853"
-                    d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.36 7.31 24 12 24z"
-                  />
-                  <path
-                    fill="#FBBC05"
-                    d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.97 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
-                  />
-                  <path
-                    fill="#EA4335"
-                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                  />
-                </svg>
-                <span>Launch Google Sign-In Popup (Firebase)</span>
-              </button>
             </div>
           </>
         )}

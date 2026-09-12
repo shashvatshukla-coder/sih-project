@@ -202,15 +202,31 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       localStorage.setItem('bhu_user_profile', JSON.stringify(verified));
       return verified;
     } catch {
+      const part1 = Math.floor(1000 + Math.random() * 9000);
+      const part2 = Math.floor(1000 + Math.random() * 9000);
+      const generatedId = isMaster ? 'BHU-RES-8763-9201' : `BHU-${effectiveRole.substring(0, 3).toUpperCase()}-${part1}-${part2}`;
+
       const fallback: UserProfile = {
         id: 'usr_' + Date.now().toString(36),
-        dedicatedFixedId: isMaster ? 'BHU-RES-8763-9201' : `BHU-${effectiveRole.substring(0, 3).toUpperCase()}-${Math.floor(1000 + Math.random() * 9000)}`,
+        dedicatedFixedId: generatedId,
         email: targetEmail,
         name: customData?.name || (isMaster ? 'Dr. Shashvat Shukla' : targetEmail.split('@')[0]),
         avatar: customData?.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(targetEmail)}&backgroundColor=${isMaster ? '059669' : '1e40af'}`,
         role: effectiveRole,
-        affiliation: isMaster ? 'National Land Records & Geospatial Intelligence Directorate' : (effectiveRole === 'policymaker' ? 'NITI Aayog & State Land Planning Commission' : 'State Cadastral Research Institute'),
-        designation: isMaster ? 'Chief Director of Inspection & Cadastral Research' : (effectiveRole === 'policymaker' ? 'Senior Land Policy Advisor' : (effectiveRole === 'public' ? 'Citizen Observer' : 'Cadastral Researcher')),
+        affiliation: isMaster
+          ? 'National Land Records & Geospatial Intelligence Directorate'
+          : (effectiveRole === 'policymaker'
+            ? 'NITI Aayog & State Land Planning Commission'
+            : (effectiveRole === 'public'
+              ? 'National Cadastral Open Public Registry'
+              : 'State Cadastral Research Institute')),
+        designation: isMaster
+          ? 'Chief Director of Inspection & Cadastral Research'
+          : (effectiveRole === 'policymaker'
+            ? 'Senior Land Policy Advisor'
+            : (effectiveRole === 'public'
+              ? 'Citizen Land Intelligence Observer'
+              : 'Cadastral Research Scientist')),
         isGoogleVerified: true,
         issuedAt: new Date().toISOString(),
         authProvider: 'google',
