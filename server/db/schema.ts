@@ -82,6 +82,23 @@ export interface DataSource {
   adapter_type: string;
 }
 
+export interface AreaTarget {
+  id?: string;
+  state_code: string;
+  state_name: string;
+  district_code?: string;
+  district_name?: string;
+  target_year?: number;
+  regional_budget_cr?: number;
+  target_agricultural_pct?: number;
+  target_reclaim_ha?: number;
+  priority_tier: 'Critical Focus' | 'Active Monitoring' | 'Routine Sustenance';
+  directives: string[];
+  last_updated?: string;
+  updated_by?: string;
+  notes?: string;
+}
+
 export interface Policy {
   id: string;
   name: string;
@@ -98,6 +115,21 @@ export interface Policy {
   observed_impact_summary: string;
   methodology_note: string;
   linked_dataset_ids: string[];
+  // Policy Maker enhancements
+  area_targets?: AreaTarget[];
+  current_area_target?: AreaTarget;
+  is_user_modified?: boolean;
+  status?: 'Active' | 'Gazette Notified' | 'Under Revision' | 'Draft Amendment';
+  policyMakerId?: string;
+  policyMakerName?: string;
+  allocated_budget_cr?: number;
+  documentText?: string;
+  fileAttachment?: {
+    name: string;
+    size: number;
+    type: string;
+    url?: string;
+  };
 }
 
 export interface ResearchPaper {
