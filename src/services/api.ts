@@ -9,7 +9,9 @@ import {
   ResearchPaper,
   Anomaly,
   AIQueryResponse,
-  UserProfile
+  UserProfile,
+  UserRegistryRecord,
+  InspectionStats
 } from '../types';
 import { LandAIService } from './landAIService';
 
@@ -298,11 +300,12 @@ export const api = {
     return json.data;
   },
 
-  async getPolicies(stateCode?: string, districtCode?: string): Promise<Policy[]> {
+  async getPolicies(stateCode?: string, districtCode?: string, includeHidden: boolean = false): Promise<Policy[]> {
     try {
       const params = new URLSearchParams();
       if (stateCode && stateCode !== 'IN-ALL') params.append('state', stateCode);
       if (districtCode && districtCode !== 'ALL') params.append('district', districtCode);
+      if (includeHidden) params.append('includeHidden', 'true');
       const res = await fetch(`${API_BASE}/policies?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
@@ -379,11 +382,12 @@ export const api = {
     return null;
   },
 
-  async getResearchPapers(search?: string, tag?: string): Promise<ResearchPaper[]> {
+  async getResearchPapers(search?: string, tag?: string, includeHidden: boolean = false): Promise<ResearchPaper[]> {
     try {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (tag && tag !== 'All') params.append('tag', tag);
+      if (includeHidden) params.append('includeHidden', 'true');
       const res = await fetch(`${API_BASE}/research?${params.toString()}`);
       if (res.ok) {
         const json = await res.json();
@@ -393,6 +397,14 @@ export const api = {
       // fallback
     }
     return [];
+  },
+
+  async deleteResearch(id: string): Promise<boolean> {
+    const res = await fetch(`${API_BASE}/research/${id}`, {
+      method: 'DELETE'
+    });
+    const json = await res.json();
+    return json.success === true;
   },
 
   async createResearchPaper(paper: Partial<ResearchPaper>): Promise<ResearchPaper> {
@@ -545,5 +557,146 @@ export const api = {
       }
     } catch {}
     return null;
+  },
+
+  // === Inspection Directorate & Ombudsman Methods ===
+
+  async getInspectionStats(): Promise<InspectionStats> {
+    try {
+      const res = await fetch(`${API_BASE}/inspection/stats`);
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch (e) {
+      console.error('Failed to load inspection stats:', e);
+    }
+    return {
+      total_registered: 14,
+      policymaker_count: 3,
+      administrator_count: 2,
+      public_count: 3,
+      researcher_count: 4,
+      inspector_count: 2,
+      total_policies: 5,
+      verified_policies_count: 4,
+      starred_policies_count: 3,
+      total_research: 6,
+      verified_research_count: 5,
+      starred_research_count: 3,
+      verified_researchers_count: 3
+    };
+  },
+
+  async getRegisteredUsers(): Promise<UserRegistryRecord[]> {
+    try {
+      const res = await fetch(`${API_BASE}/inspection/users`);
+      if (res.ok) {
+        const json = await res.json();
+        return json.data;
+      }
+    } catch (e) {
+      console.error('Failed to load users:', e);
+    }
+    return [];
+  },
+
+  async updateUserRole(id: string, role: string): Promise<UserRegistryRecord> {
+    const res = await fetch(`${API_BASE}/inspection/users/${id}/role`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ role })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update user role');
+    return json.data;
+  },
+
+  async updateUserFeatures(id: string, features_granted: string[]): Promise<UserRegistryRecord> {
+    const res = await fetch(`${API_BASE}/inspection/users/${id}/features`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ features_granted })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update user features');
+    return json.data;
+  },
+
+  async starVerifyUser(id: string, updates: { is_starred?: boolean; is_inspection_verified?: boolean; inspection_notes?: string }): Promise<UserRegistryRecord> {
+    const res = await fetch(`${API_BASE}/inspection/users/${id}/star`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update user verification');
+    return json.data;
+  },
+
+  async deleteUser(id: string): Promise<boolean> {
+    const res = await fetch(`${API_BASE}/inspection/users/${id}`, {
+      method: 'DELETE'
+    });
+    const json = await res.json();
+    return json.success === true;
+  },
+
+  async inspectPolicy(id: string, updates: {
+    is_starred?: boolean;
+    is_inspection_verified?: boolean;
+    is_hidden?: boolean;
+    priority_order?: number;
+    inspection_notes?: string;
+    inspected_by?: string;
+  }): Promise<Policy> {
+    const res = await fetch(`${API_BASE}/inspection/policies/${id}/inspect`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update policy status');
+    return json.data;
+  },
+
+  async reorderPolicies(orderedIds: string[]): Promise<Policy[]> {
+    const res = await fetch(`${API_BASE}/inspection/policies/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderedIds })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to reorder policies');
+    return json.data;
+  },
+
+  async inspectResearch(id: string, updates: {
+    is_starred?: boolean;
+    is_inspection_verified?: boolean;
+    is_hidden?: boolean;
+    priority_order?: number;
+    inspection_notes?: string;
+    inspected_by?: string;
+  }): Promise<ResearchPaper> {
+    const res = await fetch(`${API_BASE}/inspection/research/${id}/inspect`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(updates)
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to update research paper status');
+    return json.data;
+  },
+
+  async reorderResearch(orderedIds: string[]): Promise<ResearchPaper[]> {
+    const res = await fetch(`${API_BASE}/inspection/research/reorder`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ orderedIds })
+    });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Failed to reorder research');
+    return json.data;
   }
 };

@@ -25,7 +25,8 @@ import {
   TrendingUp,
   FileText,
   Trash2,
-  Award
+  Award,
+  Star
 } from 'lucide-react';
 import { PolicyUploadModal } from './PolicyUploadModal';
 import { PolicyAreaUpdateModal } from './PolicyAreaUpdateModal';
@@ -406,6 +407,20 @@ export const PolicyRepository: React.FC = () => {
                       {policy.is_user_modified && (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300">
                           Area Customized
+                        </span>
+                      )}
+
+                      {policy.is_starred && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-700 flex items-center gap-1">
+                          <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
+                          <span>Starred Directive</span>
+                        </span>
+                      )}
+
+                      {policy.is_inspection_verified && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700 flex items-center gap-1">
+                          <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                          <span>Inspection Verified</span>
                         </span>
                       )}
 

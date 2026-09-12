@@ -130,6 +130,51 @@ export interface Policy {
     type: string;
     url?: string;
   };
+  // Inspection & Ombudsman controls
+  is_starred?: boolean;
+  is_inspection_verified?: boolean;
+  inspection_notes?: string;
+  is_hidden?: boolean;
+  priority_order?: number;
+  inspected_by?: string;
+  inspected_at?: string;
+}
+
+export interface UserRegistryRecord {
+  id: string;
+  dedicatedFixedId: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  role: 'public' | 'researcher' | 'policymaker' | 'admin' | 'inspector';
+  affiliation: string;
+  designation: string;
+  institutionType?: string;
+  orcid?: string;
+  isGoogleVerified: boolean;
+  is_starred?: boolean;
+  is_inspection_verified?: boolean;
+  inspection_notes?: string;
+  features_granted: string[];
+  status: 'active' | 'restricted' | 'suspended';
+  registeredAt: string;
+  lastActiveAt: string;
+}
+
+export interface InspectionStats {
+  total_registered: number;
+  policymaker_count: number;
+  administrator_count: number;
+  public_count: number;
+  researcher_count: number;
+  inspector_count: number;
+  total_policies: number;
+  verified_policies_count: number;
+  starred_policies_count: number;
+  total_research: number;
+  verified_research_count: number;
+  starred_research_count: number;
+  verified_researchers_count: number;
 }
 
 export interface ResearchPaper {
@@ -160,6 +205,14 @@ export interface ResearchPaper {
   };
   contentMarkdown?: string;
   isUserAuthored?: boolean;
+  // Inspection controls
+  is_starred?: boolean;
+  is_inspection_verified?: boolean;
+  inspection_notes?: string;
+  is_hidden?: boolean;
+  priority_order?: number;
+  inspected_by?: string;
+  inspected_at?: string;
 }
 
 export interface Anomaly {

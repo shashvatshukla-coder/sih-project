@@ -1,6 +1,6 @@
 export type LandCategory = 'agricultural' | 'forest' | 'builtup' | 'waterbodies' | 'barren' | 'other' | 'irrigated' | 'degraded';
 
-export type UserRole = 'public' | 'researcher' | 'policymaker' | 'admin';
+export type UserRole = 'public' | 'researcher' | 'policymaker' | 'admin' | 'inspector';
 
 export type PageId =
   | 'home'
@@ -23,7 +23,8 @@ export type PageId =
   | 'admin'
   | 'case-studies'
   | 'collaboration'
-  | 'news-events';
+  | 'news-events'
+  | 'inspection';
 
 export interface State {
   state_code: string;
@@ -157,6 +158,51 @@ export interface Policy {
     type: string;
     url?: string;
   };
+  // Inspection & Ombudsman controls
+  is_starred?: boolean;
+  is_inspection_verified?: boolean;
+  inspection_notes?: string;
+  is_hidden?: boolean;
+  priority_order?: number;
+  inspected_by?: string;
+  inspected_at?: string;
+}
+
+export interface UserRegistryRecord {
+  id: string;
+  dedicatedFixedId: string;
+  email: string;
+  name: string;
+  avatar?: string;
+  role: UserRole;
+  affiliation: string;
+  designation: string;
+  institutionType?: string;
+  orcid?: string;
+  isGoogleVerified: boolean;
+  is_starred?: boolean;
+  is_inspection_verified?: boolean;
+  inspection_notes?: string;
+  features_granted: string[];
+  status: 'active' | 'restricted' | 'suspended';
+  registeredAt: string;
+  lastActiveAt: string;
+}
+
+export interface InspectionStats {
+  total_registered: number;
+  policymaker_count: number;
+  administrator_count: number;
+  public_count: number;
+  researcher_count: number;
+  inspector_count: number;
+  total_policies: number;
+  verified_policies_count: number;
+  starred_policies_count: number;
+  total_research: number;
+  verified_research_count: number;
+  starred_research_count: number;
+  verified_researchers_count: number;
 }
 
 export interface UserProfile {
@@ -173,6 +219,10 @@ export interface UserProfile {
   isGoogleVerified: boolean;
   issuedAt: string;
   authProvider: 'google' | 'institutional' | 'guest';
+  is_starred?: boolean;
+  is_inspection_verified?: boolean;
+  inspection_notes?: string;
+  features_granted?: string[];
 }
 
 export interface ResearchPaper {
@@ -206,6 +256,14 @@ export interface ResearchPaper {
   };
   isUserAuthored?: boolean;
   status?: 'published' | 'under_review' | 'draft';
+  // Inspection controls
+  is_starred?: boolean;
+  is_inspection_verified?: boolean;
+  inspection_notes?: string;
+  is_hidden?: boolean;
+  priority_order?: number;
+  inspected_by?: string;
+  inspected_at?: string;
 }
 
 export interface Anomaly {
