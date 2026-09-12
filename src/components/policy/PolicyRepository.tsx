@@ -47,6 +47,7 @@ export const PolicyRepository: React.FC = () => {
   const [isAreaUpdateOpen, setIsAreaUpdateOpen] = useState(false);
   const [isResearchUploadOpen, setIsResearchUploadOpen] = useState(false);
   const [selectedPolicyForArea, setSelectedPolicyForArea] = useState<Policy | null>(null);
+  const [droppedPolicyFile, setDroppedPolicyFile] = useState<File | null>(null);
 
   // Drag-over container state
   const [isDraggingOverRepo, setIsDraggingOverRepo] = useState(false);
@@ -81,6 +82,10 @@ export const PolicyRepository: React.FC = () => {
   const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Ignore dragleave events caused by moving between children of the repository.
+    if (e.currentTarget.contains(e.relatedTarget as Node | null)) return;
+
     setIsDraggingOverRepo(false);
   };
 
@@ -88,7 +93,18 @@ export const PolicyRepository: React.FC = () => {
     e.preventDefault();
     e.stopPropagation();
     setIsDraggingOverRepo(false);
+
+    const droppedFile = e.dataTransfer.files?.[0];
+    if (!droppedFile) return;
+
+    setDroppedPolicyFile(droppedFile);
     setIsPolicyUploadOpen(true);
+    e.dataTransfer.clearData();
+  };
+
+  const closePolicyUpload = () => {
+    setIsPolicyUploadOpen(false);
+    setDroppedPolicyFile(null);
   };
 
   const handlePolicyCreated = (newPol: Policy) => {
@@ -135,8 +151,9 @@ export const PolicyRepository: React.FC = () => {
       {/* Policy Upload Modal (Drag & Drop) */}
       <PolicyUploadModal
         isOpen={isPolicyUploadOpen}
-        onClose={() => setIsPolicyUploadOpen(false)}
+        onClose={closePolicyUpload}
         onPolicyCreated={handlePolicyCreated}
+        initialFile={droppedPolicyFile}
       />
 
       {/* Area Update Modal */}
