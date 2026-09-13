@@ -98,8 +98,8 @@ const AppContent: React.FC = () => {
           {activePage === 'policy' && <PolicyImpactAnalyzer />}
           {activePage === 'policies' && <PolicyRepository />}
           {activePage === 'decision-support' && <PolicyDecisionDashboard />}
-          {activePage === 'research' && <ResearchLibrary />}
-          {activePage === 'case-studies' && <ResearchLibrary />}
+          {activePage === 'research' && <ResearchLibrary mode="publications" />}
+          {activePage === 'case-studies' && <ResearchLibrary mode="case-studies" />}
           {activePage === 'collaboration' && <MyWorkspace />}
           {activePage === 'news-events' && <ReportGenerator />}
           {activePage === 'integration' && <DataIntegrationHub />}
