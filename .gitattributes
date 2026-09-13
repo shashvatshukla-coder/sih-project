@@ -1,6 +1,7 @@
 * text=auto
 # Git LFS: PolicyLab Random Forest models
 ml/models/*.pkl filter=lfs diff=lfs merge=lfs -text
+ml/models/**/*.pkl filter=lfs diff=lfs merge=lfs -text
 data/processed/ghaziabad/lulc/lulc_2015_classified.tif filter=lfs diff=lfs merge=lfs -text
 data/processed/ghaziabad/dem/ghaziabad_slope_aligned_30m.tif filter=lfs diff=lfs merge=lfs -text
 data/processed/ghaziabad/roads/road_distance_ghaziabad_30m_aligned_30m.tif filter=lfs diff=lfs merge=lfs -text
