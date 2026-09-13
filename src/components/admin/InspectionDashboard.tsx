@@ -77,7 +77,8 @@ export const InspectionDashboard: React.FC = () => {
     updateUpcomingEvent,
     addUpcomingEvent,
     deleteUpcomingEvent,
-    resetDashboardToBaseline
+    resetDashboardToBaseline,
+    states
   } = useApp();
 
   // State
@@ -364,15 +365,24 @@ export const InspectionDashboard: React.FC = () => {
   // Direct Creation Handlers
   const handleCreatePolicySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPolicy.name || !newPolicy.description) {
-      showMessage('Policy name and description are required', 'error');
+    if (!newPolicy.name || !newPolicy.description || !newPolicy.state_name.trim()) {
+      showMessage('Policy name, description, and target state are required', 'error');
       return;
     }
 
     try {
+      const normalizedStateName = newPolicy.state_name.trim();
+      const matchedState = states.find(
+        state => state.state_name.trim().toLowerCase() === normalizedStateName.toLowerCase()
+      );
+      const customStateCode = normalizedStateName
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const resolvedStateCode = matchedState?.state_code || `IN-${customStateCode}`;
       const areaTargets = [{
-        state_code: newPolicy.state_code,
-        state_name: newPolicy.state_name,
+        state_code: resolvedStateCode,
+        state_name: normalizedStateName,
         district_name: newPolicy.district_name,
         target_year: 2028,
         regional_budget_cr: newPolicy.allocated_budget_cr,
@@ -1491,20 +1501,14 @@ export const InspectionDashboard: React.FC = () => {
                   <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
                     Target State
                   </label>
-                  <select
-                    value={newPolicy.state_code}
-                    onChange={e => {
-                      const code = e.target.value;
-                      const name = code === 'IN-UP' ? 'Uttar Pradesh' : code === 'IN-BR' ? 'Bihar' : code === 'IN-MP' ? 'Madhya Pradesh' : 'Maharashtra';
-                      setNewPolicy(prev => ({ ...prev, state_code: code, state_name: name }));
-                    }}
+                  <input
+                    type="text"
+                    value={newPolicy.state_name}
+                    onChange={e => setNewPolicy(prev => ({ ...prev, state_name: e.target.value }))}
+                    placeholder="e.g. Uttar Pradesh"
+                    required
                     className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none"
-                  >
-                    <option value="IN-UP">Uttar Pradesh (IN-UP)</option>
-                    <option value="IN-BR">Bihar (IN-BR)</option>
-                    <option value="IN-MP">Madhya Pradesh (IN-MP)</option>
-                    <option value="IN-MH">Maharashtra (IN-MH)</option>
-                  </select>
+                  />
                 </div>
 
                 <div>
