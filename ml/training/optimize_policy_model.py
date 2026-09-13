@@ -1,9 +1,11 @@
 """Create a smaller PolicyLab Random Forest without touching the original model.
 
-This script is intentionally conservative: it benchmarks candidate forests against
-an unchanged reference model and only writes a new optimized model. It preserves
-the existing 3-feature pipeline:
-    lulc_2015 + slope + road_distance -> future LULC
+This script benchmarks smaller forests against the unchanged 2011->2015 model.
+The existing training relationship is:
+    lulc_2011 + slope + road_distance -> lulc_2015
+
+The resulting model can then be used by PolicyLab for the existing extrapolation:
+    lulc_2015 + slope + road_distance -> 2030 baseline.
 
 Run locally because the source model and geospatial dataset are large LFS assets.
 """
@@ -26,11 +28,9 @@ OUT_DIR = Path("ml/models/optimized")
 OUT_MODEL = OUT_DIR / "lulc_2011_to_2015_optimized.pkl"
 REPORT = OUT_DIR / "optimization_report.json"
 
-FEATURES = ["lulc_2015", "slope", "road_distance"]
+FEATURES = ["lulc_2011", "slope", "road_distance"]
 TARGET = "lulc_2015"
 
-# Conservative candidates. The first is deliberately close to the existing
-# 100-tree model; later candidates trade model size for inference memory.
 CANDIDATES = [
     {"n_estimators": 50, "max_depth": None, "min_samples_leaf": 1},
     {"n_estimators": 30, "max_depth": None, "min_samples_leaf": 1},
@@ -41,8 +41,6 @@ CANDIDATES = [
 
 def load_data():
     df = pd.read_csv(DATASET)
-    # The stored CSV contains historical columns. Keep the existing pipeline's
-    # three feature inputs and use the 2015 class as the prediction target.
     X = df[FEATURES].replace([np.inf, -np.inf], np.nan)
     y = df[TARGET]
     mask = X.notna().all(axis=1) & y.notna()
@@ -69,6 +67,11 @@ def main():
     )
 
     reference = joblib.load(ORIGINAL)
+    if getattr(reference, "n_features_in_", None) != len(FEATURES):
+        raise ValueError(
+            f"Original model expects {getattr(reference, 'n_features_in_', 'unknown')} "
+            f"features; this benchmark expects {len(FEATURES)}."
+        )
     reference_metrics = benchmark(reference, X_test, y_test)
 
     results = []
@@ -85,13 +88,11 @@ def main():
         result = {**params, **metrics}
         results.append(result)
 
-        # Prefer smaller forests, but require no more than a 2 percentage-point
-        # accuracy drop and no more than a 0.03 macro-F1 drop versus reference.
         acceptable = (
             metrics["accuracy"] >= reference_metrics["accuracy"] - 0.02
             and metrics["macro_f1"] >= reference_metrics["macro_f1"] - 0.03
         )
-        if acceptable and (best is None or params["n_estimators"] < best[0]["n_estimators"]):
+        if acceptable and (best is None or params["n_estimators"] < best["n_estimators"]):
             best = {"params": params, "model": model, **metrics}
 
     if best is None:
@@ -106,8 +107,9 @@ def main():
     report = {
         "reference_model": str(ORIGINAL),
         "optimized_model": str(OUT_MODEL),
-        "features": FEATURES,
+        "training_features": FEATURES,
         "target": TARGET,
+        "policyLab_inference_features": ["lulc_2015", "slope", "road_distance"],
         "reference_metrics": reference_metrics,
         "selected_candidate": {k: v for k, v in best.items() if k != "model"},
         "candidates": results,
