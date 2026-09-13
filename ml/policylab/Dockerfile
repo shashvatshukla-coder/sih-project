@@ -9,7 +9,7 @@ COPY ml/policylab/requirements.txt ./requirements.txt
 RUN pip install -r requirements.txt
 
 COPY ml/policylab ./ml/policylab
-COPY ml/models/lulc_2011_to_2015.pkl ./ml/models/lulc_2011_to_2015.pkl
+COPY ml/models/optimized/lulc_2011_to_2015_optimized.pkl ./ml/models/optimized/lulc_2011_to_2015_optimized.pkl
 COPY data/processed/ghaziabad/lulc/lulc_2015_classified.tif ./data/processed/ghaziabad/lulc/lulc_2015_classified.tif
 COPY data/processed/ghaziabad/dem/ghaziabad_slope_aligned_30m.tif ./data/processed/ghaziabad/dem/ghaziabad_slope_aligned_30m.tif
 COPY data/processed/ghaziabad/roads/road_distance_ghaziabad_30m_aligned.tif ./data/processed/ghaziabad/roads/road_distance_ghaziabad_30m_aligned.tif
