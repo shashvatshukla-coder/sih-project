@@ -52,10 +52,16 @@ class Database {
   private supabaseNeedsSeeding: boolean = false;
   private pgPool: pg.Pool | null = null;
   private pgPoolConnected: boolean = false;
+  private contentStoreReady: boolean = false;
   private lastSyncTime: string | null = null;
+  private ready: Promise<void>;
 
   constructor() {
-    this.init();
+    this.ready = this.init();
+  }
+
+  public async waitUntilReady(): Promise<void> {
+    await this.ready;
   }
 
   private async init() {
@@ -414,12 +420,14 @@ class Database {
         { data: sStates, error: errStates },
         { data: sDistricts, error: errDistricts },
         { data: sRecords, error: errRecords },
-        { data: sDatasets }
+        { data: sDatasets },
+        { data: sContent, error: errContent }
       ] = await Promise.all([
         this.supabase.from('states').select('*'),
         this.supabase.from('districts').select('*'),
         this.supabase.from('land_use_records').select('*').limit(2000),
-        this.supabase.from('datasets').select('*')
+        this.supabase.from('datasets').select('*'),
+        this.supabase.from('bhu_content_store').select('content_type, content_id, payload, deleted')
       ]);
 
       if (errStates) {
@@ -474,6 +482,11 @@ class Database {
         this.datasets = sDatasets;
       }
 
+      if (!errContent && sContent) {
+        this.mergePersistentContent(sContent);
+        this.contentStoreReady = true;
+      }
+
       this.lastSyncTime = new Date().toISOString();
       console.log(`[Database] Live Supabase cloud sync complete (${this.states.length} states, ${this.districts.length} districts, ${this.records.length} records).`);
     } catch (err: any) {
@@ -489,6 +502,10 @@ class Database {
         const resStates = await client.query('SELECT * FROM states LIMIT 100');
         const resDistricts = await client.query('SELECT * FROM districts LIMIT 1000');
         const resRecords = await client.query('SELECT * FROM land_use_records LIMIT 3000');
+        await this.ensureContentStore(client);
+        const resContent = await client.query(
+          'SELECT content_type, content_id, payload, deleted FROM bhu_content_store ORDER BY updated_at ASC'
+        );
 
         if (resStates.rows.length > 0) {
           this.states = resStates.rows.map((s: any) => ({
@@ -525,6 +542,7 @@ class Database {
             is_demo: Boolean(r.is_demo)
           }));
         }
+        this.mergePersistentContent(resContent.rows);
         this.pgPoolConnected = true;
         this.lastSyncTime = new Date().toISOString();
         console.log(`[Database] Live PostgreSQL pooler sync complete (${this.states.length} states, ${this.records.length} records).`);
@@ -534,6 +552,94 @@ class Database {
     } catch (err: any) {
       console.warn('[Database] PostgreSQL Pool sync notice:', err?.message || err);
     }
+  }
+
+  private async ensureContentStore(queryable: any = this.pgPool): Promise<void> {
+    if (!queryable) {
+      throw new Error('PostgreSQL is not configured.');
+    }
+
+    await queryable.query(`
+      CREATE TABLE IF NOT EXISTS bhu_content_store (
+        content_type TEXT NOT NULL,
+        content_id TEXT NOT NULL,
+        payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+        deleted BOOLEAN NOT NULL DEFAULT FALSE,
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (content_type, content_id)
+      )
+    `);
+    this.contentStoreReady = true;
+  }
+
+  private mergePersistentContent(rows: any[]): void {
+    for (const row of rows) {
+      if (row.content_type !== 'policy' && row.content_type !== 'research') continue;
+
+      const collection: any[] = row.content_type === 'policy' ? this.policies : this.research;
+      const index = collection.findIndex(item => item.id === row.content_id);
+
+      if (row.deleted) {
+        if (index >= 0) collection.splice(index, 1);
+        continue;
+      }
+
+      let payload = row.payload;
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch {
+          continue;
+        }
+      }
+      if (!payload || typeof payload !== 'object') continue;
+
+      const persistedItem = { ...payload, id: payload.id || row.content_id };
+      if (index >= 0) {
+        collection[index] = persistedItem;
+      } else {
+        collection.unshift(persistedItem);
+      }
+    }
+  }
+
+  private async persistContent(
+    contentType: 'policy' | 'research',
+    contentId: string,
+    payload: Policy | ResearchPaper,
+    deleted: boolean = false
+  ): Promise<void> {
+    await this.ready;
+
+    if (this.pgPool) {
+      if (!this.contentStoreReady) await this.ensureContentStore();
+      await this.pgPool.query(
+        `INSERT INTO bhu_content_store (content_type, content_id, payload, deleted, updated_at)
+         VALUES ($1, $2, $3::jsonb, $4, NOW())
+         ON CONFLICT (content_type, content_id)
+         DO UPDATE SET payload = EXCLUDED.payload, deleted = EXCLUDED.deleted, updated_at = NOW()`,
+        [contentType, contentId, JSON.stringify(payload), deleted]
+      );
+      this.pgPoolConnected = true;
+      this.lastSyncTime = new Date().toISOString();
+      return;
+    }
+
+    if (this.supabase && this.supabaseConnected) {
+      const { error } = await this.supabase.from('bhu_content_store').upsert({
+        content_type: contentType,
+        content_id: contentId,
+        payload,
+        deleted,
+        updated_at: new Date().toISOString()
+      }, { onConflict: 'content_type,content_id' });
+      if (error) throw new Error(`Persistent content save failed: ${error.message}`);
+      this.contentStoreReady = true;
+      this.lastSyncTime = new Date().toISOString();
+      return;
+    }
+
+    throw new Error('Persistent database is unavailable. Your change was not saved.');
   }
 
   private async syncFromPostgres() {
@@ -689,12 +795,14 @@ class Database {
       supabase_url: supabaseUrl ? supabaseUrl.replace(/https?:\/\//, '').split('.')[0] + '.supabase.co' : null,
       postgres_configured: Boolean(dbUrl),
       postgres_connected: this.pgPoolConnected || isDbConnected(),
+      content_store_connected: this.contentStoreReady,
       last_sync: this.lastSyncTime,
       total_states: this.states.length,
       total_districts: this.districts.length,
       total_records: this.records.length,
       total_datasets: this.datasets.length,
       total_policies: this.policies.length,
+      total_research: this.research.length,
       total_anomalies: this.anomalies.length
     };
   }
@@ -849,7 +957,8 @@ class Database {
     return this.policies.find(p => p.id.toLowerCase() === id.toLowerCase() || p.acronym.toLowerCase() === id.toLowerCase());
   }
 
-  public addPolicy(policy: Policy): Policy {
+  public async addPolicy(policy: Policy): Promise<Policy> {
+    await this.persistContent('policy', policy.id, policy);
     const existingIndex = this.policies.findIndex(p => p.id === policy.id);
     if (existingIndex >= 0) {
       this.policies[existingIndex] = { ...this.policies[existingIndex], ...policy };
@@ -862,41 +971,31 @@ class Database {
       acronym: policy.acronym
     });
 
-    if (this.supabase) {
-      this.supabase.from('policies').upsert([policy], { onConflict: 'id' }).then(({ error }) => {
-        if (error) console.warn('[Supabase] Policy save warning:', error.message);
-      });
-    }
     return policy;
   }
 
-  public updatePolicy(id: string, updates: Partial<Policy>): Policy | undefined {
+  public async updatePolicy(id: string, updates: Partial<Policy>): Promise<Policy | undefined> {
     const policy = this.getPolicyById(id);
     if (!policy) return undefined;
-    Object.assign(policy, updates, { is_user_modified: true });
+    const updatedPolicy = { ...policy, ...updates, is_user_modified: true };
+    await this.persistContent('policy', policy.id, updatedPolicy);
+    Object.assign(policy, updatedPolicy);
 
     this.logAudit('UPDATE_POLICY', updates.policyMakerName || 'PolicyMaker', {
       id: policy.id,
       updated_fields: Object.keys(updates)
     });
 
-    if (this.supabase) {
-      this.supabase.from('policies').update(updates).eq('id', policy.id).then(({ error }) => {
-        if (error) console.warn('[Supabase] Policy update warning:', error.message);
-      });
-    }
     return policy;
   }
 
-  public updatePolicyArea(id: string, areaTarget: AreaTarget): Policy | undefined {
+  public async updatePolicyArea(id: string, areaTarget: AreaTarget): Promise<Policy | undefined> {
     const policy = this.getPolicyById(id);
     if (!policy) return undefined;
 
-    if (!policy.area_targets) {
-      policy.area_targets = [];
-    }
+    const areaTargets = [...(policy.area_targets || [])];
 
-    const existingIdx = policy.area_targets.findIndex(
+    const existingIdx = areaTargets.findIndex(
       at => at.state_code.toLowerCase() === areaTarget.state_code.toLowerCase() &&
             (at.district_code || '').toLowerCase() === (areaTarget.district_code || '').toLowerCase()
     );
@@ -910,14 +1009,20 @@ class Database {
     };
 
     if (existingIdx >= 0) {
-      policy.area_targets[existingIdx] = cleanTarget;
+      areaTargets[existingIdx] = cleanTarget;
     } else {
-      policy.area_targets.push(cleanTarget);
+      areaTargets.push(cleanTarget);
     }
 
-    policy.current_area_target = cleanTarget;
-    policy.is_user_modified = true;
-    policy.status = 'Under Revision';
+    const updatedPolicy: Policy = {
+      ...policy,
+      area_targets: areaTargets,
+      current_area_target: cleanTarget,
+      is_user_modified: true,
+      status: 'Under Revision'
+    };
+    await this.persistContent('policy', policy.id, updatedPolicy);
+    Object.assign(policy, updatedPolicy);
 
     this.logAudit('UPDATE_POLICY_AREA', areaTarget.updated_by || 'PolicyMaker', {
       policy_id: policy.id,
@@ -926,22 +1031,14 @@ class Database {
       budget: areaTarget.regional_budget_cr
     });
 
-    if (this.supabase) {
-      this.supabase.from('policies').update({
-        area_targets: policy.area_targets,
-        is_user_modified: true,
-        status: policy.status
-      }).eq('id', policy.id).then(({ error }) => {
-        if (error) console.warn('[Supabase] Policy area target update warning:', error.message);
-      });
-    }
-
     return policy;
   }
 
-  public deletePolicy(id: string): boolean {
+  public async deletePolicy(id: string): Promise<boolean> {
     const idx = this.policies.findIndex(p => p.id === id);
     if (idx >= 0) {
+      const removed = this.policies[idx];
+      await this.persistContent('policy', removed.id, removed, true);
       this.policies.splice(idx, 1);
       this.logAudit('DELETE_POLICY', 'PolicyMaker', { id });
       return true;
@@ -982,7 +1079,8 @@ class Database {
     return this.research.find(p => p.id.toLowerCase() === id.toLowerCase());
   }
 
-  public addResearchPaper(paper: ResearchPaper): ResearchPaper {
+  public async addResearchPaper(paper: ResearchPaper): Promise<ResearchPaper> {
+    await this.persistContent('research', paper.id, paper);
     const existingIndex = this.research.findIndex(p => p.id === paper.id);
     if (existingIndex >= 0) {
       this.research[existingIndex] = paper;
@@ -994,12 +1092,6 @@ class Database {
       title: paper.title,
       dedicatedResearcherId: paper.dedicatedResearcherId
     });
-
-    if (this.supabase) {
-      this.supabase.from('research').upsert([paper], { onConflict: 'id' }).then(({ error }) => {
-        if (error) console.warn('[Supabase] Research paper save warning:', error.message);
-      });
-    }
 
     return paper;
   }
@@ -1093,23 +1185,26 @@ class Database {
     return false;
   }
 
-  public inspectPolicy(id: string, updates: {
+  public async inspectPolicy(id: string, updates: {
     is_starred?: boolean;
     is_inspection_verified?: boolean;
     is_hidden?: boolean;
     priority_order?: number;
     inspection_notes?: string;
     inspected_by?: string;
-  }): Policy | undefined {
+  }): Promise<Policy | undefined> {
     const policy = this.getPolicyById(id);
     if (!policy) return undefined;
-    if (typeof updates.is_starred === 'boolean') policy.is_starred = updates.is_starred;
-    if (typeof updates.is_inspection_verified === 'boolean') policy.is_inspection_verified = updates.is_inspection_verified;
-    if (typeof updates.is_hidden === 'boolean') policy.is_hidden = updates.is_hidden;
-    if (typeof updates.priority_order === 'number') policy.priority_order = updates.priority_order;
-    if (updates.inspection_notes !== undefined) policy.inspection_notes = updates.inspection_notes;
-    policy.inspected_by = updates.inspected_by || 'Chief Inspector';
-    policy.inspected_at = new Date().toISOString();
+    const inspectedPolicy = { ...policy };
+    if (typeof updates.is_starred === 'boolean') inspectedPolicy.is_starred = updates.is_starred;
+    if (typeof updates.is_inspection_verified === 'boolean') inspectedPolicy.is_inspection_verified = updates.is_inspection_verified;
+    if (typeof updates.is_hidden === 'boolean') inspectedPolicy.is_hidden = updates.is_hidden;
+    if (typeof updates.priority_order === 'number') inspectedPolicy.priority_order = updates.priority_order;
+    if (updates.inspection_notes !== undefined) inspectedPolicy.inspection_notes = updates.inspection_notes;
+    inspectedPolicy.inspected_by = updates.inspected_by || 'Chief Inspector';
+    inspectedPolicy.inspected_at = new Date().toISOString();
+    await this.persistContent('policy', policy.id, inspectedPolicy);
+    Object.assign(policy, inspectedPolicy);
 
     this.logAudit('INSPECT_POLICY', policy.inspected_by, {
       id: policy.id,
@@ -1121,35 +1216,37 @@ class Database {
     return policy;
   }
 
-  public reorderPolicies(orderedIds: string[]): Policy[] {
-    orderedIds.forEach((id, index) => {
-      const policy = this.getPolicyById(id);
-      if (policy) {
-        policy.priority_order = index + 1;
-      }
+  public async reorderPolicies(orderedIds: string[]): Promise<Policy[]> {
+    const reordered = this.policies.map(policy => {
+      const index = orderedIds.findIndex(id => id === policy.id || id.toLowerCase() === policy.acronym.toLowerCase());
+      return index >= 0 ? { ...policy, priority_order: index + 1 } : { ...policy };
     });
-    this.policies.sort((a, b) => (a.priority_order || 999) - (b.priority_order || 999));
+    await Promise.all(reordered.map(policy => this.persistContent('policy', policy.id, policy)));
+    this.policies = reordered.sort((a, b) => (a.priority_order || 999) - (b.priority_order || 999));
     this.logAudit('REORDER_POLICIES', 'ChiefInspector', { order: orderedIds });
     return this.policies;
   }
 
-  public inspectResearch(id: string, updates: {
+  public async inspectResearch(id: string, updates: {
     is_starred?: boolean;
     is_inspection_verified?: boolean;
     is_hidden?: boolean;
     priority_order?: number;
     inspection_notes?: string;
     inspected_by?: string;
-  }): ResearchPaper | undefined {
+  }): Promise<ResearchPaper | undefined> {
     const paper = this.getResearchPaperById(id);
     if (!paper) return undefined;
-    if (typeof updates.is_starred === 'boolean') paper.is_starred = updates.is_starred;
-    if (typeof updates.is_inspection_verified === 'boolean') paper.is_inspection_verified = updates.is_inspection_verified;
-    if (typeof updates.is_hidden === 'boolean') paper.is_hidden = updates.is_hidden;
-    if (typeof updates.priority_order === 'number') paper.priority_order = updates.priority_order;
-    if (updates.inspection_notes !== undefined) paper.inspection_notes = updates.inspection_notes;
-    paper.inspected_by = updates.inspected_by || 'Chief Inspector';
-    paper.inspected_at = new Date().toISOString();
+    const inspectedPaper = { ...paper };
+    if (typeof updates.is_starred === 'boolean') inspectedPaper.is_starred = updates.is_starred;
+    if (typeof updates.is_inspection_verified === 'boolean') inspectedPaper.is_inspection_verified = updates.is_inspection_verified;
+    if (typeof updates.is_hidden === 'boolean') inspectedPaper.is_hidden = updates.is_hidden;
+    if (typeof updates.priority_order === 'number') inspectedPaper.priority_order = updates.priority_order;
+    if (updates.inspection_notes !== undefined) inspectedPaper.inspection_notes = updates.inspection_notes;
+    inspectedPaper.inspected_by = updates.inspected_by || 'Chief Inspector';
+    inspectedPaper.inspected_at = new Date().toISOString();
+    await this.persistContent('research', paper.id, inspectedPaper);
+    Object.assign(paper, inspectedPaper);
 
     this.logAudit('INSPECT_RESEARCH', paper.inspected_by, {
       id: paper.id,
@@ -1161,22 +1258,23 @@ class Database {
     return paper;
   }
 
-  public reorderResearch(orderedIds: string[]): ResearchPaper[] {
-    orderedIds.forEach((id, index) => {
-      const paper = this.getResearchPaperById(id);
-      if (paper) {
-        paper.priority_order = index + 1;
-      }
+  public async reorderResearch(orderedIds: string[]): Promise<ResearchPaper[]> {
+    const reordered = this.research.map(paper => {
+      const index = orderedIds.indexOf(paper.id);
+      return index >= 0 ? { ...paper, priority_order: index + 1 } : { ...paper };
     });
-    this.research.sort((a, b) => (a.priority_order || 999) - (b.priority_order || 999));
+    await Promise.all(reordered.map(paper => this.persistContent('research', paper.id, paper)));
+    this.research = reordered.sort((a, b) => (a.priority_order || 999) - (b.priority_order || 999));
     this.logAudit('REORDER_RESEARCH', 'ChiefInspector', { order: orderedIds });
     return this.research;
   }
 
-  public deleteResearchPaper(id: string): boolean {
+  public async deleteResearchPaper(id: string): Promise<boolean> {
     const idx = this.research.findIndex(r => r.id === id);
     if (idx >= 0) {
-      const removed = this.research.splice(idx, 1)[0];
+      const removed = this.research[idx];
+      await this.persistContent('research', removed.id, removed, true);
+      this.research.splice(idx, 1);
       this.logAudit('DELETE_RESEARCH', 'ChiefInspector', { id: removed.id, title: removed.title });
       return true;
     }

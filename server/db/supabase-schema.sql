@@ -169,6 +169,21 @@ CREATE TABLE IF NOT EXISTS audit_logs (
   details JSONB
 );
 
+-- 10. Durable application content overrides
+-- Stores the complete policy/research object so uploaded fields, edits, ordering,
+-- inspection state, and deletion tombstones survive server restarts.
+CREATE TABLE IF NOT EXISTS bhu_content_store (
+  content_type TEXT NOT NULL CHECK (content_type IN ('policy', 'research')),
+  content_id TEXT NOT NULL,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  deleted BOOLEAN NOT NULL DEFAULT FALSE,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (content_type, content_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_bhu_content_store_updated
+  ON bhu_content_store(content_type, updated_at DESC);
+
 -- RLS Configuration
 ALTER TABLE states ENABLE ROW LEVEL SECURITY;
 ALTER TABLE districts ENABLE ROW LEVEL SECURITY;
@@ -179,6 +194,7 @@ ALTER TABLE policies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE research_papers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE anomalies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bhu_content_store ENABLE ROW LEVEL SECURITY;
 
 -- Anonymous and Authenticated Read Policies
 DO $$
@@ -209,5 +225,8 @@ BEGIN
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public read audit_logs') THEN
     CREATE POLICY "Allow public read audit_logs" ON audit_logs FOR SELECT USING (true);
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public read content store') THEN
+    CREATE POLICY "Allow public read content store" ON bhu_content_store FOR SELECT USING (true);
   END IF;
 END $$;

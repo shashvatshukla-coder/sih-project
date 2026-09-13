@@ -267,19 +267,21 @@ router.post('/data-sources/:id/sync', (req: Request, res: Response) => {
 });
 
 // Policies
-router.get('/policies', (req: Request, res: Response) => {
+router.get('/policies', async (req: Request, res: Response) => {
+  await db.waitUntilReady();
   const { state, district, includeHidden } = req.query;
   res.json({ success: true, data: db.getPolicies(state as string, district as string, includeHidden === 'true') });
 });
 
-router.get('/policies/:id', (req: Request, res: Response) => {
+router.get('/policies/:id', async (req: Request, res: Response) => {
+  await db.waitUntilReady();
   const policy = db.getPolicyById(req.params.id);
   if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
   res.json({ success: true, data: policy });
 });
 
 // Create new Policy (Policy Maker)
-router.post('/policies', (req: Request, res: Response) => {
+router.post('/policies', async (req: Request, res: Response) => {
   try {
     const {
       name,
@@ -334,7 +336,7 @@ router.post('/policies', (req: Request, res: Response) => {
       policyMakerName: policyMakerName || 'Policy Maker'
     };
 
-    const saved = db.addPolicy(newPolicy as any);
+    const saved = await db.addPolicy(newPolicy as any);
     res.json({ success: true, message: 'Policy registered successfully', data: saved });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -342,9 +344,9 @@ router.post('/policies', (req: Request, res: Response) => {
 });
 
 // Update Policy (Policy Maker)
-router.put('/policies/:id', (req: Request, res: Response) => {
+router.put('/policies/:id', async (req: Request, res: Response) => {
   try {
-    const updated = db.updatePolicy(req.params.id, req.body);
+    const updated = await db.updatePolicy(req.params.id, req.body);
     if (!updated) return res.status(404).json({ success: false, error: 'Policy not found' });
     res.json({ success: true, message: 'Policy updated successfully', data: updated });
   } catch (err: any) {
@@ -353,7 +355,7 @@ router.put('/policies/:id', (req: Request, res: Response) => {
 });
 
 // Update Policy Area Target (Policy Maker updates on the basis of area)
-router.post('/policies/:id/area', (req: Request, res: Response) => {
+router.post('/policies/:id/area', async (req: Request, res: Response) => {
   try {
     const {
       state_code,
@@ -394,7 +396,7 @@ router.post('/policies/:id/area', (req: Request, res: Response) => {
       last_updated: new Date().toISOString()
     };
 
-    const updated = db.updatePolicyArea(req.params.id, areaTarget as any);
+    const updated = await db.updatePolicyArea(req.params.id, areaTarget as any);
     if (!updated) return res.status(404).json({ success: false, error: 'Policy not found' });
 
     res.json({
@@ -408,7 +410,7 @@ router.post('/policies/:id/area', (req: Request, res: Response) => {
 });
 
 // Drag & Drop Ingestion for Policies / Gazette Notifications
-router.post('/policies/upload', (req: Request, res: Response) => {
+router.post('/policies/upload', async (req: Request, res: Response) => {
   try {
     const {
       fileName,
@@ -489,7 +491,7 @@ router.post('/policies/upload', (req: Request, res: Response) => {
       } : undefined
     };
 
-    const created = db.addPolicy(newPolicy as any);
+    const created = await db.addPolicy(newPolicy as any);
     res.json({
       success: true,
       message: `Policy '${detectedTitle}' successfully ingested, parsed, and registered in National Repository.`,
@@ -500,10 +502,14 @@ router.post('/policies/upload', (req: Request, res: Response) => {
   }
 });
 
-router.delete('/policies/:id', (req: Request, res: Response) => {
-  const deleted = db.deletePolicy(req.params.id);
-  if (!deleted) return res.status(404).json({ success: false, error: 'Policy not found' });
-  res.json({ success: true, message: 'Policy deleted successfully' });
+router.delete('/policies/:id', async (req: Request, res: Response) => {
+  try {
+    const deleted = await db.deletePolicy(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: 'Policy not found' });
+    res.json({ success: true, message: 'Policy deleted successfully' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 router.get('/policies/:id/impact', (req: Request, res: Response) => {
@@ -517,26 +523,32 @@ router.get('/policies/:id/impact', (req: Request, res: Response) => {
 });
 
 // Research Papers
-router.get('/research', (req: Request, res: Response) => {
+router.get('/research', async (req: Request, res: Response) => {
+  await db.waitUntilReady();
   const { search, tag, includeHidden } = req.query;
   const papers = db.getResearchPapers(search as string, tag as string, includeHidden === 'true');
   res.json({ success: true, count: papers.length, data: papers });
 });
 
-router.delete('/research/:id', (req: Request, res: Response) => {
-  const deleted = db.deleteResearchPaper(req.params.id);
-  if (!deleted) return res.status(404).json({ success: false, error: 'Research paper not found' });
-  res.json({ success: true, message: 'Research paper deleted successfully' });
+router.delete('/research/:id', async (req: Request, res: Response) => {
+  try {
+    const deleted = await db.deleteResearchPaper(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: 'Research paper not found' });
+    res.json({ success: true, message: 'Research paper deleted successfully' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
-router.get('/research/:id', (req: Request, res: Response) => {
+router.get('/research/:id', async (req: Request, res: Response) => {
+  await db.waitUntilReady();
   const paper = db.getResearchPaperById(req.params.id);
   if (!paper) return res.status(404).json({ success: false, error: 'Research paper not found' });
   res.json({ success: true, data: paper });
 });
 
 // Create / Author new Research Paper
-router.post('/research', (req: Request, res: Response) => {
+router.post('/research', async (req: Request, res: Response) => {
   try {
     const {
       title,
@@ -594,7 +606,7 @@ router.post('/research', (req: Request, res: Response) => {
       status: 'published' as const
     };
 
-    const saved = db.addResearchPaper(newPaper as any);
+    const saved = await db.addResearchPaper(newPaper as any);
     res.status(201).json({ success: true, message: 'Research paper published successfully', data: saved });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Failed to save research paper' });
@@ -602,7 +614,7 @@ router.post('/research', (req: Request, res: Response) => {
 });
 
 // Upload Document Endpoint
-router.post('/research/upload', (req: Request, res: Response) => {
+router.post('/research/upload', async (req: Request, res: Response) => {
   try {
     const { fileName, fileSize, fileType, fileContent, title, author, dedicatedResearcherId, geography, tags } = req.body;
     if (!fileName) {
@@ -645,7 +657,7 @@ router.post('/research/upload', (req: Request, res: Response) => {
       status: 'published' as const
     };
 
-    const saved = db.addResearchPaper(newPaper as any);
+    const saved = await db.addResearchPaper(newPaper as any);
     res.status(201).json({ success: true, message: 'Document uploaded and indexed successfully', data: saved });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Failed to upload document' });
@@ -794,9 +806,9 @@ router.delete('/inspection/users/:id', (req: Request, res: Response) => {
 });
 
 // 7. Inspect Policy (Star, Verify, Hide/Show, Reorder, Add Notes)
-router.put('/inspection/policies/:id/inspect', (req: Request, res: Response) => {
+router.put('/inspection/policies/:id/inspect', async (req: Request, res: Response) => {
   try {
-    const updated = db.inspectPolicy(req.params.id, req.body);
+    const updated = await db.inspectPolicy(req.params.id, req.body);
     if (!updated) return res.status(404).json({ success: false, error: 'Policy not found' });
     res.json({ success: true, message: 'Policy inspection verdict saved', data: updated });
   } catch (err: any) {
@@ -805,13 +817,13 @@ router.put('/inspection/policies/:id/inspect', (req: Request, res: Response) => 
 });
 
 // 8. Reorder Policies
-router.post('/inspection/policies/reorder', (req: Request, res: Response) => {
+router.post('/inspection/policies/reorder', async (req: Request, res: Response) => {
   try {
     const { orderedIds } = req.body;
     if (!Array.isArray(orderedIds)) {
       return res.status(400).json({ success: false, error: 'orderedIds must be an array' });
     }
-    const policies = db.reorderPolicies(orderedIds);
+    const policies = await db.reorderPolicies(orderedIds);
     res.json({ success: true, message: 'Policies reordered successfully', data: policies });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
@@ -819,9 +831,9 @@ router.post('/inspection/policies/reorder', (req: Request, res: Response) => {
 });
 
 // 9. Inspect Research Paper (Star, Verify, Hide/Show, Reorder, Add Notes)
-router.put('/inspection/research/:id/inspect', (req: Request, res: Response) => {
+router.put('/inspection/research/:id/inspect', async (req: Request, res: Response) => {
   try {
-    const updated = db.inspectResearch(req.params.id, req.body);
+    const updated = await db.inspectResearch(req.params.id, req.body);
     if (!updated) return res.status(404).json({ success: false, error: 'Research paper not found' });
     res.json({ success: true, message: 'Research paper inspection status saved', data: updated });
   } catch (err: any) {
@@ -830,13 +842,13 @@ router.put('/inspection/research/:id/inspect', (req: Request, res: Response) => 
 });
 
 // 10. Reorder Research Papers
-router.post('/inspection/research/reorder', (req: Request, res: Response) => {
+router.post('/inspection/research/reorder', async (req: Request, res: Response) => {
   try {
     const { orderedIds } = req.body;
     if (!Array.isArray(orderedIds)) {
       return res.status(400).json({ success: false, error: 'orderedIds must be an array' });
     }
-    const papers = db.reorderResearch(orderedIds);
+    const papers = await db.reorderResearch(orderedIds);
     res.json({ success: true, message: 'Research papers reordered successfully', data: papers });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
