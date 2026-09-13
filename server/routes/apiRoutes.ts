@@ -439,12 +439,15 @@ router.post('/data-sources/:id/sync', (req: Request, res: Response) => {
 // Policies
 router.get('/policies', async (req: Request, res: Response) => {
   await db.waitUntilReady();
+  await db.refreshPersistentContent();
   const { state, district, includeHidden } = req.query;
+  res.set('Cache-Control', 'no-store');
   res.json({ success: true, data: db.getPolicies(state as string, district as string, includeHidden === 'true') });
 });
 
 router.get('/policies/:id', async (req: Request, res: Response) => {
   await db.waitUntilReady();
+  await db.refreshPersistentContent();
   const policy = db.getPolicyById(req.params.id);
   if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
   res.json({ success: true, data: policy });
@@ -453,6 +456,7 @@ router.get('/policies/:id', async (req: Request, res: Response) => {
 router.get('/policies/:id/download', async (req: Request, res: Response) => {
   try {
     await db.waitUntilReady();
+    await db.refreshPersistentContent();
     const policy = db.getPolicyById(req.params.id);
     if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
 
@@ -741,8 +745,10 @@ router.get('/policies/:id/impact', (req: Request, res: Response) => {
 // Research Papers
 router.get('/research', async (req: Request, res: Response) => {
   await db.waitUntilReady();
+  await db.refreshPersistentContent();
   const { search, tag, includeHidden } = req.query;
   const papers = db.getResearchPapers(search as string, tag as string, includeHidden === 'true');
+  res.set('Cache-Control', 'no-store');
   res.json({ success: true, count: papers.length, data: papers });
 });
 
@@ -758,6 +764,7 @@ router.delete('/research/:id', async (req: Request, res: Response) => {
 
 router.get('/research/:id', async (req: Request, res: Response) => {
   await db.waitUntilReady();
+  await db.refreshPersistentContent();
   const paper = db.getResearchPaperById(req.params.id);
   if (!paper) return res.status(404).json({ success: false, error: 'Research paper not found' });
   res.json({ success: true, data: paper });
@@ -766,6 +773,7 @@ router.get('/research/:id', async (req: Request, res: Response) => {
 router.get('/research/:id/download', async (req: Request, res: Response) => {
   try {
     await db.waitUntilReady();
+    await db.refreshPersistentContent();
     const paper = db.getResearchPaperById(req.params.id);
     if (!paper) return res.status(404).json({ success: false, error: 'Research paper not found' });
 
