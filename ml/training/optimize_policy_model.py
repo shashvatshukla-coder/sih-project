@@ -92,7 +92,7 @@ def main():
             metrics["accuracy"] >= reference_metrics["accuracy"] - 0.02
             and metrics["macro_f1"] >= reference_metrics["macro_f1"] - 0.03
         )
-        if acceptable and (best is None or params["n_estimators"] < best["n_estimators"]):
+        if acceptable and (best is None or params["n_estimators"] < best["params"]["n_estimators"]):
             best = {"params": params, "model": model, **metrics}
 
     if best is None:
