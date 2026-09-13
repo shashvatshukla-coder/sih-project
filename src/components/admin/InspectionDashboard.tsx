@@ -110,7 +110,7 @@ export const InspectionDashboard: React.FC = () => {
     launch_year: new Date().getFullYear(),
     description: '',
     target_region: 'Pan-India',
-    allocated_budget_cr: 1200,
+    allocated_budget_cr: '',
     state_code: 'IN-UP',
     state_name: 'Uttar Pradesh',
     district_name: 'Amethi',
@@ -380,12 +380,15 @@ export const InspectionDashboard: React.FC = () => {
         .replace(/[^A-Z0-9]+/g, '-')
         .replace(/^-+|-+$/g, '');
       const resolvedStateCode = matchedState?.state_code || `IN-${customStateCode}`;
+      const allocatedBudget = newPolicy.allocated_budget_cr.trim() === ''
+        ? null
+        : Number(newPolicy.allocated_budget_cr);
       const areaTargets = [{
         state_code: resolvedStateCode,
         state_name: normalizedStateName,
         district_name: newPolicy.district_name,
         target_year: 2028,
-        regional_budget_cr: newPolicy.allocated_budget_cr,
+        regional_budget_cr: allocatedBudget,
         target_agricultural_pct: newPolicy.target_agricultural_pct,
         priority_tier: 'Critical Focus' as const,
         directives: [
@@ -403,7 +406,7 @@ export const InspectionDashboard: React.FC = () => {
         launch_year: Number(newPolicy.launch_year),
         description: newPolicy.description,
         target_region: newPolicy.target_region,
-        allocated_budget_cr: Number(newPolicy.allocated_budget_cr),
+        allocated_budget_cr: allocatedBudget,
         area_targets: areaTargets,
         is_inspection_verified: true,
         is_starred: true,
@@ -1485,7 +1488,8 @@ export const InspectionDashboard: React.FC = () => {
                 <input
                   type="number"
                   value={newPolicy.allocated_budget_cr}
-                  onChange={e => setNewPolicy(prev => ({ ...prev, allocated_budget_cr: Number(e.target.value) }))}
+                  onChange={e => setNewPolicy(prev => ({ ...prev, allocated_budget_cr: e.target.value }))}
+                  placeholder="Optional — saves as null"
                   className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none font-bold"
                 />
               </div>
