@@ -133,41 +133,10 @@ export const api = {
         if (json.data && json.data.length > 0) return json.data;
       }
     } catch (e) {
-      console.warn('API records fetch failed, generating fallback record');
+      console.warn('API records fetch failed; no unverified fallback record will be shown');
     }
 
-    // Default Amethi / Gauriganj fallback record
-    const isAmethi = filters.district_code === 'UP-AMT' || filters.state_code === 'IN-UP';
-    return [
-      {
-        id: 'AMT-2025',
-        state_code: 'IN-UP',
-        state_name: 'Uttar Pradesh',
-        district_code: 'UP-AMT',
-        district_name: 'Amethi (Gauriganj)',
-        year: filters.year || 2025,
-        total_area_ha: 232900,
-        agricultural_area_ha: 153714,
-        agricultural_pct: 66.0,
-        forest_area_ha: 9316,
-        forest_pct: 4.0,
-        builtup_area_ha: 30743,
-        builtup_pct: 13.2,
-        waterbodies_area_ha: 9782,
-        waterbodies_pct: 4.2,
-        barren_area_ha: 14440,
-        barren_pct: 6.2,
-        other_area_ha: 14905,
-        other_pct: 6.4,
-        irrigated_pct: 89.4,
-        degraded_pct: 16.5,
-        source_id: 'DS-UP-DES',
-        dataset_name: 'UP District Land Record Series 2025 (Amethi/Gauriganj)',
-        source_url: 'https://updes.up.nic.in',
-        confidence_score: 96,
-        is_demo: false
-      }
-    ];
+    return [];
   },
 
   async getTrendAnalysis(state: string = 'IN-UP', district: string = 'UP-AMT', category: string = 'agricultural') {

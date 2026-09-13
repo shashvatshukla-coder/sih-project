@@ -340,6 +340,7 @@ export interface FilterState {
 }
 
 export interface DashboardKPICard {
+  label: string;
   count: string;
   subtitle: string;
 }
@@ -398,4 +399,3 @@ export interface DashboardConfig {
   upcomingEvents: DashboardUpcomingEvent[];
   bannerSlides?: DashboardBannerSlide[];
 }
-

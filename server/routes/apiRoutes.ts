@@ -1010,8 +1010,9 @@ router.post('/inspection/research/reorder', async (req: Request, res: Response) 
 });
 
 // 11. Dashboard Live Control & Overrides (Inspection Directorate)
-router.get('/inspection/dashboard-data', (req: Request, res: Response) => {
+router.get('/inspection/dashboard-data', async (req: Request, res: Response) => {
   try {
+    await db.waitUntilReady();
     const data = db.getDashboardData();
     res.json({ success: true, data });
   } catch (err: any) {

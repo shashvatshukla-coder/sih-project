@@ -16,7 +16,6 @@ import {
   Lightbulb,
   ArrowRight,
   Plus,
-  Minus,
   Layers,
   Sparkles,
   ExternalLink,
@@ -34,7 +33,7 @@ import {
 } from 'lucide-react';
 
 interface BannerSlide {
-  id: number;
+  id: string;
   image: string;
   badge: string;
   title: string;
@@ -46,54 +45,54 @@ interface BannerSlide {
 
 const DEFAULT_BANNER_SLIDES: BannerSlide[] = [
   {
-    id: 1,
+    id: 'slide-1',
     image: '/banners/slide1_rainbow.png',
-    badge: 'National Land Vision',
-    title: 'Knowledge Today.',
-    highlight: 'Better Land Governance Tomorrow.',
-    subtitle: 'A collaborative national ecosystem for open data, research, policy and geospatial innovation.',
-    quote: '"Sustainable land governance for a stronger, inclusive and resilient India."',
-    author: 'Government of India • MoA&FW'
+    badge: 'Verified Data Only',
+    title: 'Evidence First.',
+    highlight: 'Decisions You Can Trace.',
+    subtitle: 'Search approved sources, inspect calculations, and preserve a replayable evidence trail.',
+    quote: 'Dashboard counts come only from connected production records.',
+    author: 'BHU-DRISHTI data principle'
   },
   {
-    id: 2,
+    id: 'slide-2',
     image: '/banners/slide2_earth_art.png',
-    badge: 'Ecological Equilibrium',
-    title: 'Preserving Soil.',
-    highlight: 'Empowering Generations.',
-    subtitle: 'Harmonizing agriculture, agroforestry and ecological balance through AI-driven intelligence.',
-    quote: '"The land is the foundation of all economic vitality and life itself; nurture it with wisdom."',
-    author: 'National Land Policy Council'
+    badge: 'Transparent Provenance',
+    title: 'Source Linked.',
+    highlight: 'Calculation Explained.',
+    subtitle: 'Every displayed record keeps its dataset, year, geography, and source visible.',
+    quote: 'No unsupported success metrics or projected values are shown as facts.',
+    author: 'BHU-DRISHTI evidence policy'
   },
   {
-    id: 3,
+    id: 'slide-3',
     image: '/banners/slide3_mother_nature.png',
-    badge: 'Land Reclamation',
-    title: 'Reclaiming Wasters.',
-    highlight: 'Expanding Green Canopies.',
-    subtitle: 'Transforming sodic and degraded soils into productive agricultural zones across Uttar Pradesh.',
-    quote: '"To restore the soil is to safeguard our civilization\'s future food security and ecological wealth."',
-    author: 'UP Bhumi Sudhar Nigam • Sodic Reclamation'
+    badge: 'Reviewable Evidence',
+    title: 'Human Review.',
+    highlight: 'Before Policy Action.',
+    subtitle: 'Conflicts, missing sources, and incomplete records are surfaced for review instead of guessed.',
+    quote: 'Empty states are more trustworthy than invented numbers.',
+    author: 'BHU-DRISHTI review principle'
   },
   {
-    id: 4,
+    id: 'slide-4',
     image: '/banners/slide4_space_earth.png',
-    badge: 'Space & Remote Sensing',
-    title: 'Precision from Space.',
-    highlight: 'Decisions on Earth.',
-    subtitle: 'Harnessing multi-spectral remote sensing (ISRO Bhuvan & Sentinel) for transparent cadastral governance.',
-    quote: '"One unified evidence layer for every agricultural, forest, and spatial development decision."',
-    author: 'ISRO • National Remote Sensing Centre (NRSC)'
+    badge: 'Safe Integration',
+    title: 'Read Only.',
+    highlight: 'Sources Stay Authoritative.',
+    subtitle: 'BHU-DRISHTI analyzes permitted data without changing external land records.',
+    quote: 'Source systems remain authoritative; disputed evidence goes to human review.',
+    author: 'BHU-DRISHTI governance principle'
   },
   {
-    id: 5,
+    id: 'slide-5',
     image: '/banners/slide5_rainforest.png',
-    badge: 'Catchment & Rivers',
-    title: 'Protecting Watercourses.',
-    highlight: 'Securing Catchment Basins.',
-    subtitle: 'Safeguarding rivers, floodplains, and irrigated agricultural plains for national prosperity.',
-    quote: '"Water is the lifeblood of our fields; land governance must protect every riverbank and wetland."',
-    author: 'Ministry of Jal Shakti & Agriculture'
+    badge: 'Explainable Analysis',
+    title: 'Data First.',
+    highlight: 'AI Explanation Second.',
+    subtitle: 'Deterministic statistics are calculated before AI is used to explain the result.',
+    quote: 'Evidence, calculation, and reasoning remain inspectable.',
+    author: 'BHU-DRISHTI analysis principle'
   }
 ];
 
@@ -128,7 +127,6 @@ export const ExecutiveDashboard: React.FC = () => {
   } = useApp();
 
   const [selectedLayer, setSelectedLayer] = useState<string>('land-use');
-  const [mapZoom, setMapZoom] = useState<number>(1);
   const [currentSlide, setCurrentSlide] = useState<number>(0);
 
   // Inspection control modals
@@ -157,6 +155,7 @@ export const ExecutiveDashboard: React.FC = () => {
   const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState('');
   const [newEventDate, setNewEventDate] = useState('');
+  const canEditDashboardData = false;
 
   // Auto-advance slides continuously every 4.8 seconds
   useEffect(() => {
@@ -256,13 +255,14 @@ export const ExecutiveDashboard: React.FC = () => {
 
   // State cadastral figures
   const currentStateObj = states.find(s => s.state_code === selectedState);
-  const currentAgPct = currentRecord?.agricultural_pct ?? 68.2;
-  const currentForestPct = currentRecord?.forest_pct ?? 14.1;
-  const currentBuiltupPct = currentRecord?.builtup_pct ?? 8.4;
-  const currentWaterPct = currentRecord?.waterbodies_pct ?? 4.2;
-  const currentBarrenPct = currentRecord?.barren_pct ?? 3.1;
-  const currentOtherPct = currentRecord?.other_pct ?? 2.0;
-  const currentTotalHa = currentRecord?.total_area_ha ?? 307000;
+  const hasVerifiedRecord = Boolean(currentRecord && !currentRecord.is_demo);
+  const currentAgPct = hasVerifiedRecord ? currentRecord?.agricultural_pct ?? 0 : 0;
+  const currentForestPct = hasVerifiedRecord ? currentRecord?.forest_pct ?? 0 : 0;
+  const currentBuiltupPct = hasVerifiedRecord ? currentRecord?.builtup_pct ?? 0 : 0;
+  const currentWaterPct = hasVerifiedRecord ? currentRecord?.waterbodies_pct ?? 0 : 0;
+  const currentBarrenPct = hasVerifiedRecord ? currentRecord?.barren_pct ?? 0 : 0;
+  const currentOtherPct = hasVerifiedRecord ? currentRecord?.other_pct ?? 0 : 0;
+  const currentTotalHa = hasVerifiedRecord ? currentRecord?.total_area_ha ?? 0 : 0;
 
   return (
     <div className="space-y-6 text-left pb-10">
@@ -279,7 +279,7 @@ export const ExecutiveDashboard: React.FC = () => {
       {/* =========================================================================
           0. INSPECTION DIRECTORATE MASTER CONTROL PANEL (For Inspection Role)
       ========================================================================= */}
-      {isInspectionAuthorized && (
+      {canEditDashboardData && (
         <div className="p-4 md:p-5 rounded-3xl bg-gradient-to-r from-emerald-950 via-slate-900 to-emerald-950 border-2 border-emerald-500/50 shadow-xl text-white flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
           <div className="flex items-start md:items-center gap-3.5">
             <div className="w-11 h-11 rounded-2xl bg-emerald-600 border border-emerald-400/50 flex items-center justify-center shrink-0 shadow-md">
@@ -383,7 +383,7 @@ export const ExecutiveDashboard: React.FC = () => {
         <div className="relative z-10 p-6 md:p-8 w-full flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
           {/* Left Text Card - Frosted Glass Box */}
           <div className="max-w-xl text-left space-y-2 p-5 rounded-2xl bg-black/35 backdrop-blur-md border border-white/20 shadow-2xl relative">
-            {isInspectionAuthorized && (
+            {canEditDashboardData && (
               <button
                 onClick={() => setIsDashboardEditorOpen(true)}
                 className="absolute top-3 right-3 p-1.5 rounded-lg bg-white/20 hover:bg-white/40 text-emerald-300 text-[10px] font-bold flex items-center gap-1 transition-all"
@@ -459,7 +459,7 @@ export const ExecutiveDashboard: React.FC = () => {
           }}
           className="relative p-4 rounded-2xl bg-[#eef8f2] dark:bg-emerald-950/30 border border-[#d2edd9] dark:border-emerald-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
         >
-          {isInspectionAuthorized && (
+          {canEditDashboardData && (
             <button
               onClick={(e) => handleStartEditingCard('datasets', e)}
               className="absolute top-2 right-2 p-1 rounded-md bg-emerald-200/80 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-200 opacity-80 hover:opacity-100 transition-opacity"
@@ -519,7 +519,7 @@ export const ExecutiveDashboard: React.FC = () => {
           }}
           className="relative p-4 rounded-2xl bg-[#eef5fc] dark:bg-blue-950/30 border border-[#d2e4f7] dark:border-blue-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
         >
-          {isInspectionAuthorized && (
+          {canEditDashboardData && (
             <button
               onClick={(e) => handleStartEditingCard('research', e)}
               className="absolute top-2 right-2 p-1 rounded-md bg-blue-200/80 dark:bg-blue-900 text-blue-800 dark:text-blue-200 opacity-80 hover:opacity-100 transition-opacity"
@@ -579,7 +579,7 @@ export const ExecutiveDashboard: React.FC = () => {
           }}
           className="relative p-4 rounded-2xl bg-[#fdf2ec] dark:bg-orange-950/30 border border-[#fae0d1] dark:border-orange-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
         >
-          {isInspectionAuthorized && (
+          {canEditDashboardData && (
             <button
               onClick={(e) => handleStartEditingCard('policies', e)}
               className="absolute top-2 right-2 p-1 rounded-md bg-orange-200/80 dark:bg-orange-900 text-orange-800 dark:text-orange-200 opacity-80 hover:opacity-100 transition-opacity"
@@ -639,7 +639,7 @@ export const ExecutiveDashboard: React.FC = () => {
           }}
           className="relative p-4 rounded-2xl bg-[#f6effa] dark:bg-purple-950/30 border border-[#edd9f6] dark:border-purple-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
         >
-          {isInspectionAuthorized && (
+          {canEditDashboardData && (
             <button
               onClick={(e) => handleStartEditingCard('layers', e)}
               className="absolute top-2 right-2 p-1 rounded-md bg-purple-200/80 dark:bg-purple-900 text-purple-800 dark:text-purple-200 opacity-80 hover:opacity-100 transition-opacity"
@@ -699,7 +699,7 @@ export const ExecutiveDashboard: React.FC = () => {
           }}
           className="relative p-4 rounded-2xl bg-[#eefaf6] dark:bg-teal-950/30 border border-[#cff2e6] dark:border-teal-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group col-span-2 sm:col-span-1"
         >
-          {isInspectionAuthorized && (
+          {canEditDashboardData && (
             <button
               onClick={(e) => handleStartEditingCard('users', e)}
               className="absolute top-2 right-2 p-1 rounded-md bg-teal-200/80 dark:bg-teal-900 text-teal-800 dark:text-teal-200 opacity-80 hover:opacity-100 transition-opacity"
@@ -768,11 +768,11 @@ export const ExecutiveDashboard: React.FC = () => {
                   Interactive Land Use Map
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                  Official Cadastral breakdown for {currentStateObj?.state_name || selectedState}
+                  Database-backed record for {currentStateObj?.state_name || selectedState}
                 </p>
               </div>
 
-              {isInspectionAuthorized && (
+              {canEditDashboardData && (
                 <button
                   onClick={() => setIsLandRecordEditorOpen(true)}
                   className="px-2.5 py-1 rounded-xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 text-[11px] font-bold flex items-center gap-1.5 hover:bg-emerald-200 transition-colors"
@@ -783,72 +783,65 @@ export const ExecutiveDashboard: React.FC = () => {
               )}
             </div>
 
-            {/* Map Frame with Leaflet Satellite Raster & Custom Polygon Preview */}
-            <div className="relative mt-4 w-full h-72 rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center group">
-              <img
-                src="https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=800&q=80"
-                alt="India Geospatial Map"
-                className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700"
-                style={{ filter: 'saturate(1.4) hue-rotate(25deg)' }}
-              />
+            <div className="mt-4 min-h-72 rounded-2xl overflow-hidden bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 flex items-center justify-center">
+              {hasVerifiedRecord && currentRecord ? (
+                <div className="w-full p-5 space-y-5">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-bold text-slate-900 dark:text-white">
+                        {currentRecord.dataset_name}
+                      </p>
+                      <p className="text-[11px] text-slate-500 mt-1">
+                        {currentRecord.district_name || currentRecord.state_name} • Reporting year {currentRecord.year}
+                      </p>
+                    </div>
+                    <span className="px-2 py-1 rounded-lg bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-bold">
+                      Validated upload
+                    </span>
+                  </div>
 
-              <div className="absolute inset-0 bg-emerald-950/20 backdrop-brightness-95 pointer-events-none" />
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-center">
+                    {[
+                      ['Agricultural', currentAgPct, 'text-lime-600'],
+                      ['Forest', currentForestPct, 'text-emerald-600'],
+                      ['Built-up', currentBuiltupPct, 'text-rose-600'],
+                      ['Water bodies', currentWaterPct, 'text-blue-600'],
+                      ['Barren', currentBarrenPct, 'text-amber-600'],
+                      ['Other', currentOtherPct, 'text-purple-600']
+                    ].map(([label, value, color]) => (
+                      <div key={String(label)} className="p-3 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                        <span className={`block text-lg font-black ${color}`}>{Number(value).toFixed(1)}%</span>
+                        <span className="text-[10px] text-slate-500">{label}</span>
+                      </div>
+                    ))}
+                  </div>
 
-              {/* Zoom Controls */}
-              <div className="absolute top-3 left-3 flex flex-col gap-1 z-10">
-                <button
-                  onClick={() => setMapZoom(z => Math.min(z + 0.2, 1.8))}
-                  className="w-7 h-7 rounded-lg bg-white/90 dark:bg-slate-800/90 text-slate-800 dark:text-white flex items-center justify-center font-bold text-sm shadow-sm hover:bg-white transition-colors"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                </button>
-                <button
-                  onClick={() => setMapZoom(z => Math.max(z - 0.2, 0.8))}
-                  className="w-7 h-7 rounded-lg bg-white/90 dark:bg-slate-800/90 text-slate-800 dark:text-white flex items-center justify-center font-bold text-sm shadow-sm hover:bg-white transition-colors"
-                >
-                  <Minus className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Color-Coded Legend Overlay */}
-              <div className="absolute bottom-3 right-3 p-2.5 rounded-xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-md border border-slate-200/80 dark:border-slate-800 text-[10px] space-y-1.5 shadow-sm text-left">
-                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
-                  <span className="w-2.5 h-2.5 rounded bg-[#84cc16]" />
-                  <span>Agricultural Land ({currentAgPct}%)</span>
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-300">
+                      <span>Total recorded area: {currentTotalHa.toLocaleString('en-IN')} ha</span>
+                      <span className="font-mono text-emerald-600">Source {currentRecord.source_id}</span>
+                    </div>
+                    <div className="w-full h-2 rounded-full overflow-hidden flex bg-slate-200 dark:bg-slate-700">
+                      <div style={{ width: `${currentAgPct}%` }} className="bg-lime-500" />
+                      <div style={{ width: `${currentForestPct}%` }} className="bg-emerald-600" />
+                      <div style={{ width: `${currentBuiltupPct}%` }} className="bg-rose-600" />
+                      <div style={{ width: `${currentWaterPct}%` }} className="bg-blue-600" />
+                      <div style={{ width: `${currentBarrenPct}%` }} className="bg-amber-500" />
+                      <div style={{ width: `${currentOtherPct}%` }} className="bg-purple-500" />
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
-                  <span className="w-2.5 h-2.5 rounded bg-[#16a34a]" />
-                  <span>Forest Land ({currentForestPct}%)</span>
+              ) : (
+                <div className="p-8 text-center max-w-sm">
+                  <Database className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto" />
+                  <p className="mt-3 text-sm font-bold text-slate-800 dark:text-slate-200">
+                    No validated record for these filters
+                  </p>
+                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">
+                    Prototype seed values are hidden. Upload and validate a dataset to populate this panel.
+                  </p>
                 </div>
-                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
-                  <span className="w-2.5 h-2.5 rounded bg-[#dc2626]" />
-                  <span>Urban Area ({currentBuiltupPct}%)</span>
-                </div>
-                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
-                  <span className="w-2.5 h-2.5 rounded bg-[#2563eb]" />
-                  <span>Water Bodies ({currentWaterPct}%)</span>
-                </div>
-                <div className="flex items-center gap-1.5 font-medium text-slate-800 dark:text-slate-200">
-                  <span className="w-2.5 h-2.5 rounded bg-[#eab308]" />
-                  <span>Other Land ({currentOtherPct + currentBarrenPct}%)</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Live Cadastral Breakdown Stats Bar */}
-            <div className="mt-3 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60">
-              <div className="flex items-center justify-between text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1.5">
-                <span>Total Recorded Area: <strong>{currentTotalHa.toLocaleString()} Ha</strong></span>
-                <span className="text-emerald-600 dark:text-emerald-400 font-mono">Series {selectedYear}</span>
-              </div>
-              <div className="w-full h-2 rounded-full overflow-hidden flex bg-slate-200 dark:bg-slate-700">
-                <div style={{ width: `${currentAgPct}%` }} className="bg-[#84cc16]" title={`Agricultural: ${currentAgPct}%`} />
-                <div style={{ width: `${currentForestPct}%` }} className="bg-[#16a34a]" title={`Forest: ${currentForestPct}%`} />
-                <div style={{ width: `${currentBuiltupPct}%` }} className="bg-[#dc2626]" title={`Builtup: ${currentBuiltupPct}%`} />
-                <div style={{ width: `${currentWaterPct}%` }} className="bg-[#2563eb]" title={`Water: ${currentWaterPct}%`} />
-                <div style={{ width: `${currentBarrenPct}%` }} className="bg-[#eab308]" title={`Barren: ${currentBarrenPct}%`} />
-                <div style={{ width: `${currentOtherPct}%` }} className="bg-purple-500" title={`Other: ${currentOtherPct}%`} />
-              </div>
+              )}
             </div>
           </div>
 
@@ -912,7 +905,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 </h2>
               </div>
               <div className="flex items-center gap-2">
-                {isInspectionAuthorized && (
+                {canEditDashboardData && (
                   <button
                     onClick={() => setIsAddingInsight(!isAddingInsight)}
                     className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 transition-colors"
@@ -966,6 +959,13 @@ export const ExecutiveDashboard: React.FC = () => {
 
             {/* Metric Items List */}
             <div className="mt-4 space-y-4">
+              {dashboardConfig.keyInsights.length === 0 && (
+                <div className="py-7 px-3 text-center rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-300 dark:border-slate-700">
+                  <Database className="w-7 h-7 text-slate-300 mx-auto" />
+                  <p className="mt-2 text-xs font-bold text-slate-700 dark:text-slate-300">No validated insights yet</p>
+                  <p className="mt-1 text-[10px] text-slate-500">Insights appear after non-demo records are ingested.</p>
+                </div>
+              )}
               {dashboardConfig.keyInsights.map((item, idx) => (
                 <div key={item.id} className="flex items-start justify-between gap-2 group">
                   <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -982,7 +982,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {isInspectionAuthorized && (
+                  {canEditDashboardData && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => {
@@ -1030,7 +1030,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 </h2>
               </div>
               <div className="flex items-center gap-2">
-                {isInspectionAuthorized && (
+                {canEditDashboardData && (
                   <button
                     onClick={() => setIsAddingPub(!isAddingPub)}
                     className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 transition-colors"
@@ -1083,6 +1083,12 @@ export const ExecutiveDashboard: React.FC = () => {
             )}
 
             <div className="mt-3 space-y-3">
+              {dashboardConfig.recentPublications.length === 0 && (
+                <div className="py-5 px-3 text-center rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-300 dark:border-slate-700">
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No submitted research yet</p>
+                  <p className="mt-1 text-[10px] text-slate-500">Seed publications are not shown on the live dashboard.</p>
+                </div>
+              )}
               {dashboardConfig.recentPublications.map((pub) => (
                 <div
                   key={pub.id}
@@ -1103,7 +1109,7 @@ export const ExecutiveDashboard: React.FC = () => {
                     </div>
                   </div>
 
-                  {isInspectionAuthorized && (
+                  {canEditDashboardData && (
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         onClick={() => {
@@ -1142,11 +1148,11 @@ export const ExecutiveDashboard: React.FC = () => {
               <div className="flex items-center gap-2">
                 <Shield className="w-4 h-4 text-[#1b5e3a]" />
                 <h2 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Ongoing Policy Experiments
+                  Policy Repository Updates
                 </h2>
               </div>
               <div className="flex items-center gap-2">
-                {isInspectionAuthorized && (
+                {canEditDashboardData && (
                   <button
                     onClick={() => setIsAddingExp(!isAddingExp)}
                     className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 transition-colors"
@@ -1199,6 +1205,12 @@ export const ExecutiveDashboard: React.FC = () => {
             )}
 
             <div className="mt-3 space-y-3">
+              {dashboardConfig.policyExperiments.length === 0 && (
+                <div className="py-5 px-3 text-center rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-300 dark:border-slate-700">
+                  <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No submitted policy updates yet</p>
+                  <p className="mt-1 text-[10px] text-slate-500">Prototype policy entries are excluded.</p>
+                </div>
+              )}
               {dashboardConfig.policyExperiments.map((exp) => (
                 <div
                   key={exp.id}
@@ -1224,7 +1236,7 @@ export const ExecutiveDashboard: React.FC = () => {
                       {exp.status}
                     </span>
 
-                    {isInspectionAuthorized && (
+                    {canEditDashboardData && (
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                         <button
                           onClick={() => {
@@ -1311,7 +1323,7 @@ export const ExecutiveDashboard: React.FC = () => {
               </h2>
             </div>
             <div className="flex items-center gap-2">
-              {isInspectionAuthorized && (
+              {canEditDashboardData && (
                 <button
                   onClick={() => setIsAddingEvent(!isAddingEvent)}
                   className="p-1 rounded-md bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-200 transition-colors"
@@ -1364,6 +1376,12 @@ export const ExecutiveDashboard: React.FC = () => {
           )}
 
           <div className="mt-3 space-y-2.5">
+            {dashboardConfig.upcomingEvents.length === 0 && (
+              <div className="py-6 px-3 text-center rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-dashed border-slate-300 dark:border-slate-700">
+                <p className="text-xs font-bold text-slate-700 dark:text-slate-300">No verified upcoming events</p>
+                <p className="mt-1 text-[10px] text-slate-500">Events will appear only after a real event source is connected.</p>
+              </div>
+            )}
             {dashboardConfig.upcomingEvents.map((evt) => (
               <div
                 key={evt.id}
@@ -1381,7 +1399,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
                 </div>
 
-                {isInspectionAuthorized && (
+                {canEditDashboardData && (
                   <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                     <button
                       onClick={() => {

@@ -54,6 +54,11 @@ class Database {
   private pgPoolConnected: boolean = false;
   private contentStoreReady: boolean = false;
   private fileStoreReady: boolean = false;
+  private seedRecordIds = new Set<string>();
+  private seedDatasetIds = new Set<string>();
+  private seedPolicyIds = new Set<string>();
+  private seedResearchIds = new Set<string>();
+  private dashboardBannerSlides: any[] | undefined;
   private lastSyncTime: string | null = null;
   private ready: Promise<void>;
 
@@ -76,6 +81,15 @@ class Database {
       this.policies = loadJson<Policy[]>('policies.json');
       this.research = loadJson<ResearchPaper[]>('research.json');
       this.anomalies = loadJson<Anomaly[]>('anomalies.json');
+
+      // Bundled JSON is useful for prototype pages, but it must never be presented
+      // as live dashboard evidence. Track it explicitly so dashboard metrics include
+      // only data added through the connected production database.
+      this.seedRecordIds = new Set(this.records.map(record => record.id));
+      this.seedDatasetIds = new Set(this.datasets.map(dataset => dataset.id));
+      this.seedPolicyIds = new Set(this.policies.map(policy => policy.id));
+      this.seedResearchIds = new Set(this.research.map(paper => paper.id));
+      this.records = this.records.map(record => ({ ...record, is_demo: true }));
 
       // Initialize default inspection order & star status on existing seed
       this.policies.forEach((p, idx) => {
@@ -475,7 +489,7 @@ class Database {
           barren_pct: Number(r.barren_pct),
           irrigated_pct: Number(r.irrigated_pct),
           degraded_pct: Number(r.degraded_pct),
-          is_demo: Boolean(r.is_demo)
+          is_demo: this.seedRecordIds.has(r.id) || Boolean(r.is_demo)
         }));
       }
 
@@ -541,7 +555,7 @@ class Database {
             barren_pct: Number(r.barren_pct),
             irrigated_pct: Number(r.irrigated_pct),
             degraded_pct: Number(r.degraded_pct),
-            is_demo: Boolean(r.is_demo)
+            is_demo: this.seedRecordIds.has(r.id) || Boolean(r.is_demo)
           }));
         }
         this.mergePersistentContent(resContent.rows);
@@ -812,7 +826,7 @@ class Database {
       if (dbRecords.length > 0) {
         this.records = dbRecords.map((r: any) => ({
           ...r,
-          is_demo: Boolean(r.is_demo)
+          is_demo: this.seedRecordIds.has(r.id) || Boolean(r.is_demo)
         }));
       }
 
@@ -1502,85 +1516,106 @@ class Database {
     return this.auditLogs;
   }
 
-  private dashboardData: any = {
-    kpiCards: {
-      datasets: { count: '12,450', subtitle: 'From 35+ Departments' },
-      research: { count: '3,250', subtitle: 'Across 500+ Institutions' },
-      policies: { count: '1,200', subtitle: 'Central & State' },
-      layers: { count: '8,700', subtitle: 'Nationwide Coverage' },
-      users: { count: '2,450', subtitle: 'Researchers | Policymakers' }
-    },
-    keyInsights: [
-      { id: 'ki-1', metric: '+12%', description: 'Increase in digitized land records (2020-2025)', icon: 'TrendingUp' },
-      { id: 'ki-2', metric: '28%', description: "India's land under forest cover", icon: 'Sprout' },
-      { id: 'ki-3', metric: '3.2M', description: 'Land disputes resolved through digital platforms', icon: 'Users' },
-      { id: 'ki-4', metric: '65+', description: 'Policy experiments in progress across states', icon: 'Target' }
-    ],
-    recentPublications: [
-      { id: 'pub-1', title: 'AI-based Land Dispute Prediction in India', author: 'IIT Bombay', year: '2024' },
-      { id: 'pub-2', title: 'Impact of Digital Land Records on Rural Governance', author: 'IIM Ahmedabad', year: '2024' },
-      { id: 'pub-3', title: 'Urban Land Use Change Analysis using Satellite Data', author: 'ISRO', year: '2023' },
-      { id: 'pub-4', title: 'Land Consolidation Models for Sustainable Agriculture', author: 'ICAR', year: '2023' }
-    ],
-    policyExperiments: [
-      { id: 'exp-1', title: 'Digital Land Record Verification', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-      { id: 'exp-2', title: 'Community Land Mapping Initiative', state: 'Maharashtra', duration: '1 year', status: 'Evaluation', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-      { id: 'exp-3', title: 'Urban Land Use Policy Reform', state: 'Karnataka', duration: '6 months', status: 'Planning', color: 'bg-blue-100 text-blue-800 border-blue-200' }
-    ],
-    upcomingEvents: [
-      { id: 'ev-1', title: 'National Workshop on Land Governance', date: '15 Oct 2025', location: 'New Delhi' }
-    ]
-  };
-
   public getDashboardData(): any {
-    return this.dashboardData;
+    const datasets = this.datasets.filter(dataset => !this.seedDatasetIds.has(dataset.id));
+    const research = this.research.filter(paper => !this.seedResearchIds.has(paper.id));
+    const policies = this.policies.filter(policy => !this.seedPolicyIds.has(policy.id));
+    const records = this.records.filter(record => !record.is_demo && !this.seedRecordIds.has(record.id));
+    const sourceCount = new Set(records.map(record => record.source_id).filter(Boolean)).size;
+    const geographyCount = new Set(
+      records.map(record => record.district_name || record.state_name).filter(Boolean)
+    ).size;
+    const latestYear = records.length > 0 ? Math.max(...records.map(record => record.year)) : null;
+
+    const keyInsights: any[] = [];
+    if (records.length > 0) {
+      keyInsights.push({
+        id: 'live-records',
+        metric: records.length.toLocaleString('en-IN'),
+        description: 'Validated non-demo land-use records available for analysis',
+        icon: 'Database'
+      });
+      keyInsights.push({
+        id: 'live-coverage',
+        metric: geographyCount.toLocaleString('en-IN'),
+        description: 'Geographies represented by validated uploaded records',
+        icon: 'MapPin'
+      });
+      if (latestYear !== null) {
+        keyInsights.push({
+          id: 'live-year',
+          metric: String(latestYear),
+          description: 'Latest reporting year in the validated record store',
+          icon: 'Calendar'
+        });
+      }
+    }
+
+    return {
+      kpiCards: {
+        datasets: {
+          label: 'Uploaded Datasets',
+          count: datasets.length.toLocaleString('en-IN'),
+          subtitle: 'Production database entries'
+        },
+        research: {
+          label: 'Submitted Research',
+          count: research.length.toLocaleString('en-IN'),
+          subtitle: 'Uploaded or authored papers'
+        },
+        policies: {
+          label: 'Submitted Policies',
+          count: policies.length.toLocaleString('en-IN'),
+          subtitle: 'Non-demo repository entries'
+        },
+        layers: {
+          label: 'Validated Sources',
+          count: sourceCount.toLocaleString('en-IN'),
+          subtitle: `${records.length.toLocaleString('en-IN')} non-demo records`
+        },
+        users: {
+          label: 'Registered Users',
+          count: '0',
+          subtitle: 'Persistent user registry not connected'
+        }
+      },
+      keyInsights,
+      recentPublications: research
+        .slice()
+        .sort((a, b) => b.year - a.year)
+        .slice(0, 5)
+        .map(paper => ({
+          id: paper.id,
+          title: paper.title,
+          author: paper.authors?.[0] || 'Author not provided',
+          year: String(paper.year)
+        })),
+      policyExperiments: policies.slice(0, 5).map(policy => ({
+        id: policy.id,
+        title: policy.name,
+        state: policy.target_region,
+        duration: `Added ${policy.launch_year}`,
+        status: policy.status || 'Registered'
+      })),
+      upcomingEvents: [],
+      bannerSlides: this.dashboardBannerSlides
+    };
   }
 
   public updateDashboardData(updates: any): any {
-    this.dashboardData = {
-      ...this.dashboardData,
-      ...updates,
-      kpiCards: {
-        ...(this.dashboardData.kpiCards || {}),
-        ...(updates.kpiCards || {})
-      }
-    };
-    this.logAudit('OVERRIDE_DASHBOARD_DATA', 'Inspection Directorate', { updates });
-    return this.dashboardData;
+    if (Array.isArray(updates?.bannerSlides)) {
+      this.dashboardBannerSlides = updates.bannerSlides;
+      this.logAudit('UPDATE_DASHBOARD_PRESENTATION', 'Inspection Directorate', {
+        bannerSlides: updates.bannerSlides.length
+      });
+    }
+    return this.getDashboardData();
   }
 
   public resetDashboardData(): any {
-    this.dashboardData = {
-      kpiCards: {
-        datasets: { count: '12,450', subtitle: 'From 35+ Departments' },
-        research: { count: '3,250', subtitle: 'Across 500+ Institutions' },
-        policies: { count: '1,200', subtitle: 'Central & State' },
-        layers: { count: '8,700', subtitle: 'Nationwide Coverage' },
-        users: { count: '2,450', subtitle: 'Researchers | Policymakers' }
-      },
-      keyInsights: [
-        { id: 'ki-1', metric: '+12%', description: 'Increase in digitized land records (2020-2025)', icon: 'TrendingUp' },
-        { id: 'ki-2', metric: '28%', description: "India's land under forest cover", icon: 'Sprout' },
-        { id: 'ki-3', metric: '3.2M', description: 'Land disputes resolved through digital platforms', icon: 'Users' },
-        { id: 'ki-4', metric: '65+', description: 'Policy experiments in progress across states', icon: 'Target' }
-      ],
-      recentPublications: [
-        { id: 'pub-1', title: 'AI-based Land Dispute Prediction in India', author: 'IIT Bombay', year: '2024' },
-        { id: 'pub-2', title: 'Impact of Digital Land Records on Rural Governance', author: 'IIM Ahmedabad', year: '2024' },
-        { id: 'pub-3', title: 'Urban Land Use Change Analysis using Satellite Data', author: 'ISRO', year: '2023' },
-        { id: 'pub-4', title: 'Land Consolidation Models for Sustainable Agriculture', author: 'ICAR', year: '2023' }
-      ],
-      policyExperiments: [
-        { id: 'exp-1', title: 'Digital Land Record Verification', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-        { id: 'exp-2', title: 'Community Land Mapping Initiative', state: 'Maharashtra', duration: '1 year', status: 'Evaluation', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-        { id: 'exp-3', title: 'Urban Land Use Policy Reform', state: 'Karnataka', duration: '6 months', status: 'Planning', color: 'bg-blue-100 text-blue-800 border-blue-200' }
-      ],
-      upcomingEvents: [
-        { id: 'ev-1', title: 'National Workshop on Land Governance', date: '15 Oct 2025', location: 'New Delhi' }
-      ]
-    };
+    this.dashboardBannerSlides = undefined;
     this.logAudit('RESET_DASHBOARD_DATA', 'Inspection Directorate', {});
-    return this.dashboardData;
+    return this.getDashboardData();
   }
 }
 

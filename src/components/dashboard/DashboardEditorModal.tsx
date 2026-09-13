@@ -210,7 +210,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                     value={dashboardConfig.kpiCards.datasets.count}
                     onChange={e => updateDashboardKPI('datasets', e.target.value, dashboardConfig.kpiCards.datasets.subtitle)}
                     className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold text-slate-900 dark:text-white text-base"
-                    placeholder="12,450"
+                    placeholder="Database-derived count"
                   />
                   <input
                     type="text"
@@ -232,7 +232,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                     value={dashboardConfig.kpiCards.research.count}
                     onChange={e => updateDashboardKPI('research', e.target.value, dashboardConfig.kpiCards.research.subtitle)}
                     className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold text-slate-900 dark:text-white text-base"
-                    placeholder="3,250"
+                    placeholder="Database-derived count"
                   />
                   <input
                     type="text"
@@ -254,7 +254,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                     value={dashboardConfig.kpiCards.policies.count}
                     onChange={e => updateDashboardKPI('policies', e.target.value, dashboardConfig.kpiCards.policies.subtitle)}
                     className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold text-slate-900 dark:text-white text-base"
-                    placeholder="1,200"
+                    placeholder="Database-derived count"
                   />
                   <input
                     type="text"
@@ -276,7 +276,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                     value={dashboardConfig.kpiCards.layers.count}
                     onChange={e => updateDashboardKPI('layers', e.target.value, dashboardConfig.kpiCards.layers.subtitle)}
                     className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold text-slate-900 dark:text-white text-base"
-                    placeholder="8,700"
+                    placeholder="Database-derived count"
                   />
                   <input
                     type="text"
@@ -298,7 +298,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                     value={dashboardConfig.kpiCards.users.count}
                     onChange={e => updateDashboardKPI('users', e.target.value, dashboardConfig.kpiCards.users.subtitle)}
                     className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 font-extrabold text-slate-900 dark:text-white text-base"
-                    placeholder="2,450"
+                    placeholder="Database-derived count"
                   />
                   <input
                     type="text"

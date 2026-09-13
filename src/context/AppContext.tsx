@@ -109,80 +109,66 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
   kpiCards: {
-    datasets: { count: '12,450', subtitle: 'From 35+ Departments' },
-    research: { count: '3,250', subtitle: 'Across 500+ Institutions' },
-    policies: { count: '1,200', subtitle: 'Central & State' },
-    layers: { count: '8,700', subtitle: 'Nationwide Coverage' },
-    users: { count: '2,450', subtitle: 'Researchers | Policymakers' }
+    datasets: { label: 'Uploaded Datasets', count: '0', subtitle: 'Production database entries' },
+    research: { label: 'Submitted Research', count: '0', subtitle: 'Uploaded or authored papers' },
+    policies: { label: 'Submitted Policies', count: '0', subtitle: 'Non-demo repository entries' },
+    layers: { label: 'Validated Sources', count: '0', subtitle: '0 non-demo records' },
+    users: { label: 'Registered Users', count: '0', subtitle: 'Persistent user registry not connected' }
   },
-  keyInsights: [
-    { id: 'ki-1', metric: '+12%', description: 'Increase in digitized land records (2020-2025)', icon: 'TrendingUp' },
-    { id: 'ki-2', metric: '28%', description: "India's land under forest cover", icon: 'Sprout' },
-    { id: 'ki-3', metric: '3.2M', description: 'Land disputes resolved through digital platforms', icon: 'Users' },
-    { id: 'ki-4', metric: '65+', description: 'Policy experiments in progress across states', icon: 'Target' }
-  ],
-  recentPublications: [
-    { id: 'pub-1', title: 'AI-based Land Dispute Prediction in India', author: 'IIT Bombay', year: '2024' },
-    { id: 'pub-2', title: 'Impact of Digital Land Records on Rural Governance', author: 'IIM Ahmedabad', year: '2024' },
-    { id: 'pub-3', title: 'Urban Land Use Change Analysis using Satellite Data', author: 'ISRO', year: '2023' },
-    { id: 'pub-4', title: 'Land Consolidation Models for Sustainable Agriculture', author: 'ICAR', year: '2023' }
-  ],
-  policyExperiments: [
-    { id: 'exp-1', title: 'Digital Land Record Verification', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-    { id: 'exp-2', title: 'Community Land Mapping Initiative', state: 'Maharashtra', duration: '1 year', status: 'Evaluation', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-    { id: 'exp-3', title: 'Urban Land Use Policy Reform', state: 'Karnataka', duration: '6 months', status: 'Planning', color: 'bg-blue-100 text-blue-800 border-blue-200' }
-  ],
-  upcomingEvents: [
-    { id: 'ev-1', title: 'National Workshop on Land Governance', date: '15 Oct 2025', location: 'New Delhi' }
-  ],
+  keyInsights: [],
+  recentPublications: [],
+  policyExperiments: [],
+  upcomingEvents: [],
   bannerSlides: [
     {
       id: 'slide-1',
-      headline: 'National Land Vision',
-      highlight: 'Better Land Governance Tomorrow.',
-      subtitle: 'A collaborative national ecosystem for open data, research, policy and geospatial innovation.',
-      quote: '"Sustainable land governance for a stronger, inclusive and resilient India."',
-      author: 'Government of India • MoA&FW',
-      badge: 'National Land Vision'
+      headline: 'Evidence First.',
+      highlight: 'Decisions You Can Trace.',
+      subtitle: 'Search approved sources, inspect calculations, and preserve a replayable evidence trail.',
+      quote: 'Dashboard counts come only from connected production records.',
+      author: 'BHU-DRISHTI data principle',
+      badge: 'Verified Data Only'
     },
     {
       id: 'slide-2',
-      headline: 'Preserving Soil.',
-      highlight: 'Empowering Generations.',
-      subtitle: 'Harmonizing agriculture, agroforestry and ecological balance through AI-driven intelligence.',
-      quote: '"The land is the foundation of all economic vitality and life itself; nurture it with wisdom."',
-      author: 'National Land Policy Council',
-      badge: 'Ecological Equilibrium'
+      headline: 'Source Linked.',
+      highlight: 'Calculation Explained.',
+      subtitle: 'Every displayed record keeps its dataset, year, geography, and source visible.',
+      quote: 'No unsupported success metrics or projected values are shown as facts.',
+      author: 'BHU-DRISHTI evidence policy',
+      badge: 'Transparent Provenance'
     },
     {
       id: 'slide-3',
-      headline: 'Reclaiming Wasters.',
-      highlight: 'Expanding Green Canopies.',
-      subtitle: 'Transforming sodic and degraded soils into productive agricultural zones across Uttar Pradesh.',
-      quote: '"To restore the soil is to safeguard our civilization\'s future food security and ecological wealth."',
-      author: 'UP Bhumi Sudhar Nigam • Sodic Reclamation',
-      badge: 'Land Reclamation'
+      headline: 'Human Review.',
+      highlight: 'Before Policy Action.',
+      subtitle: 'Conflicts, missing sources, and incomplete records are surfaced for review instead of guessed.',
+      quote: 'Empty states are more trustworthy than invented numbers.',
+      author: 'BHU-DRISHTI review principle',
+      badge: 'Reviewable Evidence'
     },
     {
       id: 'slide-4',
-      headline: 'Precision from Space.',
-      highlight: 'Decisions on Earth.',
-      subtitle: 'Harnessing multi-spectral remote sensing (ISRO Bhuvan & Sentinel) for transparent cadastral governance.',
-      quote: '"One unified evidence layer for every agricultural, forest, and spatial development decision."',
-      author: 'ISRO • National Remote Sensing Centre (NRSC)',
-      badge: 'Space & Remote Sensing'
+      headline: 'Read Only.',
+      highlight: 'Authoritative Sources Stay Authoritative.',
+      subtitle: 'BHU-DRISHTI analyzes permitted data without changing external land records.',
+      quote: 'Source systems remain authoritative; disputed evidence goes to human review.',
+      author: 'BHU-DRISHTI governance principle',
+      badge: 'Safe Integration'
     },
     {
       id: 'slide-5',
-      headline: 'Protecting Watercourses.',
-      highlight: 'Securing Catchment Basins.',
-      subtitle: 'Safeguarding rivers, floodplains, and irrigated agricultural plains for national prosperity.',
-      quote: '"Water is the lifeblood of our fields; land governance must protect every riverbank and wetland."',
-      author: 'Ministry of Jal Shakti & Agriculture',
-      badge: 'Catchment & Rivers'
+      headline: 'Data First.',
+      highlight: 'AI Explanation Second.',
+      subtitle: 'Deterministic statistics are calculated before AI is used to explain the result.',
+      quote: 'Evidence, calculation, and reasoning remain inspectable.',
+      author: 'BHU-DRISHTI analysis principle',
+      badge: 'Explainable Analysis'
     }
   ]
 };
+
+const DASHBOARD_CACHE_KEY = 'bhu_dashboard_config_verified_v1';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [activePage, setActivePage] = useState<PageId>('dashboard');
@@ -239,7 +225,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Dashboard Live Configuration State (Inspection Directorate Control)
   const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig>(() => {
     try {
-      const cached = localStorage.getItem('bhu_dashboard_config');
+      localStorage.removeItem('bhu_dashboard_config');
+      const cached = localStorage.getItem(DASHBOARD_CACHE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
         return {
@@ -267,7 +254,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               kpiCards: { ...prev.kpiCards, ...(remote.kpiCards || {}) }
             };
             try {
-              localStorage.setItem('bhu_dashboard_config', JSON.stringify(merged));
+              localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(merged));
             } catch {}
             return merged;
           });
@@ -289,7 +276,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ kpiCards: updated.kpiCards }).catch(console.warn);
       return updated;
@@ -303,7 +290,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         keyInsights: prev.keyInsights.map(item => item.id === id ? { ...item, ...updates } : item)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ keyInsights: updated.keyInsights }).catch(console.warn);
       return updated;
@@ -321,7 +308,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         keyInsights: [...prev.keyInsights, newItem]
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ keyInsights: updated.keyInsights }).catch(console.warn);
       return updated;
@@ -335,7 +322,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         keyInsights: prev.keyInsights.filter(item => item.id !== id)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ keyInsights: updated.keyInsights }).catch(console.warn);
       return updated;
@@ -349,7 +336,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recentPublications: prev.recentPublications.map(item => item.id === id ? { ...item, ...updates } : item)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ recentPublications: updated.recentPublications }).catch(console.warn);
       return updated;
@@ -367,7 +354,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recentPublications: [newItem, ...prev.recentPublications]
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ recentPublications: updated.recentPublications }).catch(console.warn);
       return updated;
@@ -381,7 +368,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recentPublications: prev.recentPublications.filter(item => item.id !== id)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ recentPublications: updated.recentPublications }).catch(console.warn);
       return updated;
@@ -395,7 +382,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         policyExperiments: prev.policyExperiments.map(item => item.id === id ? { ...item, ...updates } : item)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ policyExperiments: updated.policyExperiments }).catch(console.warn);
       return updated;
@@ -414,7 +401,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         policyExperiments: [newItem, ...prev.policyExperiments]
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ policyExperiments: updated.policyExperiments }).catch(console.warn);
       return updated;
@@ -428,7 +415,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         policyExperiments: prev.policyExperiments.filter(item => item.id !== id)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ policyExperiments: updated.policyExperiments }).catch(console.warn);
       return updated;
@@ -442,7 +429,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         upcomingEvents: prev.upcomingEvents.map(item => item.id === id ? { ...item, ...updates } : item)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ upcomingEvents: updated.upcomingEvents }).catch(console.warn);
       return updated;
@@ -460,7 +447,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         upcomingEvents: [...prev.upcomingEvents, newItem]
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ upcomingEvents: updated.upcomingEvents }).catch(console.warn);
       return updated;
@@ -474,7 +461,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         upcomingEvents: prev.upcomingEvents.filter(item => item.id !== id)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ upcomingEvents: updated.upcomingEvents }).catch(console.warn);
       return updated;
@@ -486,7 +473,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const slides = (prev.bannerSlides || []).map(s => s.id === id ? { ...s, ...updates } : s);
       const updated = { ...prev, bannerSlides: slides };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ bannerSlides: slides }).catch(console.warn);
       return updated;
@@ -512,7 +499,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const resetDashboardToBaseline = async () => {
     setDashboardConfig(DEFAULT_DASHBOARD_CONFIG);
     try {
-      localStorage.removeItem('bhu_dashboard_config');
+      localStorage.removeItem(DASHBOARD_CACHE_KEY);
     } catch {}
     try {
       await api.resetDashboardData();
@@ -524,7 +511,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const saveDashboardConfig = async (customConfig?: DashboardConfig) => {
     const toSave = customConfig || dashboardConfig;
     try {
-      localStorage.setItem('bhu_dashboard_config', JSON.stringify(toSave));
+      localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(toSave));
     } catch {}
     await api.updateDashboardData(toSave);
   };
