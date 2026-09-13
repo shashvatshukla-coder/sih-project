@@ -38,5 +38,7 @@ for remote, local in FILES.items():
     print(f"Saved {local}: {target.stat().st_size / (1024 * 1024):.2f} MB", flush=True)
 PY
 
+# Render supplies PORT for web services. Use it when present so health checks
+# and routing work on Render, while keeping 8000 as the local default.
 EXPOSE 8000
-CMD ["uvicorn", "ml.policylab.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["sh", "-c", "uvicorn ml.policylab.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
