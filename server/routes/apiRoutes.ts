@@ -57,6 +57,101 @@ function csvCell(value: unknown): string {
   return `"${text.replace(/"/g, '""')}"`;
 }
 
+function safeFileStem(value: unknown, fallback: string): string {
+  const stem = String(value || '')
+    .normalize('NFKD')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+  return stem || fallback;
+}
+
+function numberedLines(values: unknown): string[] {
+  if (!Array.isArray(values) || values.length === 0) return ['Not provided'];
+  return values.map((value, index) => `${index + 1}. ${String(value)}`);
+}
+
+function sendGeneratedTextAttachment(res: Response, name: string, content: string) {
+  const buffer = Buffer.from(content, 'utf8');
+  sendAttachment(res, {
+    name,
+    type: 'text/plain; charset=utf-8',
+    size: buffer.length,
+    dataBase64: buffer.toString('base64')
+  });
+}
+
+function buildPolicyRepositoryExport(policy: any): string {
+  return [
+    'BHU-DRISHTI POLICY REPOSITORY EXPORT',
+    'Export type: Repository metadata summary (the original source file is not stored)',
+    '',
+    `Repository ID: ${policy.id}`,
+    `Policy: ${policy.name}`,
+    `Acronym: ${policy.acronym || 'Not provided'}`,
+    `Ministry / Department: ${policy.ministry || 'Not provided'}`,
+    `Launch year: ${policy.launch_year || 'Not provided'}`,
+    `Status: ${policy.status || 'Not provided'}`,
+    `Target region: ${policy.target_region || 'Not provided'}`,
+    '',
+    'DESCRIPTION',
+    policy.description || 'Not provided',
+    '',
+    'OBJECTIVES',
+    ...numberedLines(policy.objectives),
+    '',
+    'RELATED INDICATORS',
+    ...numberedLines(policy.related_indicators),
+    '',
+    'OBSERVED IMPACT SUMMARY',
+    policy.observed_impact_summary || 'Not provided',
+    '',
+    'METHODOLOGY NOTE',
+    policy.methodology_note || 'Not provided',
+    '',
+    `Official source: ${policy.documents_url || 'Not provided'}`,
+    '',
+    'This file is a BHU-DRISHTI repository export. Check the official source before relying on it as an authoritative policy document.'
+  ].join('\n');
+}
+
+function buildResearchRepositoryExport(paper: any): string {
+  const authoredContent = typeof paper.contentMarkdown === 'string' && paper.contentMarkdown.trim()
+    ? ['','AUTHORED CONTENT', paper.contentMarkdown.trim()]
+    : [];
+
+  return [
+    'BHU-DRISHTI RESEARCH REPOSITORY EXPORT',
+    'Export type: Repository metadata summary (the original source file is not stored)',
+    '',
+    `Repository ID: ${paper.id}`,
+    `Title: ${paper.title}`,
+    `Authors: ${Array.isArray(paper.authors) ? paper.authors.join(', ') : 'Not provided'}`,
+    `Year: ${paper.year || 'Not provided'}`,
+    `Publisher: ${paper.publisher || 'Not provided'}`,
+    `Journal: ${paper.journal || 'Not provided'}`,
+    `Research area: ${paper.research_area || 'Not provided'}`,
+    `Geography: ${paper.geography || 'Not provided'}`,
+    '',
+    'ABSTRACT',
+    paper.abstract || 'Not provided',
+    '',
+    'METHODOLOGY',
+    paper.methodology || 'Not provided',
+    '',
+    'KEY FINDINGS',
+    ...numberedLines(paper.key_findings),
+    '',
+    'CITATION',
+    paper.citation_apa || 'Not provided',
+    '',
+    `Source: ${paper.source_url || 'Not provided'}`,
+    ...authoredContent,
+    '',
+    'This file is a BHU-DRISHTI repository export. Check the cited source before relying on it as an authoritative publication.'
+  ].join('\n');
+}
+
 // System & Database Health
 router.get('/health', (req: Request, res: Response) => {
   res.json({
@@ -362,14 +457,13 @@ router.get('/policies/:id/download', async (req: Request, res: Response) => {
     if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
 
     const file = await db.getFileAttachment('policy', policy.id);
-    if (!file) {
-      return res.status(410).json({
-        success: false,
-        error: 'The original file was uploaded before download storage was enabled. Please re-upload this document.'
-      });
+    if (file) {
+      sendAttachment(res, file);
+      return;
     }
 
-    sendAttachment(res, file);
+    const fileName = `${safeFileStem(policy.name, policy.id)}-policy.txt`;
+    sendGeneratedTextAttachment(res, fileName, buildPolicyRepositoryExport(policy));
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Failed to download policy document' });
   }
@@ -670,14 +764,13 @@ router.get('/research/:id/download', async (req: Request, res: Response) => {
     if (!paper) return res.status(404).json({ success: false, error: 'Research paper not found' });
 
     const file = await db.getFileAttachment('research', paper.id);
-    if (!file) {
-      return res.status(410).json({
-        success: false,
-        error: 'The original file was uploaded before download storage was enabled. Please re-upload this document.'
-      });
+    if (file) {
+      sendAttachment(res, file);
+      return;
     }
 
-    sendAttachment(res, file);
+    const fileName = `${safeFileStem(paper.title, paper.id)}-research.txt`;
+    sendGeneratedTextAttachment(res, fileName, buildResearchRepositoryExport(paper));
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Failed to download research document' });
   }

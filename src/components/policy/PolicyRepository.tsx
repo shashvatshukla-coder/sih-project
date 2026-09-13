@@ -125,11 +125,13 @@ export const PolicyRepository: React.FC = () => {
   };
 
   const handleDownload = async (policy: Policy) => {
-    if (!policy.fileAttachment) return;
     try {
       setDownloadingId(policy.id);
       setDownloadError('');
-      await api.downloadPolicyDocument(policy.id, policy.fileAttachment.name);
+      await api.downloadPolicyDocument(
+        policy.id,
+        policy.fileAttachment?.name || `${policy.id}-policy.txt`
+      );
     } catch (err: any) {
       setDownloadError(err.message || 'The policy document could not be downloaded.');
     } finally {
@@ -590,24 +592,23 @@ export const PolicyRepository: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    {policy.fileAttachment ? (
-                      <button
-                        onClick={() => handleDownload(policy)}
-                        disabled={downloadingId === policy.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-60 transition-colors"
-                        title={`Download ${policy.fileAttachment.name}`}
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>{downloadingId === policy.id ? 'Downloading...' : 'Download Gazette'}</span>
-                      </button>
-                    ) : (
+                    <button
+                      onClick={() => handleDownload(policy)}
+                      disabled={downloadingId === policy.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-60 transition-colors"
+                      title={policy.fileAttachment ? `Download ${policy.fileAttachment.name}` : 'Download policy repository record'}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>{downloadingId === policy.id ? 'Downloading...' : 'Download Policy'}</span>
+                    </button>
+                    {!policy.fileAttachment && /^https?:\/\//i.test(policy.documents_url || '') && (
                       <a
                         href={policy.documents_url}
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold hover:underline"
                       >
-                        <span>Official Guidelines / Gazette</span>
+                        <span>Official Source</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     )}

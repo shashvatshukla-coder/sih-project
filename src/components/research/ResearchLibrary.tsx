@@ -78,11 +78,13 @@ export const ResearchLibrary: React.FC = () => {
   };
 
   const handleDownload = async (paper: ResearchPaper) => {
-    if (!paper.fileAttachment) return;
     try {
       setDownloadingId(paper.id);
       setDownloadError('');
-      await api.downloadResearchDocument(paper.id, paper.fileAttachment.name);
+      await api.downloadResearchDocument(
+        paper.id,
+        paper.fileAttachment?.name || `${paper.id}-research.txt`
+      );
     } catch (err: any) {
       setDownloadError(err.message || 'The research document could not be downloaded.');
     } finally {
@@ -353,24 +355,23 @@ export const ResearchLibrary: React.FC = () => {
                       ))}
                     </div>
 
-                    {paper.fileAttachment ? (
-                      <button
-                        onClick={() => handleDownload(paper)}
-                        disabled={downloadingId === paper.id}
-                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-60 transition-colors"
-                        title={`Download ${paper.fileAttachment.name}`}
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>{downloadingId === paper.id ? 'Downloading...' : 'Download File'}</span>
-                      </button>
-                    ) : (
+                    <button
+                      onClick={() => handleDownload(paper)}
+                      disabled={downloadingId === paper.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-60 transition-colors"
+                      title={paper.fileAttachment ? `Download ${paper.fileAttachment.name}` : 'Download research repository record'}
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      <span>{downloadingId === paper.id ? 'Downloading...' : 'Download Publication'}</span>
+                    </button>
+                    {!paper.fileAttachment && /^https?:\/\//i.test(paper.source_url || '') && (
                       <a
                         href={paper.source_url}
                         target="_blank"
                         rel="noreferrer"
                         className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
                       >
-                        <span>Repository Reference</span>
+                        <span>Source Reference</span>
                         <ExternalLink className="w-3 h-3" />
                       </a>
                     )}
