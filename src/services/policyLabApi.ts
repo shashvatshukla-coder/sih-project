@@ -1,0 +1,30 @@
+const rawBase = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_BACKEND_URL || (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+const API_BASE = String(rawBase).replace(/\/+$/, '');
+
+async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...init,
+    headers: {
+      'Content-Type': 'application/json',
+      ...(init?.headers || {}),
+    },
+  });
+
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(payload?.error || payload?.detail || `Request failed: ${response.status}`);
+  }
+  return payload as T;
+}
+
+export interface PolicyLabResponse {
+  success: boolean;
+  data?: any;
+  error?: string;
+}
+
+export const policyLabApi = {
+  health: () => request<PolicyLabResponse>('/policylab/health'),
+  predict: () => request<PolicyLabResponse>('/policylab/predict', { method: 'POST', body: '{}' }),
+  scenarios: () => request<PolicyLabResponse>('/policylab/scenarios', { method: 'POST', body: '{}' }),
+};
