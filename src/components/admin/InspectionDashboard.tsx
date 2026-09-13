@@ -1855,8 +1855,8 @@ export const InspectionDashboard: React.FC = () => {
                   onClick={() => {
                     const title = prompt('Enter Paper Title:');
                     const author = prompt('Enter Author / Institution:');
-                    if (title) {
-                      addDashboardPublication({ title, author: author || 'National Cadastral Directorate', year: '2025' });
+                    if (title && author) {
+                      addDashboardPublication({ title, author, year: new Date().getFullYear().toString() });
                       showMessage('Added research publication!');
                     }
                   }}
