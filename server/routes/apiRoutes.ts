@@ -7,6 +7,55 @@ import { IngestionService } from '../services/ingestionService.ts';
 import { GeminiService } from '../services/geminiService.ts';
 
 const router = express.Router();
+const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
+
+function decodeUploadedFile(fileData: unknown, fallbackType: string) {
+  if (typeof fileData !== 'string' || !fileData.trim()) return null;
+
+  const dataUrlMatch = fileData.match(/^data:([^;,]+)?;base64,([A-Za-z0-9+/=\r\n]+)$/);
+  const suppliedMimeType = dataUrlMatch?.[1] || fallbackType || '';
+  const mimeType = /^[a-zA-Z0-9.+-]+\/[a-zA-Z0-9.+-]+$/.test(suppliedMimeType)
+    ? suppliedMimeType
+    : 'application/octet-stream';
+  const dataBase64 = (dataUrlMatch?.[2] || fileData).replace(/\s/g, '');
+
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(dataBase64)) {
+    throw new Error('The uploaded file data is not valid Base64 content.');
+  }
+
+  const buffer = Buffer.from(dataBase64, 'base64');
+  if (buffer.length === 0) throw new Error('The uploaded file is empty.');
+  if (buffer.length > MAX_DOCUMENT_BYTES) {
+    throw new Error('The uploaded file exceeds the 25 MB limit.');
+  }
+
+  return { mimeType, dataBase64, size: buffer.length };
+}
+
+function sendAttachment(
+  res: Response,
+  file: { name: string; type: string; size: number; dataBase64: string }
+) {
+  const buffer = Buffer.from(file.dataBase64, 'base64');
+  const originalName = file.name.replace(/[\r\n]/g, '').trim() || 'bhu-drishti-document';
+  const asciiName = originalName.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_');
+
+  res.setHeader('Content-Type', file.type || 'application/octet-stream');
+  res.setHeader('Content-Length', buffer.length.toString());
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(originalName)}`
+  );
+  res.send(buffer);
+}
+
+function csvCell(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+}
 
 // System & Database Health
 router.get('/health', (req: Request, res: Response) => {
@@ -255,6 +304,32 @@ router.get('/datasets/:id', (req: Request, res: Response) => {
   res.json({ success: true, data: dataset });
 });
 
+router.get('/datasets/:id/download', (req: Request, res: Response) => {
+  const dataset = db.getDatasetById(req.params.id);
+  if (!dataset) return res.status(404).json({ success: false, error: 'Dataset not found' });
+
+  const matchingRecords = db
+    .getLandUseRecords({})
+    .filter(record => record.dataset_name === dataset.title || record.source_id === dataset.id);
+  const rows: any[] = matchingRecords.length > 0 ? matchingRecords : (dataset.sample_rows || []);
+
+  if (rows.length === 0) {
+    return res.status(404).json({ success: false, error: 'This dataset has no downloadable rows.' });
+  }
+
+  const columns = Array.from(new Set(rows.flatMap(row => Object.keys(row))));
+  const csv = [
+    columns.map(csvCell).join(','),
+    ...rows.map(row => columns.map(column => csvCell(row[column])).join(','))
+  ].join('\n');
+  const safeTitle = dataset.title.replace(/[^a-zA-Z0-9-_]+/g, '_').replace(/^_+|_+$/g, '') || dataset.id;
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.csv"`);
+  res.send(`\uFEFF${csv}`);
+});
+
 // Data Sources
 router.get('/data-sources', (req: Request, res: Response) => {
   res.json({ success: true, data: db.getDataSources() });
@@ -278,6 +353,26 @@ router.get('/policies/:id', async (req: Request, res: Response) => {
   const policy = db.getPolicyById(req.params.id);
   if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
   res.json({ success: true, data: policy });
+});
+
+router.get('/policies/:id/download', async (req: Request, res: Response) => {
+  try {
+    await db.waitUntilReady();
+    const policy = db.getPolicyById(req.params.id);
+    if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
+
+    const file = await db.getFileAttachment('policy', policy.id);
+    if (!file) {
+      return res.status(410).json({
+        success: false,
+        error: 'The original file was uploaded before download storage was enabled. Please re-upload this document.'
+      });
+    }
+
+    sendAttachment(res, file);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to download policy document' });
+  }
 });
 
 // Create new Policy (Policy Maker)
@@ -417,6 +512,7 @@ router.post('/policies/upload', async (req: Request, res: Response) => {
       fileSize,
       fileType,
       fileContent,
+      fileData,
       name,
       acronym,
       ministry,
@@ -455,6 +551,11 @@ router.post('/policies/upload', async (req: Request, res: Response) => {
       updated_by: policyMakerName || 'Policy Maker'
     } : undefined;
 
+    const decodedFile = fileName ? decodeUploadedFile(fileData, fileType) : null;
+    if (fileName && !decodedFile) {
+      return res.status(400).json({ success: false, error: 'The original policy file content is required.' });
+    }
+
     const newPolicy = {
       id: policyId,
       name: detectedTitle,
@@ -485,13 +586,28 @@ router.post('/policies/upload', async (req: Request, res: Response) => {
       documentText: typeof fileContent === 'string' ? fileContent.substring(0, 2000) : '',
       fileAttachment: fileName ? {
         name: fileName,
-        size: fileSize || 0,
-        type: fileType || 'application/pdf',
-        url: `/documents/${fileName}`
+        size: decodedFile?.size || fileSize || 0,
+        type: decodedFile?.mimeType || fileType || 'application/pdf',
+        url: `/api/policies/${policyId}/download`
       } : undefined
     };
 
-    const created = await db.addPolicy(newPolicy as any);
+    if (decodedFile && fileName) {
+      await db.saveFileAttachment('policy', policyId, {
+        name: fileName,
+        type: decodedFile.mimeType,
+        size: decodedFile.size,
+        dataBase64: decodedFile.dataBase64
+      });
+    }
+
+    let created;
+    try {
+      created = await db.addPolicy(newPolicy as any);
+    } catch (error) {
+      if (decodedFile) await db.deleteFileAttachment('policy', policyId).catch(() => undefined);
+      throw error;
+    }
     res.json({
       success: true,
       message: `Policy '${detectedTitle}' successfully ingested, parsed, and registered in National Repository.`,
@@ -545,6 +661,26 @@ router.get('/research/:id', async (req: Request, res: Response) => {
   const paper = db.getResearchPaperById(req.params.id);
   if (!paper) return res.status(404).json({ success: false, error: 'Research paper not found' });
   res.json({ success: true, data: paper });
+});
+
+router.get('/research/:id/download', async (req: Request, res: Response) => {
+  try {
+    await db.waitUntilReady();
+    const paper = db.getResearchPaperById(req.params.id);
+    if (!paper) return res.status(404).json({ success: false, error: 'Research paper not found' });
+
+    const file = await db.getFileAttachment('research', paper.id);
+    if (!file) {
+      return res.status(410).json({
+        success: false,
+        error: 'The original file was uploaded before download storage was enabled. Please re-upload this document.'
+      });
+    }
+
+    sendAttachment(res, file);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to download research document' });
+  }
 });
 
 // Create / Author new Research Paper
@@ -616,13 +752,17 @@ router.post('/research', async (req: Request, res: Response) => {
 // Upload Document Endpoint
 router.post('/research/upload', async (req: Request, res: Response) => {
   try {
-    const { fileName, fileSize, fileType, fileContent, title, author, dedicatedResearcherId, geography, tags } = req.body;
+    const { fileName, fileSize, fileType, fileContent, fileData, title, author, dedicatedResearcherId, geography, tags } = req.body;
     if (!fileName) {
       return res.status(400).json({ success: false, error: 'File name is required.' });
     }
 
     const paperId = 'PAP-UPL-' + Date.now().toString(36).toUpperCase();
     const paperTitle = title || fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+    const decodedFile = decodeUploadedFile(fileData, fileType);
+    if (!decodedFile) {
+      return res.status(400).json({ success: false, error: 'The original research file content is required.' });
+    }
 
     const newPaper = {
       id: paperId,
@@ -649,15 +789,29 @@ router.post('/research/upload', async (req: Request, res: Response) => {
       contentMarkdown: typeof fileContent === 'string' ? fileContent.substring(0, 50000) : '',
       fileAttachment: {
         name: fileName,
-        size: fileSize || 0,
-        type: fileType || 'application/pdf',
+        size: decodedFile.size || fileSize || 0,
+        type: decodedFile.mimeType || fileType || 'application/pdf',
+        dataUrl: `/api/research/${paperId}/download`,
         uploadedAt: new Date().toISOString()
       },
       isUserAuthored: true,
       status: 'published' as const
     };
 
-    const saved = await db.addResearchPaper(newPaper as any);
+    await db.saveFileAttachment('research', paperId, {
+      name: fileName,
+      type: decodedFile.mimeType,
+      size: decodedFile.size,
+      dataBase64: decodedFile.dataBase64
+    });
+
+    let saved;
+    try {
+      saved = await db.addResearchPaper(newPaper as any);
+    } catch (error) {
+      await db.deleteFileAttachment('research', paperId).catch(() => undefined);
+      throw error;
+    }
     res.status(201).json({ success: true, message: 'Document uploaded and indexed successfully', data: saved });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message || 'Failed to upload document' });

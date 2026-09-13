@@ -184,6 +184,23 @@ CREATE TABLE IF NOT EXISTS bhu_content_store (
 CREATE INDEX IF NOT EXISTS idx_bhu_content_store_updated
   ON bhu_content_store(content_type, updated_at DESC);
 
+-- 11. Original uploaded document bytes
+-- Kept separately so policy/research catalogue responses stay fast and small.
+CREATE TABLE IF NOT EXISTS bhu_file_store (
+  owner_type TEXT NOT NULL CHECK (owner_type IN ('policy', 'research')),
+  owner_id TEXT NOT NULL,
+  file_name TEXT NOT NULL,
+  mime_type TEXT NOT NULL DEFAULT 'application/octet-stream',
+  file_size BIGINT NOT NULL DEFAULT 0,
+  file_data TEXT NOT NULL,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  PRIMARY KEY (owner_type, owner_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_bhu_file_store_owner
+  ON bhu_file_store(owner_type, owner_id);
+
 -- RLS Configuration
 ALTER TABLE states ENABLE ROW LEVEL SECURITY;
 ALTER TABLE districts ENABLE ROW LEVEL SECURITY;
@@ -195,6 +212,7 @@ ALTER TABLE research_papers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE anomalies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bhu_content_store ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bhu_file_store ENABLE ROW LEVEL SECURITY;
 
 -- Anonymous and Authenticated Read Policies
 DO $$

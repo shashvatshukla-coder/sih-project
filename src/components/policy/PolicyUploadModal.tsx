@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { Policy } from '../../types';
+import { readFileAsDataUrl, validateUploadFile } from '../../lib/files';
 import {
   UploadCloud,
   FileText,
@@ -71,6 +72,14 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
   };
 
   const processFile = (selectedFile: File) => {
+    const validationError = validateUploadFile(selectedFile);
+    if (validationError) {
+      setFile(null);
+      setFilePreview('');
+      setErrorMessage(validationError);
+      return;
+    }
+
     setFile(selectedFile);
     setErrorMessage('');
 
@@ -153,12 +162,14 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
     try {
       setUploading(true);
       setErrorMessage('');
+      const fileData = file ? await readFileAsDataUrl(file) : undefined;
 
       const payload = {
-        fileName: file?.name || 'Gazette_Notification_Directive.pdf',
-        fileSize: file?.size || 142000,
-        fileType: file?.type || 'application/pdf',
+        fileName: file?.name,
+        fileSize: file?.size,
+        fileType: file?.type,
         fileContent: filePreview,
+        fileData,
         name: policyName.trim(),
         acronym: acronym.trim() || policyName.substring(0, 6).toUpperCase(),
         ministry,

@@ -18,6 +18,36 @@ const metaEnv = ((import.meta as any).env || {}) as Record<string, string | unde
 const rawBase = metaEnv.VITE_API_URL || metaEnv.VITE_BACKEND_URL || metaEnv.VITE_API_BASE_URL || '/api';
 const API_BASE = rawBase.replace(/\/+$/, '');
 
+function getResponseFilename(response: Response, fallbackName: string): string {
+  const disposition = response.headers.get('Content-Disposition') || '';
+  const utf8Match = disposition.match(/filename\*=UTF-8''([^;]+)/i);
+  if (utf8Match) {
+    try {
+      return decodeURIComponent(utf8Match[1]);
+    } catch {}
+  }
+  const basicMatch = disposition.match(/filename="?([^";]+)"?/i);
+  return basicMatch?.[1] || fallbackName;
+}
+
+async function downloadApiFile(path: string, fallbackName: string): Promise<void> {
+  const response = await fetch(`${API_BASE}${path}`);
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new Error(body?.error || 'The file could not be downloaded.');
+  }
+
+  const blob = await response.blob();
+  const objectUrl = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = objectUrl;
+  link.download = getResponseFilename(response, fallbackName);
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+}
+
 // Reliable Embedded Fallback Metadata
 const FALLBACK_STATES: State[] = [
   { state_code: 'IN-UP', state_name: 'Uttar Pradesh', capital: 'Lucknow', total_area_sqkm: 243286, region: 'North', center_coords: [26.8467, 80.9462] },
@@ -360,6 +390,10 @@ export const api = {
     return json;
   },
 
+  async downloadPolicyDocument(id: string, fileName: string): Promise<void> {
+    await downloadApiFile(`/policies/${encodeURIComponent(id)}/download`, fileName);
+  },
+
   async deletePolicy(id: string): Promise<boolean> {
     const res = await fetch(`${API_BASE}/policies/${id}`, {
       method: 'DELETE'
@@ -422,6 +456,7 @@ export const api = {
     fileSize?: number;
     fileType?: string;
     fileContent?: string;
+    fileData: string;
     title?: string;
     author?: string;
     dedicatedResearcherId?: string;
@@ -436,6 +471,15 @@ export const api = {
     const json = await res.json();
     if (!res.ok) throw new Error(json.error || 'Failed to upload document');
     return json.data;
+  },
+
+  async downloadResearchDocument(id: string, fileName: string): Promise<void> {
+    await downloadApiFile(`/research/${encodeURIComponent(id)}/download`, fileName);
+  },
+
+  async downloadDataset(id: string, title: string): Promise<void> {
+    const safeTitle = title.replace(/[^a-zA-Z0-9-_]+/g, '_') || id;
+    await downloadApiFile(`/datasets/${encodeURIComponent(id)}/download`, `${safeTitle}.csv`);
   },
 
   async getAnomalies(stateCode?: string): Promise<Anomaly[]> {

@@ -18,7 +18,9 @@ import {
   PlusCircle,
   Award,
   Layers,
-  Star
+  Star,
+  Download,
+  AlertCircle
 } from 'lucide-react';
 import { ResearchUploadModal } from './ResearchUploadModal';
 import { ResearchWriterStudio } from './ResearchWriterStudio';
@@ -30,6 +32,8 @@ export const ResearchLibrary: React.FC = () => {
   const [selectedTag, setSelectedTag] = useState('All');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState('');
 
   // Active view: 'catalog' | 'author' | 'upload'
   const [activeTab, setActiveTab] = useState<'catalog' | 'author' | 'upload'>('catalog');
@@ -73,6 +77,19 @@ export const ResearchLibrary: React.FC = () => {
     setActiveTab('catalog');
   };
 
+  const handleDownload = async (paper: ResearchPaper) => {
+    if (!paper.fileAttachment) return;
+    try {
+      setDownloadingId(paper.id);
+      setDownloadError('');
+      await api.downloadResearchDocument(paper.id, paper.fileAttachment.name);
+    } catch (err: any) {
+      setDownloadError(err.message || 'The research document could not be downloaded.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6 text-left">
       {/* Upload Drag & Drop Modal */}
@@ -81,6 +98,13 @@ export const ResearchLibrary: React.FC = () => {
         onClose={() => setIsUploadModalOpen(false)}
         onPaperCreated={handlePaperCreated}
       />
+
+      {downloadError && (
+        <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{downloadError}</span>
+        </div>
+      )}
 
       {/* Researcher Identity & Action Strip */}
       <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-sky-500/10 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-sky-950/20 border border-emerald-500/20 dark:border-emerald-800/40 flex flex-wrap items-center justify-between gap-4">
@@ -329,15 +353,27 @@ export const ResearchLibrary: React.FC = () => {
                       ))}
                     </div>
 
-                    <a
-                      href={paper.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
-                    >
-                      <span>Repository Reference</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                    {paper.fileAttachment ? (
+                      <button
+                        onClick={() => handleDownload(paper)}
+                        disabled={downloadingId === paper.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-60 transition-colors"
+                        title={`Download ${paper.fileAttachment.name}`}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>{downloadingId === paper.id ? 'Downloading...' : 'Download File'}</span>
+                      </button>
+                    ) : (
+                      <a
+                        href={paper.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
+                      >
+                        <span>Repository Reference</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
                 </div>
               );

@@ -26,7 +26,9 @@ import {
   FileText,
   Trash2,
   Award,
-  Star
+  Star,
+  Download,
+  AlertCircle
 } from 'lucide-react';
 import { PolicyUploadModal } from './PolicyUploadModal';
 import { PolicyAreaUpdateModal } from './PolicyAreaUpdateModal';
@@ -48,6 +50,8 @@ export const PolicyRepository: React.FC = () => {
   const [isResearchUploadOpen, setIsResearchUploadOpen] = useState(false);
   const [selectedPolicyForArea, setSelectedPolicyForArea] = useState<Policy | null>(null);
   const [droppedPolicyFile, setDroppedPolicyFile] = useState<File | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState('');
 
   // Drag-over container state
   const [isDraggingOverRepo, setIsDraggingOverRepo] = useState(false);
@@ -120,6 +124,19 @@ export const PolicyRepository: React.FC = () => {
     setIsAreaUpdateOpen(true);
   };
 
+  const handleDownload = async (policy: Policy) => {
+    if (!policy.fileAttachment) return;
+    try {
+      setDownloadingId(policy.id);
+      setDownloadError('');
+      await api.downloadPolicyDocument(policy.id, policy.fileAttachment.name);
+    } catch (err: any) {
+      setDownloadError(err.message || 'The policy document could not be downloaded.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   // Filter policies in memory
   const filteredPolicies = policies.filter(p => {
     if (statusFilter !== 'ALL' && p.status !== statusFilter) return false;
@@ -170,6 +187,13 @@ export const PolicyRepository: React.FC = () => {
         onClose={() => setIsResearchUploadOpen(false)}
         onPaperCreated={() => setActivePage('research')}
       />
+
+      {downloadError && (
+        <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{downloadError}</span>
+        </div>
+      )}
 
       {/* Drag & Drop Overlay Visual Cue when hovering */}
       {isDraggingOverRepo && (
@@ -566,15 +590,27 @@ export const PolicyRepository: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <a
-                      href={policy.documents_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold hover:underline"
-                    >
-                      <span>Official Guidelines / Gazette</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                    {policy.fileAttachment ? (
+                      <button
+                        onClick={() => handleDownload(policy)}
+                        disabled={downloadingId === policy.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-60 transition-colors"
+                        title={`Download ${policy.fileAttachment.name}`}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>{downloadingId === policy.id ? 'Downloading...' : 'Download Gazette'}</span>
+                      </button>
+                    ) : (
+                      <a
+                        href={policy.documents_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold hover:underline"
+                      >
+                        <span>Official Guidelines / Gazette</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

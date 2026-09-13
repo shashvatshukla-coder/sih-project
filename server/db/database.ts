@@ -53,6 +53,7 @@ class Database {
   private pgPool: pg.Pool | null = null;
   private pgPoolConnected: boolean = false;
   private contentStoreReady: boolean = false;
+  private fileStoreReady: boolean = false;
   private lastSyncTime: string | null = null;
   private ready: Promise<void>;
 
@@ -572,6 +573,27 @@ class Database {
     this.contentStoreReady = true;
   }
 
+  private async ensureFileStore(queryable: any = this.pgPool): Promise<void> {
+    if (!queryable) {
+      throw new Error('PostgreSQL is not configured.');
+    }
+
+    await queryable.query(`
+      CREATE TABLE IF NOT EXISTS bhu_file_store (
+        owner_type TEXT NOT NULL CHECK (owner_type IN ('policy', 'research')),
+        owner_id TEXT NOT NULL,
+        file_name TEXT NOT NULL,
+        mime_type TEXT NOT NULL DEFAULT 'application/octet-stream',
+        file_size BIGINT NOT NULL DEFAULT 0,
+        file_data TEXT NOT NULL,
+        created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+        PRIMARY KEY (owner_type, owner_id)
+      )
+    `);
+    this.fileStoreReady = true;
+  }
+
   private mergePersistentContent(rows: any[]): void {
     for (const row of rows) {
       if (row.content_type !== 'policy' && row.content_type !== 'research') continue;
@@ -640,6 +662,121 @@ class Database {
     }
 
     throw new Error('Persistent database is unavailable. Your change was not saved.');
+  }
+
+  public async saveFileAttachment(
+    ownerType: 'policy' | 'research',
+    ownerId: string,
+    file: { name: string; type: string; size: number; dataBase64: string }
+  ): Promise<void> {
+    await this.ready;
+
+    const row = {
+      owner_type: ownerType,
+      owner_id: ownerId,
+      file_name: file.name,
+      mime_type: file.type || 'application/octet-stream',
+      file_size: file.size,
+      file_data: file.dataBase64,
+      updated_at: new Date().toISOString()
+    };
+
+    if (this.pgPool) {
+      if (!this.fileStoreReady) await this.ensureFileStore();
+      await this.pgPool.query(
+        `INSERT INTO bhu_file_store
+          (owner_type, owner_id, file_name, mime_type, file_size, file_data, updated_at)
+         VALUES ($1, $2, $3, $4, $5, $6, NOW())
+         ON CONFLICT (owner_type, owner_id)
+         DO UPDATE SET
+           file_name = EXCLUDED.file_name,
+           mime_type = EXCLUDED.mime_type,
+           file_size = EXCLUDED.file_size,
+           file_data = EXCLUDED.file_data,
+           updated_at = NOW()`,
+        [ownerType, ownerId, file.name, row.mime_type, file.size, file.dataBase64]
+      );
+      this.fileStoreReady = true;
+      return;
+    }
+
+    if (this.supabase && this.supabaseConnected) {
+      const { error } = await this.supabase
+        .from('bhu_file_store')
+        .upsert(row, { onConflict: 'owner_type,owner_id' });
+      if (error) throw new Error(`File save failed: ${error.message}`);
+      this.fileStoreReady = true;
+      return;
+    }
+
+    throw new Error('Persistent file storage is unavailable. The document was not saved.');
+  }
+
+  public async getFileAttachment(
+    ownerType: 'policy' | 'research',
+    ownerId: string
+  ): Promise<{ name: string; type: string; size: number; dataBase64: string } | null> {
+    await this.ready;
+
+    if (this.pgPool) {
+      if (!this.fileStoreReady) await this.ensureFileStore();
+      const result = await this.pgPool.query(
+        `SELECT file_name, mime_type, file_size, file_data
+         FROM bhu_file_store
+         WHERE owner_type = $1 AND owner_id = $2
+         LIMIT 1`,
+        [ownerType, ownerId]
+      );
+      const row = result.rows[0];
+      if (!row) return null;
+      return {
+        name: row.file_name,
+        type: row.mime_type,
+        size: Number(row.file_size),
+        dataBase64: row.file_data
+      };
+    }
+
+    if (this.supabase && this.supabaseConnected) {
+      const { data, error } = await this.supabase
+        .from('bhu_file_store')
+        .select('file_name, mime_type, file_size, file_data')
+        .eq('owner_type', ownerType)
+        .eq('owner_id', ownerId)
+        .maybeSingle();
+      if (error) throw new Error(`File lookup failed: ${error.message}`);
+      if (!data) return null;
+      return {
+        name: data.file_name,
+        type: data.mime_type,
+        size: Number(data.file_size),
+        dataBase64: data.file_data
+      };
+    }
+
+    return null;
+  }
+
+  public async deleteFileAttachment(ownerType: 'policy' | 'research', ownerId: string): Promise<void> {
+    await this.ready;
+
+    if (this.pgPool) {
+      if (!this.fileStoreReady) await this.ensureFileStore();
+      await this.pgPool.query(
+        'DELETE FROM bhu_file_store WHERE owner_type = $1 AND owner_id = $2',
+        [ownerType, ownerId]
+      );
+      return;
+    }
+
+    if (this.supabase && this.supabaseConnected) {
+      const { error } = await this.supabase
+        .from('bhu_file_store')
+        .delete()
+        .eq('owner_type', ownerType)
+        .eq('owner_id', ownerId);
+      if (error) throw new Error(`File deletion failed: ${error.message}`);
+    }
   }
 
   private async syncFromPostgres() {
@@ -796,6 +933,7 @@ class Database {
       postgres_configured: Boolean(dbUrl),
       postgres_connected: this.pgPoolConnected || isDbConnected(),
       content_store_connected: this.contentStoreReady,
+      file_store_connected: this.fileStoreReady,
       last_sync: this.lastSyncTime,
       total_states: this.states.length,
       total_districts: this.districts.length,
@@ -1039,6 +1177,9 @@ class Database {
     if (idx >= 0) {
       const removed = this.policies[idx];
       await this.persistContent('policy', removed.id, removed, true);
+      await this.deleteFileAttachment('policy', removed.id).catch((error: any) => {
+        console.warn('[Database] Policy file cleanup warning:', error?.message || error);
+      });
       this.policies.splice(idx, 1);
       this.logAudit('DELETE_POLICY', 'PolicyMaker', { id });
       return true;
@@ -1274,6 +1415,9 @@ class Database {
     if (idx >= 0) {
       const removed = this.research[idx];
       await this.persistContent('research', removed.id, removed, true);
+      await this.deleteFileAttachment('research', removed.id).catch((error: any) => {
+        console.warn('[Database] Research file cleanup warning:', error?.message || error);
+      });
       this.research.splice(idx, 1);
       this.logAudit('DELETE_RESEARCH', 'ChiefInspector', { id: removed.id, title: removed.title });
       return true;

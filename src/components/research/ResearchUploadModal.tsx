@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { ResearchPaper } from '../../types';
+import { readFileAsDataUrl, validateUploadFile } from '../../lib/files';
 import {
   UploadCloud,
   FileText,
@@ -43,6 +44,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [createdPaper, setCreatedPaper] = useState<ResearchPaper | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,7 +63,16 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   };
 
   const processFile = (selectedFile: File) => {
+    const validationError = validateUploadFile(selectedFile);
+    if (validationError) {
+      setFile(null);
+      setFilePreview('');
+      setErrorMessage(validationError);
+      return;
+    }
+
     setFile(selectedFile);
+    setErrorMessage('');
     // Auto-generate title if empty
     const cleanTitle = selectedFile.name
       .replace(/\.[^/.]+$/, '')
@@ -118,11 +129,14 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
     if (!file || !title.trim()) return;
     try {
       setUploading(true);
+      setErrorMessage('');
+      const fileData = await readFileAsDataUrl(file);
       const paper = await api.uploadResearchDocument({
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
         fileContent: filePreview,
+        fileData,
         title: title.trim(),
         author: userProfile?.name || 'Dr. Shashvat Shukla',
         dedicatedResearcherId: dedicatedFixedId,
@@ -134,8 +148,9 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
       if (onPaperCreated) {
         onPaperCreated(paper);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to upload research document:', err);
+      setErrorMessage(err.message || 'Failed to upload the research document.');
     } finally {
       setUploading(false);
     }
@@ -212,6 +227,13 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
             </div>
           ) : (
             <>
+              {errorMessage && (
+                <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
               {/* Drag and Drop Zone */}
               <div
                 onDragOver={handleDragOver}
@@ -259,7 +281,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
                         Drag and drop your research paper or cadastral file here
                       </p>
                       <p className="text-[11px] text-slate-500">
-                        Or click to browse from your device
+                        Or click to browse from your device • Maximum 25 MB
                       </p>
                     </div>
                     <div className="flex items-center justify-center gap-2 pt-1">
