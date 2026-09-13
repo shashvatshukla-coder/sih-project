@@ -23,7 +23,7 @@ CLASSES = {
 }
 
 DEFAULT_BASE = Path("data/processed/ghaziabad")
-DEFAULT_MODEL = Path("ml/models/lulc_2011_to_2015.pkl")
+DEFAULT_MODEL = Path("ml/models/optimized/lulc_2011_to_2015_optimized.pkl")
 
 
 def _find_existing(base: Path, candidates: list[str]) -> Path:
