@@ -11,21 +11,4 @@ services:
       - key: NODE_ENV
         value: production
       - key: POLICYLAB_URL
-        fromService:
-          name: bhu-drishti-policylab
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
-
-  - type: web
-    name: bhu-drishti-policylab
-    runtime: docker
-    plan: starter
-    dockerfilePath: ./ml/policylab/Dockerfile
-    dockerContext: .
-    healthCheckPath: /health
-    autoDeployTrigger: commit
-    envVars:
-      - key: POLICYLAB_DATA_DIR
-        value: /app/data/processed/ghaziabad
-      - key: POLICYLAB_MODEL_PATH
-        value: /app/ml/models/lulc_2011_to_2015.pkl
+        sync: false
