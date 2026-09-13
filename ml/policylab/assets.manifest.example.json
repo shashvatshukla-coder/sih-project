@@ -1,0 +1,17 @@
+{
+  "service": "BHU-DRISHTI PolicyLab",
+  "required_assets": {
+    "models": [
+      "ml/models/lulc_2011_to_2015.pkl"
+    ],
+    "rasters": [
+      "data/processed/ghaziabad/lulc/lulc_2015_classified.tif",
+      "data/processed/ghaziabad/dem/ghaziabad_slope_aligned_30m.tif",
+      "data/processed/ghaziabad/roads/road_distance_ghaziabad_30m_aligned.tif"
+    ]
+  },
+  "optional_models": [
+    "ml/models/lulc_2005_to_2011.pkl"
+  ],
+  "deployment_note": "Store large model/raster assets outside GitHub and mount them into the PolicyLab service using the paths above. Do not commit the multi-gigabyte PKL files to the repository."
+}
