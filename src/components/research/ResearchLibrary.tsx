@@ -24,8 +24,13 @@ import {
 import { ResearchUploadModal } from './ResearchUploadModal';
 import { ResearchWriterStudio } from './ResearchWriterStudio';
 
-export const ResearchLibrary: React.FC = () => {
+interface ResearchLibraryProps {
+  mode?: 'publications' | 'case-studies';
+}
+
+export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'publications' }) => {
   const { saveItem, isSaved, runAIQuery, userProfile, dedicatedFixedId, setIsAuthModalOpen, setIsIdCardModalOpen } = useApp();
+  const isCaseStudyPage = mode === 'case-studies';
   const [papers, setPapers] = useState<ResearchPaper[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('All');
@@ -42,8 +47,15 @@ export const ResearchLibrary: React.FC = () => {
     async function loadPapers() {
       try {
         setLoading(true);
-        const data = await api.getResearchPapers(searchQuery, selectedTag);
-        setPapers(data || []);
+        const data = await api.getResearchPapers(searchQuery, isCaseStudyPage ? undefined : selectedTag);
+        const separatedPapers = (data || []).filter((paper) => {
+          const isCaseStudy =
+            paper.tags?.some(tag => tag.trim().toLowerCase().includes('case study')) ||
+            paper.research_area?.toLowerCase().includes('case study') ||
+            paper.title?.toLowerCase().includes('case study');
+          return isCaseStudyPage ? isCaseStudy : !isCaseStudy;
+        });
+        setPapers(separatedPapers);
       } catch (err) {
         console.error('Failed to load papers:', err);
       } finally {
@@ -51,7 +63,7 @@ export const ResearchLibrary: React.FC = () => {
       }
     }
     loadPapers();
-  }, [searchQuery, selectedTag]);
+  }, [searchQuery, selectedTag, isCaseStudyPage]);
 
   const tags = ['All', 'Indo-Gangetic Plain', 'DILRMP', 'PMKSY', 'Cadastral Maps', 'Urban Sprawl', 'Sodic Reclamation', 'Uploaded Paper'];
 
@@ -98,6 +110,7 @@ export const ResearchLibrary: React.FC = () => {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onPaperCreated={handlePaperCreated}
+        requiredTag={isCaseStudyPage ? 'Case Study' : undefined}
       />
 
       {downloadError && (
@@ -141,24 +154,26 @@ export const ResearchLibrary: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab(activeTab === 'author' ? 'catalog' : 'author')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
-              activeTab === 'author'
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
-          >
-            <FileEdit className="w-3.5 h-3.5" />
-            <span>{activeTab === 'author' ? 'Back to Library' : 'Write Research Paper'}</span>
-          </button>
+          {!isCaseStudyPage && (
+            <button
+              onClick={() => setActiveTab(activeTab === 'author' ? 'catalog' : 'author')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                activeTab === 'author'
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
+            >
+              <FileEdit className="w-3.5 h-3.5" />
+              <span>{activeTab === 'author' ? 'Back to Library' : 'Write Research Paper'}</span>
+            </button>
+          )}
 
           <button
             onClick={() => setIsUploadModalOpen(true)}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
             <UploadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Drag & Drop Upload</span>
+            <span>{isCaseStudyPage ? 'Upload Case Study' : 'Drag & Drop Upload'}</span>
           </button>
         </div>
       </div>
@@ -190,15 +205,17 @@ export const ResearchLibrary: React.FC = () => {
               <div>
                 <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
                   <BookOpen className="w-4 h-4" />
-                  <span>Peer-Reviewed Land Studies & Cadastral Repository</span>
+                  <span>{isCaseStudyPage ? 'Applied Land Governance Evidence' : 'Peer-Reviewed Land Studies & Cadastral Repository'}</span>
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                  Research Papers, Ingested Field Surveys & Grounded Evaluations
+                  {isCaseStudyPage
+                    ? 'Case Studies & Field Implementation Records'
+                    : 'Research Papers, Ingested Field Surveys & Grounded Evaluations'}
                 </h2>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                  {papers.length} Papers Available
+                  {papers.length} {isCaseStudyPage ? 'Case Studies' : 'Papers'} Available
                 </span>
               </div>
             </div>
@@ -209,14 +226,16 @@ export const ResearchLibrary: React.FC = () => {
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search papers by author, title, journal, keywords, dedicated UID, geography..."
+                  placeholder={isCaseStudyPage
+                    ? 'Search case studies by title, geography, author, or keywords...'
+                    : 'Search papers by author, title, journal, keywords, dedicated UID, geography...'}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 text-xs md:text-sm rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+              {!isCaseStudyPage && <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
                 {tags.map(t => (
                   <button
                     key={t}
@@ -230,12 +249,25 @@ export const ResearchLibrary: React.FC = () => {
                     {t}
                   </button>
                 ))}
-              </div>
+              </div>}
             </div>
           </div>
 
           {/* Papers Grid */}
           <div className="space-y-4">
+            {!loading && papers.length === 0 && (
+              <div className="p-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-2">
+                <BookOpen className="w-9 h-9 text-slate-300 mx-auto" />
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  {isCaseStudyPage ? 'No case studies uploaded yet' : 'No research publications found'}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {isCaseStudyPage
+                    ? 'Upload a case study and it will appear only in this section.'
+                    : 'Upload a publication or change the current search filters.'}
+                </p>
+              </div>
+            )}
             {papers.map(paper => {
               const saved = isSaved(paper.id);
               const isCopied = copiedId === paper.id;
@@ -348,7 +380,7 @@ export const ResearchLibrary: React.FC = () => {
                       title={paper.fileAttachment ? `Download ${paper.fileAttachment.name}` : 'Download research repository record'}
                     >
                       <Download className="w-3.5 h-3.5" />
-                      <span>{downloadingId === paper.id ? 'Downloading...' : 'Download Publication'}</span>
+                      <span>{downloadingId === paper.id ? 'Downloading...' : isCaseStudyPage ? 'Download Case Study' : 'Download Publication'}</span>
                     </button>
                     {!paper.fileAttachment && /^https?:\/\//i.test(paper.source_url || '') && (
                       <a
