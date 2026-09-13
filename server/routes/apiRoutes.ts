@@ -520,7 +520,9 @@ router.post('/policies', async (req: Request, res: Response) => {
       area_targets: Array.isArray(area_targets) ? area_targets : [],
       is_user_modified: true,
       status: status || 'Active',
-      allocated_budget_cr: allocated_budget_cr ? Number(allocated_budget_cr) : undefined,
+      allocated_budget_cr: allocated_budget_cr === '' || allocated_budget_cr == null
+        ? null
+        : Number(allocated_budget_cr),
       policyMakerId: policyMakerId || 'BHU-POL-8763-9201',
       policyMakerName: policyMakerName || 'Policy Maker'
     };
@@ -638,7 +640,9 @@ router.post('/policies/upload', async (req: Request, res: Response) => {
       state_name,
       district_name: district_name || undefined,
       target_year: 2028,
-      regional_budget_cr: allocated_budget_cr ? Number(allocated_budget_cr) : 350,
+      regional_budget_cr: allocated_budget_cr === '' || allocated_budget_cr == null
+        ? null
+        : Number(allocated_budget_cr),
       priority_tier: 'Critical Focus' as const,
       directives: detectedDirectives,
       last_updated: new Date().toISOString(),
@@ -674,7 +678,9 @@ router.post('/policies/upload', async (req: Request, res: Response) => {
       current_area_target: initialAreaTarget,
       is_user_modified: true,
       status: 'Gazette Notified' as const,
-      allocated_budget_cr: allocated_budget_cr ? Number(allocated_budget_cr) : 450,
+      allocated_budget_cr: allocated_budget_cr === '' || allocated_budget_cr == null
+        ? null
+        : Number(allocated_budget_cr),
       policyMakerId: 'BHU-POL-8763-9201',
       policyMakerName: policyMakerName || 'Policy Maker',
       documentText: typeof fileContent === 'string' ? fileContent.substring(0, 2000) : '',
