@@ -4,6 +4,7 @@ services:
     runtime: docker
     plan: starter
     dockerfilePath: ./ml/policylab/Dockerfile
+    dockerContext: .
     autoDeployTrigger: commit
     envVars:
       - key: POLICYLAB_DATA_DIR
