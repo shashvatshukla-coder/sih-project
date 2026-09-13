@@ -426,6 +426,10 @@ class Database {
     } catch (err) {
       console.warn('[Database] Prisma initialization error, continuing with in-memory store:', err);
     }
+
+    // Prisma/reference-table synchronization must never be allowed to overwrite
+    // user-uploaded policies and research loaded from the durable content store.
+    await this.refreshPersistentContent();
   }
 
   private async syncFromSupabase() {
@@ -435,7 +439,7 @@ class Database {
         { data: sStates, error: errStates },
         { data: sDistricts, error: errDistricts },
         { data: sRecords, error: errRecords },
-        { data: sDatasets },
+        { data: sDatasets, error: errDatasets },
         { data: sContent, error: errContent }
       ] = await Promise.all([
         this.supabase.from('states').select('*'),
@@ -445,15 +449,13 @@ class Database {
         this.supabase.from('bhu_content_store').select('content_type, content_id, payload, deleted')
       ]);
 
-      if (errStates) {
-        console.log('[Database] Supabase reachable. Tables need initialization or seeding:', errStates.message);
-        this.supabaseConnected = true;
-        this.supabaseNeedsSeeding = true;
-        return;
-      }
-
       this.supabaseConnected = true;
-      this.supabaseNeedsSeeding = false;
+      this.supabaseNeedsSeeding = Boolean(errStates || errDistricts || errRecords || errDatasets);
+
+      if (errStates) console.warn('[Database] Supabase states sync warning:', errStates.message);
+      if (errDistricts) console.warn('[Database] Supabase districts sync warning:', errDistricts.message);
+      if (errRecords) console.warn('[Database] Supabase land records sync warning:', errRecords.message);
+      if (errDatasets) console.warn('[Database] Supabase datasets sync warning:', errDatasets.message);
 
       if (sStates && sStates.length > 0) {
         this.states = sStates.map((s: any) => ({
@@ -500,6 +502,8 @@ class Database {
       if (!errContent && sContent) {
         this.mergePersistentContent(sContent);
         this.contentStoreReady = true;
+      } else if (errContent) {
+        console.warn('[Database] Supabase persistent content sync warning:', errContent.message);
       }
 
       this.lastSyncTime = new Date().toISOString();
@@ -514,14 +518,28 @@ class Database {
     try {
       const client = await this.pgPool.connect();
       try {
-        const resStates = await client.query('SELECT * FROM states LIMIT 100');
-        const resDistricts = await client.query('SELECT * FROM districts LIMIT 1000');
-        const resRecords = await client.query('SELECT * FROM land_use_records LIMIT 3000');
         await this.ensureContentStore(client);
         await this.ensureFileStore(client);
         const resContent = await client.query(
           'SELECT content_type, content_id, payload, deleted FROM bhu_content_store ORDER BY updated_at ASC'
         );
+        this.mergePersistentContent(resContent.rows);
+        this.pgPoolConnected = true;
+
+        const [resStates, resDistricts, resRecords] = await Promise.all([
+          client.query('SELECT * FROM states LIMIT 100').catch((error: any) => {
+            console.warn('[Database] PostgreSQL states sync warning:', error?.message || error);
+            return { rows: [] };
+          }),
+          client.query('SELECT * FROM districts LIMIT 1000').catch((error: any) => {
+            console.warn('[Database] PostgreSQL districts sync warning:', error?.message || error);
+            return { rows: [] };
+          }),
+          client.query('SELECT * FROM land_use_records LIMIT 3000').catch((error: any) => {
+            console.warn('[Database] PostgreSQL land records sync warning:', error?.message || error);
+            return { rows: [] };
+          })
+        ]);
 
         if (resStates.rows.length > 0) {
           this.states = resStates.rows.map((s: any) => ({
@@ -558,8 +576,6 @@ class Database {
             is_demo: this.seedRecordIds.has(r.id) || Boolean(r.is_demo)
           }));
         }
-        this.mergePersistentContent(resContent.rows);
-        this.pgPoolConnected = true;
         this.lastSyncTime = new Date().toISOString();
         console.log(`[Database] Live PostgreSQL pooler sync complete (${this.states.length} states, ${this.records.length} records).`);
       } finally {
@@ -636,6 +652,38 @@ class Database {
         collection[index] = persistedItem;
       } else {
         collection.unshift(persistedItem);
+      }
+    }
+  }
+
+  public async refreshPersistentContent(): Promise<void> {
+    if (this.pgPool) {
+      try {
+        if (!this.contentStoreReady) await this.ensureContentStore();
+        const result = await this.pgPool.query(
+          'SELECT content_type, content_id, payload, deleted FROM bhu_content_store ORDER BY updated_at ASC'
+        );
+        this.mergePersistentContent(result.rows);
+        this.pgPoolConnected = true;
+        this.lastSyncTime = new Date().toISOString();
+        return;
+      } catch (error: any) {
+        console.warn('[Database] PostgreSQL persistent content refresh warning:', error?.message || error);
+      }
+    }
+
+    if (this.supabase && this.supabaseConnected) {
+      try {
+        const { data, error } = await this.supabase
+          .from('bhu_content_store')
+          .select('content_type, content_id, payload, deleted')
+          .order('updated_at', { ascending: true });
+        if (error) throw error;
+        this.mergePersistentContent(data || []);
+        this.contentStoreReady = true;
+        this.lastSyncTime = new Date().toISOString();
+      } catch (error: any) {
+        console.warn('[Database] Supabase persistent content refresh warning:', error?.message || error);
       }
     }
   }
