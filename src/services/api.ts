@@ -432,7 +432,7 @@ export const api = {
       if (stateCode && stateCode !== 'IN-ALL') params.append('state', stateCode);
       if (districtCode && districtCode !== 'ALL') params.append('district', districtCode);
       if (includeHidden) params.append('includeHidden', 'true');
-      const res = await fetch(`${API_BASE}/policies?${params.toString()}`);
+      const res = await fetch(`${API_BASE}/policies?${params.toString()}`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         return json.data;
@@ -518,7 +518,7 @@ export const api = {
       if (search) params.append('search', search);
       if (tag && tag !== 'All') params.append('tag', tag);
       if (includeHidden) params.append('includeHidden', 'true');
-      const res = await fetch(`${API_BASE}/research?${params.toString()}`);
+      const res = await fetch(`${API_BASE}/research?${params.toString()}`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         return json.data;
