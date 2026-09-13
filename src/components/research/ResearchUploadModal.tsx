@@ -23,12 +23,14 @@ interface ResearchUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPaperCreated?: (paper: ResearchPaper) => void;
+  requiredTag?: string;
 }
 
 export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   isOpen,
   onClose,
-  onPaperCreated
+  onPaperCreated,
+  requiredTag
 }) => {
   const { userProfile, dedicatedFixedId, states, selectedState } = useApp();
 
@@ -38,7 +40,12 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   const [title, setTitle] = useState('');
   const [abstract, setAbstract] = useState('');
   const [geography, setGeography] = useState('Uttar Pradesh (Central)');
-  const [tags, setTags] = useState<string[]>(['Cadastral Survey', 'Land Use Dynamics', 'Field Telemetry']);
+  const [tags, setTags] = useState<string[]>([
+    'Cadastral Survey',
+    'Land Use Dynamics',
+    'Field Telemetry',
+    ...(requiredTag ? [requiredTag] : [])
+  ]);
   const [tagInput, setTagInput] = useState('');
   const [journal, setJournal] = useState('Bhu-Drishti Ingested Research Archives');
   const [uploading, setUploading] = useState(false);
@@ -122,6 +129,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
+    if (tagToRemove === requiredTag) return;
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
@@ -141,7 +149,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
         author: userProfile?.name || 'Dr. Shashvat Shukla',
         dedicatedResearcherId: dedicatedFixedId,
         geography: geography,
-        tags: tags
+        tags: requiredTag && !tags.includes(requiredTag) ? [...tags, requiredTag] : tags
       });
       setCreatedPaper(paper);
       setSuccess(true);
