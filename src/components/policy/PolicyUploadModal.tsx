@@ -41,7 +41,7 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
   const [policyName, setPolicyName] = useState('');
   const [acronym, setAcronym] = useState('');
   const [ministry, setMinistry] = useState('Ministry of Agriculture & Farmers Welfare / Board of Revenue');
-  const [targetStateCode, setTargetStateCode] = useState(selectedState || 'IN-UP');
+  const [targetStateName, setTargetStateName] = useState('Uttar Pradesh');
   const [districtName, setDistrictName] = useState('Amethi (Gauriganj HQ)');
   const [allocatedBudgetCr, setAllocatedBudgetCr] = useState('420');
   const [directives, setDirectives] = useState<string[]>([
@@ -56,8 +56,6 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const currentStateObj = states.find(s => s.state_code === targetStateCode) || states[0];
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -123,6 +121,12 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
     }
   }, [isOpen, initialFile]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const selectedStateName = states.find(s => s.state_code === selectedState)?.state_name;
+    if (selectedStateName) setTargetStateName(selectedStateName);
+  }, [isOpen, selectedState, states]);
+
   if (!isOpen) return null;
 
   const handleDrop = (e: React.DragEvent) => {
@@ -154,8 +158,8 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!policyName.trim()) {
-      setErrorMessage('Please provide a policy title or upload a document.');
+    if (!policyName.trim() || !targetStateName.trim()) {
+      setErrorMessage('Please provide a policy title and target state.');
       return;
     }
 
@@ -163,6 +167,15 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
       setUploading(true);
       setErrorMessage('');
       const fileData = file ? await readFileAsDataUrl(file) : undefined;
+      const normalizedStateName = targetStateName.trim();
+      const matchedState = states.find(
+        state => state.state_name.trim().toLowerCase() === normalizedStateName.toLowerCase()
+      );
+      const customStateCode = normalizedStateName
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const resolvedStateCode = matchedState?.state_code || `IN-${customStateCode}`;
 
       const payload = {
         fileName: file?.name,
@@ -173,9 +186,9 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
         name: policyName.trim(),
         acronym: acronym.trim() || policyName.substring(0, 6).toUpperCase(),
         ministry,
-        target_region: `${currentStateObj?.state_name || 'Uttar Pradesh'} (${districtName || 'All Districts'})`,
-        state_code: targetStateCode,
-        state_name: currentStateObj?.state_name || 'Uttar Pradesh',
+        target_region: `${normalizedStateName} (${districtName || 'All Districts'})`,
+        state_code: resolvedStateCode,
+        state_name: normalizedStateName,
         district_name: districtName,
         allocated_budget_cr: Number(allocatedBudgetCr) || 450,
         directives,
@@ -419,17 +432,14 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
                       <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
                         Target State
                       </label>
-                      <select
-                        value={targetStateCode}
-                        onChange={(e) => setTargetStateCode(e.target.value)}
+                      <input
+                        type="text"
+                        value={targetStateName}
+                        onChange={(e) => setTargetStateName(e.target.value)}
+                        placeholder="e.g. Uttar Pradesh"
+                        required
                         className="w-full px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                      >
-                        {states.map(s => (
-                          <option key={s.state_code} value={s.state_code}>
-                            {s.state_name}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
 
                     <div>
