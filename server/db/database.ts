@@ -504,6 +504,7 @@ class Database {
         const resDistricts = await client.query('SELECT * FROM districts LIMIT 1000');
         const resRecords = await client.query('SELECT * FROM land_use_records LIMIT 3000');
         await this.ensureContentStore(client);
+        await this.ensureFileStore(client);
         const resContent = await client.query(
           'SELECT content_type, content_id, payload, deleted FROM bhu_content_store ORDER BY updated_at ASC'
         );
