@@ -16,7 +16,7 @@ const allowedOrigins = (process.env.CORS_ORIGINS || '')
   .filter(Boolean);
 
 app.use(cors({
-  origin: allowedOrigins.length > 0
+  origin: allowedOrigins.length > 0 && !allowedOrigins.includes('*')
     ? (origin, callback) => {
         if (!origin || allowedOrigins.includes(origin)) {
           callback(null, true);

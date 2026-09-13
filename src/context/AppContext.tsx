@@ -171,13 +171,28 @@ export const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
 const DASHBOARD_CACHE_KEY = 'bhu_dashboard_config_verified_v1';
 
 export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activePage, setActivePage] = useState<PageId>('dashboard');
-  const [selectedState, setSelectedState] = useState<string>('IN-UP');
-  const [selectedDistrict, setSelectedDistrict] = useState<string>('UP-AMT');
-  const [selectedYear, setSelectedYear] = useState<number>(2025);
-  const [selectedCategory, setSelectedCategory] = useState<LandCategory>('agricultural');
-  const [userRole, setUserRole] = useState<UserRole>('researcher');
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
+  const [activePage, setActivePage] = useState<PageId>(() => {
+    return (localStorage.getItem('bhudrishti_activePage') as PageId) || 'dashboard';
+  });
+  const [selectedState, setSelectedState] = useState<string>(() => {
+    return localStorage.getItem('bhudrishti_selectedState') || 'IN-UP';
+  });
+  const [selectedDistrict, setSelectedDistrict] = useState<string>(() => {
+    return localStorage.getItem('bhudrishti_selectedDistrict') || 'UP-AMT';
+  });
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    const saved = localStorage.getItem('bhudrishti_selectedYear');
+    return saved ? Number(saved) : 2025;
+  });
+  const [selectedCategory, setSelectedCategory] = useState<LandCategory>(() => {
+    return (localStorage.getItem('bhudrishti_selectedCategory') as LandCategory) || 'agricultural';
+  });
+  const [userRole, setUserRole] = useState<UserRole>(() => {
+    return (localStorage.getItem('bhudrishti_userRole') as UserRole) || 'policymaker';
+  });
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    return localStorage.getItem('bhudrishti_theme') === 'dark';
+  });
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
 
   const GUEST_PROFILE: UserProfile = {
@@ -609,30 +624,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentRecord, setCurrentRecord] = useState<LandUseRecord | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const [savedItems, setSavedItems] = useState<SavedItem[]>([
-    {
-      id: 'DS-DES-LUS',
-      type: 'dataset',
-      title: 'Land Use Statistics At A Glance',
-      subtitle: 'MoA&FW / DES Official Series',
-      timestamp: '2026-03-01',
-      data: {}
-    },
-    {
-      id: 'PAP-001',
-      type: 'paper',
-      title: 'Decadal Spatio-Temporal Dynamics of Agricultural Land Conversion in Central UP',
-      subtitle: 'Sharma et al., 2024 (Springer)',
-      timestamp: '2026-02-28',
-      data: {}
-    }
-  ]);
+  const [savedItems, setSavedItems] = useState<SavedItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('bhudrishti_savedItems');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        id: 'DS-DES-LUS',
+        type: 'dataset',
+        title: 'Land Use Statistics At A Glance',
+        subtitle: 'MoA&FW / DES Official Series',
+        timestamp: '2026-03-01',
+        data: {}
+      },
+      {
+        id: 'PAP-001',
+        type: 'paper',
+        title: 'Decadal Spatio-Temporal Dynamics of Agricultural Land Conversion in Central UP',
+        subtitle: 'Sharma et al., 2024 (Springer)',
+        timestamp: '2026-02-28',
+        data: {}
+      }
+    ];
+  });
 
   const [activeAIQuery, setActiveAIQuery] = useState<string>('Show land statistics of Gauriganj, Amethi (UP)');
   const [aiResponse, setAIResponse] = useState<AIQueryResponse | null>(null);
   const [aiLoading, setAILoading] = useState<boolean>(false);
 
-  const [geminiApiKey, setGeminiApiKey] = useState<string>('');
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => {
+    return localStorage.getItem('bhudrishti_geminiApiKey') || '';
+  });
   const [geminiStatus, setGeminiStatus] = useState<{ tested: boolean; success: boolean; message: string; model: string; latencyMs?: number } | null>({
     tested: true,
     success: true,
@@ -641,12 +664,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     latencyMs: 95
   });
 
+  // Sync state changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_activePage', activePage);
+  }, [activePage]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_selectedState', selectedState);
+  }, [selectedState]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_selectedDistrict', selectedDistrict);
+  }, [selectedDistrict]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_selectedYear', String(selectedYear));
+  }, [selectedYear]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_selectedCategory', selectedCategory);
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_userRole', userRole);
+  }, [userRole]);
+
+  useEffect(() => {
+    if (geminiApiKey) {
+      localStorage.setItem('bhudrishti_geminiApiKey', geminiApiKey);
+    }
+  }, [geminiApiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_savedItems', JSON.stringify(savedItems));
+  }, [savedItems]);
+
   useEffect(() => {
     // Theme setup
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('bhudrishti_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('bhudrishti_theme', 'light');
     }
   }, [isDarkMode]);
 
@@ -659,7 +719,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setLoading(true);
         const [statesData, allDistrictsData] = await Promise.all([
           api.getStates(),
-          api.getDistricts('IN-UP')
+          api.getDistricts(selectedState || 'IN-UP')
         ]);
         setStates(statesData || []);
         setAllDistricts(allDistrictsData || []);
@@ -680,10 +740,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const dists = await api.getDistricts(selectedState);
         if (dists && dists.length > 0) {
           setDistricts(dists);
-          if (selectedState === 'IN-UP') {
-            setSelectedDistrict('UP-AMT');
-          } else {
-            setSelectedDistrict('ALL');
+          const districtMatches = dists.some(d => d.district_code === selectedDistrict);
+          if (!districtMatches) {
+            const savedDistrict = localStorage.getItem('bhudrishti_selectedDistrict');
+            if (savedDistrict && dists.some(d => d.district_code === savedDistrict)) {
+              setSelectedDistrict(savedDistrict);
+            } else if (selectedState === 'IN-UP') {
+              setSelectedDistrict('UP-AMT');
+            } else {
+              setSelectedDistrict('ALL');
+            }
           }
         }
       } catch (e) {

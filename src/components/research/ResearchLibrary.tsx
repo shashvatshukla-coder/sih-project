@@ -5,7 +5,6 @@ import { useApp } from '../../context/AppContext';
 import {
   BookOpen,
   Search,
-  Sparkles,
   ExternalLink,
   Bookmark,
   Check,
@@ -313,19 +312,6 @@ export const ResearchLibrary: React.FC = () => {
                   <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
                     {paper.abstract}
                   </p>
-
-                  {/* AI Summary Callout */}
-                  {paper.ai_summary && (
-                    <div className="p-3.5 rounded-xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 text-purple-950 dark:text-purple-200 space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-[11px] text-purple-700 dark:text-purple-300">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>AI-Generated Concise Finding Summary</span>
-                      </div>
-                      <p className="text-[11px] leading-relaxed">
-                        {paper.ai_summary.replace('AI Summary: ', '')}
-                      </p>
-                    </div>
-                  )}
 
                   {/* Key Findings */}
                   {paper.key_findings && paper.key_findings.length > 0 && (

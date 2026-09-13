@@ -797,9 +797,16 @@ class Database {
   private async syncFromPostgres() {
     if (!this.prisma) return;
     try {
-      const dbStates = await this.prisma.state.findMany();
-      const dbDistricts = await this.prisma.district.findMany();
-      const dbRecords = await this.prisma.landUseRecord.findMany();
+      const [dbStates, dbDistricts, dbRecords, dbDatasets, dbDataSources, dbPolicies, dbResearch, dbAnomalies] = await Promise.all([
+        this.prisma.state.findMany().catch(() => []),
+        this.prisma.district.findMany().catch(() => []),
+        this.prisma.landUseRecord.findMany().catch(() => []),
+        this.prisma.dataset.findMany().catch(() => []),
+        this.prisma.dataSource.findMany().catch(() => []),
+        this.prisma.policy.findMany().catch(() => []),
+        this.prisma.researchPaper.findMany().catch(() => []),
+        this.prisma.anomaly.findMany().catch(() => [])
+      ]);
 
       if (dbStates.length > 0) {
         this.states = dbStates.map((s: any) => ({
@@ -830,8 +837,28 @@ class Database {
         }));
       }
 
+      if (dbDatasets.length > 0) {
+        this.datasets = dbDatasets;
+      }
+
+      if (dbDataSources.length > 0) {
+        this.dataSources = dbDataSources;
+      }
+
+      if (dbPolicies.length > 0) {
+        this.policies = dbPolicies;
+      }
+
+      if (dbResearch.length > 0) {
+        this.research = dbResearch;
+      }
+
+      if (dbAnomalies.length > 0) {
+        this.anomalies = dbAnomalies;
+      }
+
       this.lastSyncTime = new Date().toISOString();
-      console.log(`[Database] Successfully synced live state from PostgreSQL (${this.states.length} states, ${this.records.length} records).`);
+      console.log(`[Database] Successfully synced live state from PostgreSQL (${this.states.length} states, ${this.districts.length} districts, ${this.records.length} records, ${this.datasets.length} datasets).`);
     } catch (err) {
       console.warn('[Database] PostgreSQL sync warning:', err);
     }
@@ -1445,7 +1472,7 @@ class Database {
     return this.anomalies.filter(a => a.state_code.toLowerCase() === stateCode.toLowerCase());
   }
 
-  public addUploadedDataset(dataset: Dataset, records: LandUseRecord[]): void {
+  public async addUploadedDataset(dataset: Dataset, records: LandUseRecord[]): Promise<void> {
     this.datasets.unshift(dataset);
     this.records.push(...records);
     this.logAudit('UPLOAD_DATASET', 'Admin', { dataset_id: dataset.id, records_count: records.length });
@@ -1464,24 +1491,63 @@ class Database {
     }
 
     if (this.prisma) {
-      this.prisma.dataset.create({
-        data: {
-          id: dataset.id,
-          title: dataset.title,
-          publisher: dataset.publisher,
-          description: dataset.description,
-          category: dataset.category,
-          coverage: dataset.coverage,
-          date_range: dataset.date_range,
-          last_updated: dataset.last_updated,
-          format: dataset.format,
-          update_frequency: dataset.update_frequency,
-          source_url: dataset.source_url,
-          license: dataset.license,
-          data_quality: dataset.data_quality as any,
-          sample_rows: dataset.sample_rows as any
+      try {
+        await this.prisma.dataset.create({
+          data: {
+            id: dataset.id,
+            title: dataset.title,
+            publisher: dataset.publisher,
+            description: dataset.description,
+            category: dataset.category,
+            coverage: dataset.coverage,
+            date_range: dataset.date_range,
+            last_updated: dataset.last_updated,
+            format: dataset.format,
+            update_frequency: dataset.update_frequency,
+            source_url: dataset.source_url,
+            license: dataset.license,
+            data_quality: dataset.data_quality as any,
+            sample_rows: dataset.sample_rows as any
+          }
+        });
+
+        if (records.length > 0) {
+          await this.prisma.landUseRecord.createMany({
+            data: records.map(r => ({
+              id: r.id,
+              state_code: r.state_code,
+              state_name: r.state_name,
+              district_code: r.district_code || null,
+              district_name: r.district_name || null,
+              year: Number(r.year),
+              total_area_ha: Number(r.total_area_ha || 0),
+              agricultural_area_ha: Number(r.agricultural_area_ha || 0),
+              agricultural_pct: Number(r.agricultural_pct || 0),
+              forest_area_ha: Number(r.forest_area_ha || 0),
+              forest_pct: Number(r.forest_pct || 0),
+              builtup_area_ha: Number(r.builtup_area_ha || 0),
+              builtup_pct: Number(r.builtup_pct || 0),
+              waterbodies_area_ha: Number(r.waterbodies_area_ha || 0),
+              waterbodies_pct: Number(r.waterbodies_pct || 0),
+              barren_area_ha: Number(r.barren_area_ha || 0),
+              barren_pct: Number(r.barren_pct || 0),
+              other_area_ha: Number(r.other_area_ha || 0),
+              other_pct: Number(r.other_pct || 0),
+              irrigated_pct: Number(r.irrigated_pct || 0),
+              degraded_pct: Number(r.degraded_pct || 0),
+              source_id: r.source_id || 'DS-UPLOAD',
+              dataset_name: r.dataset_name || dataset.title,
+              source_url: r.source_url || 'https://desagri.gov.in',
+              confidence_score: Number(r.confidence_score || 95),
+              is_demo: false,
+              notes: r.notes || null
+            })),
+            skipDuplicates: true
+          });
         }
-      }).catch((e: any) => console.warn('[Prisma] Async Dataset upload persist warning:', e));
+      } catch (e) {
+        console.warn('[Prisma] Async Dataset/Records upload persist warning:', e);
+      }
     }
   }
 
