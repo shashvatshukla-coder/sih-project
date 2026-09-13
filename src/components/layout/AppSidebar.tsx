@@ -127,7 +127,6 @@ export const AppSidebar: React.FC<SidebarProps> = ({
             // Handle equivalent active states
             const isActive =
               activePage === item.id ||
-              (item.id === 'case-studies' && activePage === 'research') ||
               (item.id === 'collaboration' && activePage === 'workspace') ||
               (item.id === 'news-events' && activePage === 'reports');
 
