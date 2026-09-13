@@ -118,7 +118,7 @@ export interface AreaTarget {
   district_code?: string;
   district_name?: string;
   target_year?: number;
-  regional_budget_cr?: number;
+  regional_budget_cr?: number | null;
   target_agricultural_pct?: number;
   target_reclaim_ha?: number;
   priority_tier: 'Critical Focus' | 'Active Monitoring' | 'Routine Sustenance';
@@ -151,7 +151,7 @@ export interface Policy {
   status?: 'Active' | 'Gazette Notified' | 'Under Revision' | 'Draft Amendment';
   policyMakerId?: string;
   policyMakerName?: string;
-  allocated_budget_cr?: number;
+  allocated_budget_cr?: number | null;
   documentText?: string;
   fileAttachment?: {
     name: string;
