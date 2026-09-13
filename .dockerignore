@@ -11,3 +11,17 @@ yarn-error.log*
 .DS_Store
 Thumbs.db
 *.log
+
+# Keep the PolicyLab Docker image focused on inference assets.
+ml/models/*
+!ml/models/lulc_2011_to_2015.pkl
+
+data/raw/
+data/processed/*
+!data/processed/ghaziabad/
+!data/processed/ghaziabad/lulc/
+!data/processed/ghaziabad/lulc/lulc_2015_classified.tif
+!data/processed/ghaziabad/dem/
+!data/processed/ghaziabad/dem/ghaziabad_slope_aligned_30m.tif
+!data/processed/ghaziabad/roads/
+!data/processed/ghaziabad/roads/road_distance_ghaziabad_30m_aligned.tif
