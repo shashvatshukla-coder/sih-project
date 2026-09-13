@@ -421,6 +421,7 @@ export const PolicyRepository: React.FC = () => {
           filteredPolicies.map((policy) => {
             // Check if there is an active area target for this policy
             const activeAreaTarget = policy.current_area_target || (policy.area_targets && policy.area_targets.length > 0 ? policy.area_targets[0] : null);
+            const displayBudget = activeAreaTarget?.regional_budget_cr ?? policy.allocated_budget_cr;
 
             return (
               <div
@@ -529,7 +530,7 @@ export const PolicyRepository: React.FC = () => {
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Regional Budget</span>
                         <span className="text-xs font-black text-amber-600 dark:text-amber-400">
-                          ₹{activeAreaTarget.regional_budget_cr || policy.allocated_budget_cr || 450} Cr
+                          {displayBudget == null ? 'Not specified' : `₹${displayBudget} Cr`}
                         </span>
                       </div>
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
