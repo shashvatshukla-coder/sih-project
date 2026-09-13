@@ -150,7 +150,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
   const [isAddingExp, setIsAddingExp] = useState(false);
   const [newExpTitle, setNewExpTitle] = useState('');
-  const [newExpState, setNewExpState] = useState('Uttar Pradesh');
+  const [newExpState, setNewExpState] = useState('');
 
   const [isAddingEvent, setIsAddingEvent] = useState(false);
   const [newEventTitle, setNewEventTitle] = useState('');
@@ -218,7 +218,7 @@ export const ExecutiveDashboard: React.FC = () => {
     if (!newPubTitle) return;
     addDashboardPublication({
       title: newPubTitle,
-      author: newPubAuthor || 'National Cadastral Directorate',
+      author: newPubAuthor || 'Author not provided',
       year: new Date().getFullYear().toString()
     });
     setNewPubTitle('');
@@ -232,8 +232,8 @@ export const ExecutiveDashboard: React.FC = () => {
     addPolicyExperiment({
       title: newExpTitle,
       state: newExpState,
-      duration: '6 months',
-      status: 'Ongoing'
+      duration: 'Not provided',
+      status: 'Registered'
     });
     setNewExpTitle('');
     setIsAddingExp(false);
@@ -244,8 +244,8 @@ export const ExecutiveDashboard: React.FC = () => {
     if (!newEventTitle) return;
     addUpcomingEvent({
       title: newEventTitle,
-      date: newEventDate || 'Upcoming',
-      location: 'New Delhi'
+      date: newEventDate || 'Date not provided',
+      location: 'Location not provided'
     });
     setNewEventTitle('');
     setNewEventDate('');
@@ -928,7 +928,7 @@ export const ExecutiveDashboard: React.FC = () => {
               <div className="my-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-2">
                 <input
                   type="text"
-                  placeholder="Metric (e.g. +14%)"
+                  placeholder="Metric value"
                   value={newInsightMetric}
                   onChange={e => setNewInsightMetric(e.target.value)}
                   className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 font-bold"
@@ -1182,7 +1182,7 @@ export const ExecutiveDashboard: React.FC = () => {
                 />
                 <input
                   type="text"
-                  placeholder="State (e.g. Uttar Pradesh)"
+                  placeholder="State or region"
                   value={newExpState}
                   onChange={e => setNewExpState(e.target.value)}
                   className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"
@@ -1353,7 +1353,7 @@ export const ExecutiveDashboard: React.FC = () => {
               />
               <input
                 type="text"
-                placeholder="Date (e.g. 15 Oct 2025)"
+                placeholder="Event date"
                 value={newEventDate}
                 onChange={e => setNewEventDate(e.target.value)}
                 className="w-full px-2 py-1 text-xs rounded border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900"

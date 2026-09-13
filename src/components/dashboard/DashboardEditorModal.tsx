@@ -60,10 +60,10 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   // New item states
-  const [newInsight, setNewInsight] = useState({ metric: '+15%', description: '', icon: 'TrendingUp' });
-  const [newPublication, setNewPublication] = useState({ title: '', author: 'ICAR & NRSC', year: '2025' });
-  const [newExperiment, setNewExperiment] = useState({ title: '', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing' });
-  const [newEvent, setNewEvent] = useState({ title: '', date: '20 Oct 2025', location: 'New Delhi' });
+  const [newInsight, setNewInsight] = useState({ metric: '', description: '', icon: 'TrendingUp' });
+  const [newPublication, setNewPublication] = useState({ title: '', author: '', year: '' });
+  const [newExperiment, setNewExperiment] = useState({ title: '', state: '', duration: '', status: 'Registered' });
+  const [newEvent, setNewEvent] = useState({ title: '', date: '', location: '' });
 
   if (!isOpen) return null;
 
@@ -76,13 +76,13 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
   const handleAddPublication = () => {
     if (!newPublication.title || !newPublication.author) return;
     addDashboardPublication(newPublication);
-    setNewPublication({ title: '', author: '', year: '2025' });
+    setNewPublication({ title: '', author: '', year: '' });
   };
 
   const handleAddExperiment = () => {
     if (!newExperiment.title) return;
     addPolicyExperiment(newExperiment);
-    setNewExperiment({ title: '', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing' });
+    setNewExperiment({ title: '', state: '', duration: '', status: 'Registered' });
   };
 
   const handleAddEvent = () => {
@@ -107,7 +107,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
   };
 
   const handleReset = async () => {
-    if (confirm('Reset entire dashboard to official Government baseline values?')) {
+    if (confirm('Reset the dashboard to verified database-derived values?')) {
       await resetDashboardToBaseline();
       onClose();
     }
@@ -217,7 +217,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                     value={dashboardConfig.kpiCards.datasets.subtitle}
                     onChange={e => updateDashboardKPI('datasets', dashboardConfig.kpiCards.datasets.count, e.target.value)}
                     className="w-full px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300"
-                    placeholder="From 35+ Departments"
+                    placeholder="Data source description"
                   />
                 </div>
 
@@ -239,7 +239,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                     value={dashboardConfig.kpiCards.research.subtitle}
                     onChange={e => updateDashboardKPI('research', dashboardConfig.kpiCards.research.count, e.target.value)}
                     className="w-full px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300"
-                    placeholder="Across 500+ Institutions"
+                    placeholder="Submission source"
                   />
                 </div>
 
@@ -261,7 +261,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                     value={dashboardConfig.kpiCards.policies.subtitle}
                     onChange={e => updateDashboardKPI('policies', dashboardConfig.kpiCards.policies.count, e.target.value)}
                     className="w-full px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300"
-                    placeholder="Central & State"
+                    placeholder="Repository scope"
                   />
                 </div>
 
@@ -283,7 +283,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                     value={dashboardConfig.kpiCards.layers.subtitle}
                     onChange={e => updateDashboardKPI('layers', dashboardConfig.kpiCards.layers.count, e.target.value)}
                     className="w-full px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300"
-                    placeholder="Nationwide Coverage"
+                    placeholder="Validated record coverage"
                   />
                 </div>
 
@@ -305,7 +305,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                     value={dashboardConfig.kpiCards.users.subtitle}
                     onChange={e => updateDashboardKPI('users', dashboardConfig.kpiCards.users.count, e.target.value)}
                     className="w-full px-3 py-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs text-slate-600 dark:text-slate-300"
-                    placeholder="Researchers | Policymakers"
+                    placeholder="Registry status"
                   />
                 </div>
               </div>
@@ -597,7 +597,7 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                 />
                 <input
                   type="text"
-                  placeholder="Date (e.g. 15 Oct 2025)"
+                  placeholder="Event date"
                   value={newEvent.date}
                   onChange={e => setNewEvent({ ...newEvent, date: e.target.value })}
                   className="w-40 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-xs"

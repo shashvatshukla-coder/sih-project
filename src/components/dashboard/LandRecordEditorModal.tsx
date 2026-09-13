@@ -353,7 +353,7 @@ export const LandRecordEditorModal: React.FC<LandRecordEditorModalProps> = ({ is
               type="text"
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="e.g., UP Bhumi Sudhar Sodic Survey ground truth correction (2026)"
+              placeholder="Explain the source and reason for this correction"
               className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
             />
           </div>
