@@ -16,7 +16,6 @@ import {
   Users,
   Check,
   UserCheck,
-  Database,
   Fingerprint,
   Award,
   ShieldCheck,
@@ -116,17 +115,6 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
             </span>
           </div>
           <Award className="w-3.5 h-3.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
-        </button>
-
-        {/* Supabase Status Pill */}
-        <button
-          onClick={() => setActivePage('admin')}
-          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
-          title="Database status (click to open Admin Storage Console)"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <Database className="w-3 h-3 text-emerald-600" />
-          <span>{dbStatus?.supabase_connected ? 'Supabase Cloud' : (dbStatus?.postgres_connected ? 'PostgreSQL' : 'Hybrid DB')}</span>
         </button>
 
         {/* Dark Mode Toggle */}
