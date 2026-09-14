@@ -44,5 +44,18 @@ for remote, local in FILES.items():
     print(f"Saved {local}: {target.stat().st_size / (1024 * 1024):.2f} MB", flush=True)
 PY
 
+# Precompute the deterministic baseline during the image build. Runtime requests
+# can then reuse it instead of performing a long, memory-heavy first prediction.
+RUN python - <<'PY'
+from pathlib import Path
+from ml.policylab.engine import predict
+
+result = predict(
+    model_path=Path("/app/ml/models/optimized/lulc_2011_to_2015_optimized.pkl"),
+    base=Path("/app/data/processed/ghaziabad"),
+)
+print(f"Precomputed PolicyLab baseline: {result['output']}", flush=True)
+PY
+
 EXPOSE 8000
 CMD ["sh", "-c", "uvicorn ml.policylab.api:app --host 0.0.0.0 --port ${PORT:-8000}"]
