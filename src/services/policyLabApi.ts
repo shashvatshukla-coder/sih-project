@@ -17,6 +17,13 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return payload as T;
 }
 
+export interface PolicyLabScenarioRequest {
+  agriculture_protection: number;
+  water_protection: number;
+  forest_protection: number;
+  policy_text?: string;
+}
+
 export interface PolicyLabResponse {
   success: boolean;
   data?: any;
@@ -26,5 +33,8 @@ export interface PolicyLabResponse {
 export const policyLabApi = {
   health: () => request<PolicyLabResponse>('/policylab/health'),
   predict: () => request<PolicyLabResponse>('/policylab/predict', { method: 'POST', body: '{}' }),
-  scenarios: () => request<PolicyLabResponse>('/policylab/scenarios', { method: 'POST', body: '{}' }),
+  scenarios: (scenario?: PolicyLabScenarioRequest) => request<PolicyLabResponse>('/policylab/scenarios', {
+    method: 'POST',
+    body: JSON.stringify(scenario || {}),
+  }),
 };
