@@ -1,7 +1,6 @@
-const configuredBase = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_BACKEND_URL || (import.meta as any).env?.VITE_API_BASE_URL;
-// Production frontend is hosted on Vercel; PolicyLab requests must go to the Render API.
-const rawBase = configuredBase || 'https://bhu-drishti-api.onrender.com/api';
-const API_BASE = String(rawBase).replace(/\/+$/, '');
+// PolicyLab runs on the Render backend. Keep this production endpoint explicit so
+// Vercel environment variables cannot accidentally redirect requests to Vercel /api.
+const API_BASE = 'https://bhu-drishti-api.onrender.com/api';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
