@@ -4,11 +4,22 @@ import os
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from .engine import DEFAULT_BASE, DEFAULT_MODEL, apply_scenarios, predict
 
 app = FastAPI(title="BHU-DRISHTI PolicyLab", version="1.0.0")
+
+# PolicyLab is also called directly by the Vercel frontend for the public demo.
+# Keep CORS open for the prototype so the hosted frontend can reach the ML service.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 class RunRequest(BaseModel):
