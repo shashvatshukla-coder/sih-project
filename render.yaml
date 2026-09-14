@@ -11,10 +11,7 @@ services:
       - key: NODE_ENV
         value: production
       - key: POLICYLAB_URL
-        fromService:
-          name: bhu-drishti-policylab
-          type: web
-          envVarKey: RENDER_EXTERNAL_URL
+        value: https://bhu-drishti-policylab.onrender.com
 
   - type: web
     name: bhu-drishti-policylab
