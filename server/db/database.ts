@@ -1178,7 +1178,17 @@ class Database {
     if (stateCode && stateCode !== 'IN-ALL') {
       const sc = stateCode.toLowerCase();
       list = list.map(p => {
-        const areaTarget = p.area_targets?.find(at => at.state_code.toLowerCase() === sc && (!districtCode || districtCode === 'ALL' || at.district_code?.toLowerCase() === districtCode.toLowerCase()));
+        const stateTargets = (p.area_targets || [])
+          .filter(at => at.state_code.toLowerCase() === sc)
+          .sort((a, b) => new Date(b.last_updated || 0).getTime() - new Date(a.last_updated || 0).getTime());
+
+        const requestedDistrict = districtCode && districtCode !== 'ALL'
+          ? districtCode.toLowerCase()
+          : null;
+        const areaTarget = requestedDistrict
+          ? stateTargets.find(at => at.district_code?.toLowerCase() === requestedDistrict) ||
+            stateTargets.find(at => !at.district_code)
+          : stateTargets[0];
         return areaTarget ? { ...p, current_area_target: areaTarget } : p;
       });
     }

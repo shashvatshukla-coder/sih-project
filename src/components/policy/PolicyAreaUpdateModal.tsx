@@ -64,28 +64,39 @@ export const PolicyAreaUpdateModal: React.FC<PolicyAreaUpdateModalProps> = ({
           setSelectedPolicyId(pols[0].id);
         }
       });
-      if (selectedState) setTargetStateCode(selectedState);
+      const initialAreaTarget = initialPolicy?.current_area_target;
+      if (initialAreaTarget) {
+        setTargetStateCode(initialAreaTarget.state_code);
+        setTargetDistrictCode(initialAreaTarget.district_code || 'ALL');
+      } else if (selectedState) {
+        setTargetStateCode(selectedState);
+        const firstDistrict = allDistricts.find(d => d.state_code === selectedState);
+        setTargetDistrictCode(firstDistrict?.district_code || 'ALL');
+      }
     }
-  }, [isOpen, initialPolicy, selectedState]);
+  }, [isOpen, initialPolicy, selectedState, allDistricts]);
 
-  // Load existing area target if policy already has one for this state
+  // Load the exact state/district target instead of the first target in a state.
   useEffect(() => {
     if (selectedPolicyId && availablePolicies.length > 0) {
       const pol = availablePolicies.find(p => p.id === selectedPolicyId);
       if (pol && pol.area_targets && pol.area_targets.length > 0) {
-        const existing = pol.area_targets.find(at => at.state_code === targetStateCode);
+        const existing = pol.area_targets.find(at =>
+          at.state_code === targetStateCode &&
+          (at.district_code || 'ALL') === targetDistrictCode
+        );
         if (existing) {
-          if (existing.regional_budget_cr) setRegionalBudgetCr(String(existing.regional_budget_cr));
-          if (existing.target_agricultural_pct) setTargetAgriPct(String(existing.target_agricultural_pct));
-          if (existing.target_reclaim_ha) setTargetReclaimHa(String(existing.target_reclaim_ha));
+          setTargetYear(existing.target_year ?? 2028);
+          setRegionalBudgetCr(existing.regional_budget_cr == null ? '' : String(existing.regional_budget_cr));
+          setTargetAgriPct(existing.target_agricultural_pct == null ? '' : String(existing.target_agricultural_pct));
+          setTargetReclaimHa(existing.target_reclaim_ha == null ? '' : String(existing.target_reclaim_ha));
           if (existing.priority_tier) setPriorityTier(existing.priority_tier);
           if (existing.directives && existing.directives.length > 0) setDirectives(existing.directives);
-          if (existing.notes) setNotes(existing.notes);
-          if (existing.district_code) setTargetDistrictCode(existing.district_code);
+          setNotes(existing.notes || '');
         }
       }
     }
-  }, [selectedPolicyId, targetStateCode, availablePolicies]);
+  }, [selectedPolicyId, targetStateCode, targetDistrictCode, availablePolicies]);
 
   if (!isOpen) return null;
 
@@ -137,9 +148,9 @@ export const PolicyAreaUpdateModal: React.FC<PolicyAreaUpdateModalProps> = ({
         district_code: targetDistrictCode !== 'ALL' ? targetDistrictCode : undefined,
         district_name: targetDistrictCode !== 'ALL' ? currentDistrictObj?.district_name || 'Amethi' : 'All Districts',
         target_year: Number(targetYear) || 2028,
-        regional_budget_cr: regionalBudgetCr ? Number(regionalBudgetCr) : 450,
-        target_agricultural_pct: targetAgriPct ? Number(targetAgriPct) : 65.0,
-        target_reclaim_ha: targetReclaimHa ? Number(targetReclaimHa) : 8000,
+        regional_budget_cr: regionalBudgetCr.trim() === '' ? null : Number(regionalBudgetCr),
+        target_agricultural_pct: targetAgriPct.trim() === '' ? undefined : Number(targetAgriPct),
+        target_reclaim_ha: targetReclaimHa.trim() === '' ? undefined : Number(targetReclaimHa),
         priority_tier: priorityTier,
         directives,
         notes: notes || `Area-specific directives updated by Policy Maker for ${currentDistrictObj?.district_name || 'State'}`,

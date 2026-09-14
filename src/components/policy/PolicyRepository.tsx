@@ -530,13 +530,17 @@ export const PolicyRepository: React.FC = () => {
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Agri Preservation</span>
                         <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
-                          {activeAreaTarget.target_agricultural_pct || 66.0}%
+                          {activeAreaTarget.target_agricultural_pct == null
+                            ? 'Not specified'
+                            : `${activeAreaTarget.target_agricultural_pct}%`}
                         </span>
                       </div>
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Sodic Reclamation</span>
                         <span className="text-xs font-black text-blue-600 dark:text-blue-400">
-                          {Number(activeAreaTarget.target_reclaim_ha || 8500).toLocaleString()} ha
+                          {activeAreaTarget.target_reclaim_ha == null
+                            ? 'Not specified'
+                            : `${Number(activeAreaTarget.target_reclaim_ha).toLocaleString()} ha`}
                         </span>
                       </div>
                     </div>

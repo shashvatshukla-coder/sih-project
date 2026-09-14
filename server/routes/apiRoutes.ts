@@ -569,15 +569,24 @@ router.post('/policies/:id/area', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'State code and state name are required for area-based policy updates.' });
     }
 
+    const parseOptionalNumber = (value: unknown, fieldName: string, allowNull = false): number | null | undefined => {
+      if (value === '' || value == null) return allowNull ? null : undefined;
+      const parsed = Number(value);
+      if (!Number.isFinite(parsed)) {
+        throw new Error(`${fieldName} must be a valid number.`);
+      }
+      return parsed;
+    };
+
     const areaTarget = {
       state_code,
       state_name,
       district_code: district_code || undefined,
       district_name: district_name || undefined,
-      target_year: Number(target_year) || 2028,
-      regional_budget_cr: regional_budget_cr ? Number(regional_budget_cr) : undefined,
-      target_agricultural_pct: target_agricultural_pct ? Number(target_agricultural_pct) : undefined,
-      target_reclaim_ha: target_reclaim_ha ? Number(target_reclaim_ha) : undefined,
+      target_year: parseOptionalNumber(target_year, 'Target year') || 2028,
+      regional_budget_cr: parseOptionalNumber(regional_budget_cr, 'Regional budget', true),
+      target_agricultural_pct: parseOptionalNumber(target_agricultural_pct, 'Agricultural preservation percentage'),
+      target_reclaim_ha: parseOptionalNumber(target_reclaim_ha, 'Sodic reclamation target'),
       priority_tier: priority_tier || 'Critical Focus',
       directives: Array.isArray(directives) && directives.length > 0 ? directives : [
         `Strict enforcement of cadastral zoning across ${district_name || state_name}.`,
