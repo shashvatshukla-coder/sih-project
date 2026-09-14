@@ -6,7 +6,6 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /app
 
-# Rasterio's binary wheels require Expat at runtime on Render's slim image.
 RUN apt-get update \
     && apt-get install -y --no-install-recommends libexpat1 \
     && rm -rf /var/lib/apt/lists/*
@@ -16,9 +15,6 @@ RUN pip install -r requirements.txt
 
 COPY ml/policylab ./ml/policylab
 
-# Render's Git checkout may expose Git LFS pointer files rather than the
-# binary assets. Download the public LFS-backed inference assets directly
-# during the Docker build so the image is independent of the checkout mode.
 RUN python - <<'PY'
 from pathlib import Path
 from urllib.request import urlopen
@@ -30,7 +26,6 @@ FILES = {
     "data/processed/ghaziabad/dem/ghaziabad_slope_aligned_30m.tif": "data/processed/ghaziabad/dem/ghaziabad_slope_aligned_30m.tif",
     "data/processed/ghaziabad/roads/road_distance_ghaziabad_30m_aligned.tif": "data/processed/ghaziabad/roads/road_distance_ghaziabad_30m_aligned.tif",
 }
-
 for remote, local in FILES.items():
     target = Path(local)
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -42,6 +37,18 @@ for remote, local in FILES.items():
                 break
             out.write(chunk)
     print(f"Saved {local}: {target.stat().st_size / (1024 * 1024):.2f} MB", flush=True)
+PY
+
+# Precompute the deterministic baseline while building the image. This prevents
+# the first browser request from loading the model and processing the full scene.
+RUN python - <<'PY'
+from pathlib import Path
+from ml.policylab.engine_runtime import predict
+result = predict(
+    model_path=Path("/app/ml/models/optimized/lulc_2011_to_2015_optimized.pkl"),
+    base=Path("/app/data/processed/ghaziabad"),
+)
+print(f"Precomputed PolicyLab baseline: {result['output']}", flush=True)
 PY
 
 EXPOSE 8000
