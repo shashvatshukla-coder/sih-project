@@ -38,16 +38,24 @@ function formatNumber(value: number) {
   return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value);
 }
 
-function extractPercent(text: string, fallback: number) {
+function extractPercent(text: string): number | null {
   const match = text.match(/(\d+(?:\.\d+)?)\s*%/);
-  return match ? Number(match[1]) : fallback;
+  return match ? Number(match[1]) : null;
 }
 
 function parsePolicyText(text: string, current: PolicyLabScenarioRequest) {
   const lower = text.toLowerCase();
-  const percent = extractPercent(text, 20);
-  const protection = Math.max(0, Math.min(100, 100 - percent));
+  const percent = extractPercent(text);
   const next = { ...current, policy_text: text };
+
+  if (percent === null) return next;
+
+  const clampedPercent = Math.max(0, Math.min(100, percent));
+  const describesConversion =
+    lower.includes('conversion') ||
+    lower.includes('convert') ||
+    lower.includes('converted');
+  const protection = describesConversion ? 100 - clampedPercent : clampedPercent;
 
   if (lower.includes('agricultur') || lower.includes('farm') || lower.includes('cropland')) {
     next.agriculture_protection = protection;

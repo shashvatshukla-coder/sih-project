@@ -3,9 +3,11 @@ export interface PolicyLabRunRequest {
   model_path?: string;
 }
 
-function policyLabBaseUrl(): string | null {
-  const value = process.env.POLICYLAB_URL?.trim();
-  return value ? value.replace(/\/+$/, '') : null;
+const DEFAULT_POLICYLAB_URL = 'https://bhu-drishti-policylab.onrender.com';
+
+function policyLabBaseUrl(): string {
+  const value = process.env.POLICYLAB_URL?.trim() || DEFAULT_POLICYLAB_URL;
+  return value.replace(/\/+$/, '');
 }
 
 async function callPolicyLab(path: string, body: PolicyLabRunRequest = {}) {

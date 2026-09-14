@@ -23,7 +23,7 @@ RUN python - <<'PY'
 from pathlib import Path
 from urllib.request import urlopen
 
-BASE = "https://media.githubusercontent.com/media/shashvatshukla-coder/sih-project/feature/policylab-integration/"
+BASE = "https://media.githubusercontent.com/media/shashvatshukla-coder/sih-project/main/"
 FILES = {
     "ml/models/optimized/lulc_2011_to_2015_optimized.pkl": "ml/models/optimized/lulc_2011_to_2015_optimized.pkl",
     "data/processed/ghaziabad/lulc/lulc_2015_classified.tif": "data/processed/ghaziabad/lulc/lulc_2015_classified.tif",
