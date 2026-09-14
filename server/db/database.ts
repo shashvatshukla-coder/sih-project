@@ -46,6 +46,15 @@ function stripObsoleteIdentityFields<T>(value: T): T {
   return cleaned as T;
 }
 
+function mergeStates(baseStates: State[], incomingStates: State[]): State[] {
+  const merged = new Map(baseStates.map(state => [state.state_code.toLowerCase(), state]));
+  incomingStates.forEach(state => {
+    const key = state.state_code.toLowerCase();
+    merged.set(key, { ...merged.get(key), ...state });
+  });
+  return Array.from(merged.values());
+}
+
 class Database {
   private states: State[] = [];
   private districts: District[] = [];
@@ -457,14 +466,15 @@ class Database {
       if (errDatasets) console.warn('[Database] Supabase datasets sync warning:', errDatasets.message);
 
       if (sStates && sStates.length > 0) {
-        this.states = sStates.map((s: any) => ({
+        const cloudStates: State[] = sStates.map((s: any) => ({
           state_code: s.state_code,
           state_name: s.state_name,
           capital: s.capital,
           total_area_sqkm: Number(s.total_area_sqkm),
           region: s.region,
-          center_coords: [Number(s.center_lat || 0), Number(s.center_lng || 0)]
+          center_coords: [Number(s.center_lat || 0), Number(s.center_lng || 0)] as [number, number]
         }));
+        this.states = mergeStates(this.states, cloudStates);
       }
 
       if (sDistricts && sDistricts.length > 0) {
@@ -541,14 +551,15 @@ class Database {
         ]);
 
         if (resStates.rows.length > 0) {
-          this.states = resStates.rows.map((s: any) => ({
+          const postgresStates: State[] = resStates.rows.map((s: any) => ({
             state_code: s.state_code,
             state_name: s.state_name,
             capital: s.capital,
             total_area_sqkm: Number(s.total_area_sqkm),
             region: s.region,
-            center_coords: [Number(s.center_lat || 0), Number(s.center_lng || 0)]
+            center_coords: [Number(s.center_lat || 0), Number(s.center_lng || 0)] as [number, number]
           }));
+          this.states = mergeStates(this.states, postgresStates);
         }
         if (resDistricts.rows.length > 0) {
           this.districts = resDistricts.rows.map((d: any) => ({
@@ -870,14 +881,15 @@ class Database {
       ]);
 
       if (dbStates.length > 0) {
-        this.states = dbStates.map((s: any) => ({
+        const prismaStates: State[] = dbStates.map((s: any) => ({
           state_code: s.state_code,
           state_name: s.state_name,
           capital: s.capital,
           total_area_sqkm: s.total_area_sqkm,
           region: s.region,
-          center_coords: [s.center_lat, s.center_lng]
+          center_coords: [s.center_lat, s.center_lng] as [number, number]
         }));
+        this.states = mergeStates(this.states, prismaStates);
       }
 
       if (dbDistricts.length > 0) {

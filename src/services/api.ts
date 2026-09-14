@@ -59,8 +59,36 @@ const FALLBACK_STATES: State[] = [
   { state_code: 'IN-TN', state_name: 'Tamil Nadu', capital: 'Chennai', total_area_sqkm: 130058, region: 'South', center_coords: [13.0827, 80.2707] },
   { state_code: 'IN-GJ', state_name: 'Gujarat', capital: 'Gandhinagar', total_area_sqkm: 196024, region: 'West', center_coords: [23.2156, 72.6369] },
   { state_code: 'IN-WB', state_name: 'West Bengal', capital: 'Kolkata', total_area_sqkm: 88752, region: 'East', center_coords: [22.5726, 88.3639] },
+  { state_code: 'IN-AP', state_name: 'Andhra Pradesh', capital: 'Amaravati', total_area_sqkm: 162970, region: 'South', center_coords: [15.9129, 79.74] },
+  { state_code: 'IN-OD', state_name: 'Odisha', capital: 'Bhubaneswar', total_area_sqkm: 155707, region: 'East', center_coords: [20.9517, 85.0985] },
+  { state_code: 'IN-PB', state_name: 'Punjab', capital: 'Chandigarh', total_area_sqkm: 50362, region: 'North', center_coords: [31.1471, 75.3412] },
+  { state_code: 'IN-HR', state_name: 'Haryana', capital: 'Chandigarh', total_area_sqkm: 44212, region: 'North', center_coords: [29.0588, 76.0856] },
+  { state_code: 'IN-AS', state_name: 'Assam', capital: 'Dispur', total_area_sqkm: 78438, region: 'Northeast', center_coords: [26.2006, 92.9376] },
+  { state_code: 'IN-KL', state_name: 'Kerala', capital: 'Thiruvananthapuram', total_area_sqkm: 38863, region: 'South', center_coords: [10.8505, 76.2711] },
+  { state_code: 'IN-AR', state_name: 'Arunachal Pradesh', capital: 'Itanagar', total_area_sqkm: 83743, region: 'Northeast', center_coords: [28.218, 94.7278] },
+  { state_code: 'IN-CG', state_name: 'Chhattisgarh', capital: 'Raipur', total_area_sqkm: 135192, region: 'Central', center_coords: [21.2787, 81.8661] },
+  { state_code: 'IN-GA', state_name: 'Goa', capital: 'Panaji', total_area_sqkm: 3702, region: 'West', center_coords: [15.2993, 74.124] },
+  { state_code: 'IN-HP', state_name: 'Himachal Pradesh', capital: 'Shimla', total_area_sqkm: 55673, region: 'North', center_coords: [31.1048, 77.1734] },
+  { state_code: 'IN-JH', state_name: 'Jharkhand', capital: 'Ranchi', total_area_sqkm: 79716, region: 'East', center_coords: [23.6102, 85.2799] },
+  { state_code: 'IN-MN', state_name: 'Manipur', capital: 'Imphal', total_area_sqkm: 22327, region: 'Northeast', center_coords: [24.6637, 93.9063] },
+  { state_code: 'IN-ML', state_name: 'Meghalaya', capital: 'Shillong', total_area_sqkm: 22429, region: 'Northeast', center_coords: [25.467, 91.3662] },
+  { state_code: 'IN-MZ', state_name: 'Mizoram', capital: 'Aizawl', total_area_sqkm: 21081, region: 'Northeast', center_coords: [23.1645, 92.9376] },
+  { state_code: 'IN-NL', state_name: 'Nagaland', capital: 'Kohima', total_area_sqkm: 16579, region: 'Northeast', center_coords: [26.1584, 94.5624] },
+  { state_code: 'IN-SK', state_name: 'Sikkim', capital: 'Gangtok', total_area_sqkm: 7096, region: 'Northeast', center_coords: [27.533, 88.5122] },
+  { state_code: 'IN-TS', state_name: 'Telangana', capital: 'Hyderabad', total_area_sqkm: 112077, region: 'South', center_coords: [18.1124, 79.0193] },
+  { state_code: 'IN-TR', state_name: 'Tripura', capital: 'Agartala', total_area_sqkm: 10486, region: 'Northeast', center_coords: [23.9408, 91.9882] },
+  { state_code: 'IN-UK', state_name: 'Uttarakhand', capital: 'Dehradun', total_area_sqkm: 53483, region: 'North', center_coords: [30.0668, 79.0193] },
   { state_code: 'IN-ALL', state_name: 'All India', capital: 'New Delhi', total_area_sqkm: 3287263, region: 'Central', center_coords: [20.5937, 78.9629] }
 ];
+
+function mergeStatesWithFallback(states: State[]): State[] {
+  const merged = new Map(FALLBACK_STATES.map(state => [state.state_code.toLowerCase(), state]));
+  states.forEach(state => {
+    const key = state.state_code.toLowerCase();
+    merged.set(key, { ...merged.get(key), ...state });
+  });
+  return Array.from(merged.values());
+}
 
 const FALLBACK_DISTRICTS: District[] = [
   { district_code: 'UP-AMT', district_name: 'Amethi (Gauriganj)', state_code: 'IN-UP', state_name: 'Uttar Pradesh', total_area_sqkm: 2329, center_coords: [26.2167, 81.6833] },
@@ -131,7 +159,7 @@ export const api = {
       const res = await fetch(`${API_BASE}/states`);
       if (res.ok) {
         const json = await res.json();
-        return json.data || FALLBACK_STATES;
+        return mergeStatesWithFallback(Array.isArray(json.data) ? json.data : []);
       }
     } catch (e) {
       console.warn('API fetch failed, using fallback states');
