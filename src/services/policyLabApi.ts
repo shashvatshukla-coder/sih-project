@@ -1,6 +1,7 @@
-// PolicyLab runs on the Render backend. Keep this production endpoint explicit so
-// Vercel environment variables cannot accidentally redirect requests to Vercel /api.
-const API_BASE = 'https://bhu-drishti-api.onrender.com/api';
+// PolicyLab is hosted as a dedicated public ML service on Render.
+// Calling it directly avoids the cross-region Render API proxy path that was
+// returning HTTP 502 in the hosted demo.
+const API_BASE = 'https://bhu-drishti-policylab.onrender.com';
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -13,7 +14,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
 
   const payload = await response.json().catch(() => ({}));
   if (!response.ok) {
-    throw new Error(payload?.error || payload?.detail || `Request failed: ${response.status}`);
+    throw new Error(payload?.error || payload?.detail || `PolicyLab request failed: ${response.status}`);
   }
   return payload as T;
 }
@@ -32,9 +33,9 @@ export interface PolicyLabResponse {
 }
 
 export const policyLabApi = {
-  health: () => request<PolicyLabResponse>('/policylab/health'),
-  predict: () => request<PolicyLabResponse>('/policylab/predict', { method: 'POST', body: '{}' }),
-  scenarios: (scenario?: PolicyLabScenarioRequest) => request<PolicyLabResponse>('/policylab/scenarios', {
+  health: () => request<PolicyLabResponse>('/health'),
+  predict: () => request<PolicyLabResponse>('/predict', { method: 'POST', body: '{}' }),
+  scenarios: (scenario?: PolicyLabScenarioRequest) => request<PolicyLabResponse>('/scenarios', {
     method: 'POST',
     body: JSON.stringify(scenario || {}),
   }),
