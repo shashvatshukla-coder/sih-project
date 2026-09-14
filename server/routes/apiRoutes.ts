@@ -569,13 +569,24 @@ router.post('/policies/:id/area', async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, error: 'State code and state name are required for area-based policy updates.' });
     }
 
-    const parseOptionalNumber = (value: unknown, fieldName: string, allowNull = false): number | null | undefined => {
-      if (value === '' || value == null) return allowNull ? null : undefined;
-      const parsed = Number(value);
-      if (!Number.isFinite(parsed)) {
-        throw new Error(`${fieldName} must be a valid number.`);
+    const parseOptionalNumberOrText = (
+      value: unknown,
+      fieldName: string,
+      allowNull = false
+    ): number | string | null | undefined => {
+      if (value == null) return allowNull ? null : undefined;
+      if (typeof value === 'number') {
+        if (!Number.isFinite(value)) throw new Error(`${fieldName} must be a valid value.`);
+        return value;
       }
-      return parsed;
+      if (typeof value !== 'string') throw new Error(`${fieldName} must be text or a number.`);
+
+      const trimmed = value.trim();
+      if (!trimmed) return allowNull ? null : undefined;
+      if (trimmed.length > 120) throw new Error(`${fieldName} must be 120 characters or fewer.`);
+
+      const parsed = Number(trimmed);
+      return Number.isFinite(parsed) ? parsed : trimmed;
     };
 
     const areaTarget = {
@@ -583,10 +594,10 @@ router.post('/policies/:id/area', async (req: Request, res: Response) => {
       state_name,
       district_code: district_code || undefined,
       district_name: district_name || undefined,
-      target_year: parseOptionalNumber(target_year, 'Target year') || 2028,
-      regional_budget_cr: parseOptionalNumber(regional_budget_cr, 'Regional budget', true),
-      target_agricultural_pct: parseOptionalNumber(target_agricultural_pct, 'Agricultural preservation percentage'),
-      target_reclaim_ha: parseOptionalNumber(target_reclaim_ha, 'Sodic reclamation target'),
+      target_year: parseOptionalNumberOrText(target_year, 'Target horizon') ?? 2028,
+      regional_budget_cr: parseOptionalNumberOrText(regional_budget_cr, 'Regional budget', true),
+      target_agricultural_pct: parseOptionalNumberOrText(target_agricultural_pct, 'Agricultural preservation'),
+      target_reclaim_ha: parseOptionalNumberOrText(target_reclaim_ha, 'Sodic reclamation'),
       priority_tier: priority_tier || 'Critical Focus',
       directives: Array.isArray(directives) && directives.length > 0 ? directives : [
         `Strict enforcement of cadastral zoning across ${district_name || state_name}.`,

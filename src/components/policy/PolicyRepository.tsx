@@ -33,6 +33,17 @@ import { PolicyUploadModal } from './PolicyUploadModal';
 import { PolicyAreaUpdateModal } from './PolicyAreaUpdateModal';
 import { ResearchUploadModal } from '../research/ResearchUploadModal';
 
+const formatAreaValue = (
+  value: string | number | null | undefined,
+  numericFormatter?: (numericValue: number) => string
+): string => {
+  if (value == null || String(value).trim() === '') return 'Not specified';
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) && numericFormatter
+    ? numericFormatter(numericValue)
+    : String(value);
+};
+
 export const PolicyRepository: React.FC = () => {
   const { states, selectedState, allDistricts, userProfile, setActivePage } = useApp();
 
@@ -520,29 +531,25 @@ export const PolicyRepository: React.FC = () => {
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Target Horizon</span>
                         <span className="text-xs font-black text-slate-900 dark:text-white">
-                          {activeAreaTarget.target_year || 2028}
+                          {formatAreaValue(activeAreaTarget.target_year ?? 2028)}
                         </span>
                       </div>
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Regional Budget</span>
                         <span className="text-xs font-black text-amber-600 dark:text-amber-400">
-                          {displayBudget == null ? 'Not specified' : `₹${displayBudget} Cr`}
+                          {formatAreaValue(displayBudget, value => `₹${value} Cr`)}
                         </span>
                       </div>
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Agri Preservation</span>
                         <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
-                          {activeAreaTarget.target_agricultural_pct == null
-                            ? 'Not specified'
-                            : `${activeAreaTarget.target_agricultural_pct}%`}
+                          {formatAreaValue(activeAreaTarget.target_agricultural_pct, value => `${value}%`)}
                         </span>
                       </div>
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Sodic Reclamation</span>
                         <span className="text-xs font-black text-blue-600 dark:text-blue-400">
-                          {activeAreaTarget.target_reclaim_ha == null
-                            ? 'Not specified'
-                            : `${Number(activeAreaTarget.target_reclaim_ha).toLocaleString()} ha`}
+                          {formatAreaValue(activeAreaTarget.target_reclaim_ha, value => `${value.toLocaleString()} ha`)}
                         </span>
                       </div>
                     </div>

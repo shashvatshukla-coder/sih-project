@@ -117,10 +117,10 @@ export interface AreaTarget {
   state_name: string;
   district_code?: string;
   district_name?: string;
-  target_year?: number;
-  regional_budget_cr?: number | null;
-  target_agricultural_pct?: number;
-  target_reclaim_ha?: number;
+  target_year?: number | string;
+  regional_budget_cr?: number | string | null;
+  target_agricultural_pct?: number | string;
+  target_reclaim_ha?: number | string;
   priority_tier: 'Critical Focus' | 'Active Monitoring' | 'Routine Sustenance';
   directives: string[];
   last_updated?: string;
@@ -150,7 +150,7 @@ export interface Policy {
   is_user_modified?: boolean;
   status?: 'Active' | 'Gazette Notified' | 'Under Revision' | 'Draft Amendment';
   policyMakerName?: string;
-  allocated_budget_cr?: number | null;
+  allocated_budget_cr?: number | string | null;
   documentText?: string;
   fileAttachment?: {
     name: string;

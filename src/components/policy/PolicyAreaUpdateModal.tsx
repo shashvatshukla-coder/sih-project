@@ -25,6 +25,32 @@ interface PolicyAreaUpdateModalProps {
   onPolicyUpdated?: (policy: Policy) => void;
 }
 
+const normalizeTargetValue = (value: string): number | string | undefined => {
+  const trimmed = value.trim();
+  if (!trimmed) return undefined;
+  const numericValue = Number(trimmed);
+  return Number.isFinite(numericValue) ? numericValue : trimmed;
+};
+
+const isNumericValue = (value: string | number): boolean => {
+  return String(value).trim() !== '' && Number.isFinite(Number(value));
+};
+
+const formatBudget = (value: string | number | null | undefined): string => {
+  if (value == null || String(value).trim() === '') return 'Not specified';
+  return isNumericValue(value) ? `₹${value} Cr` : String(value);
+};
+
+const formatPercentage = (value: string | number | undefined): string => {
+  if (value == null || String(value).trim() === '') return 'Not specified';
+  return isNumericValue(value) ? `${value}%` : String(value);
+};
+
+const formatHectares = (value: string | number | undefined): string => {
+  if (value == null || String(value).trim() === '') return 'Not specified';
+  return isNumericValue(value) ? `${Number(value).toLocaleString()} ha` : String(value);
+};
+
 export const PolicyAreaUpdateModal: React.FC<PolicyAreaUpdateModalProps> = ({
   isOpen,
   onClose,
@@ -37,7 +63,7 @@ export const PolicyAreaUpdateModal: React.FC<PolicyAreaUpdateModalProps> = ({
   const [selectedPolicyId, setSelectedPolicyId] = useState<string>('');
   const [targetStateCode, setTargetStateCode] = useState<string>('IN-UP');
   const [targetDistrictCode, setTargetDistrictCode] = useState<string>('UP-AMT');
-  const [targetYear, setTargetYear] = useState<number>(2028);
+  const [targetYear, setTargetYear] = useState<string>('2028');
   const [regionalBudgetCr, setRegionalBudgetCr] = useState<string>('480');
   const [targetAgriPct, setTargetAgriPct] = useState<string>('65.0');
   const [targetReclaimHa, setTargetReclaimHa] = useState<string>('8500');
@@ -86,7 +112,7 @@ export const PolicyAreaUpdateModal: React.FC<PolicyAreaUpdateModalProps> = ({
           (at.district_code || 'ALL') === targetDistrictCode
         );
         if (existing) {
-          setTargetYear(existing.target_year ?? 2028);
+          setTargetYear(existing.target_year == null ? '2028' : String(existing.target_year));
           setRegionalBudgetCr(existing.regional_budget_cr == null ? '' : String(existing.regional_budget_cr));
           setTargetAgriPct(existing.target_agricultural_pct == null ? '' : String(existing.target_agricultural_pct));
           setTargetReclaimHa(existing.target_reclaim_ha == null ? '' : String(existing.target_reclaim_ha));
@@ -147,10 +173,10 @@ export const PolicyAreaUpdateModal: React.FC<PolicyAreaUpdateModalProps> = ({
         state_name: currentStateObj?.state_name || 'Uttar Pradesh',
         district_code: targetDistrictCode !== 'ALL' ? targetDistrictCode : undefined,
         district_name: targetDistrictCode !== 'ALL' ? currentDistrictObj?.district_name || 'Amethi' : 'All Districts',
-        target_year: Number(targetYear) || 2028,
-        regional_budget_cr: regionalBudgetCr.trim() === '' ? null : Number(regionalBudgetCr),
-        target_agricultural_pct: targetAgriPct.trim() === '' ? undefined : Number(targetAgriPct),
-        target_reclaim_ha: targetReclaimHa.trim() === '' ? undefined : Number(targetReclaimHa),
+        target_year: normalizeTargetValue(targetYear) ?? 2028,
+        regional_budget_cr: normalizeTargetValue(regionalBudgetCr) ?? null,
+        target_agricultural_pct: normalizeTargetValue(targetAgriPct),
+        target_reclaim_ha: normalizeTargetValue(targetReclaimHa),
         priority_tier: priorityTier,
         directives,
         notes: notes || `Area-specific directives updated by Policy Maker for ${currentDistrictObj?.district_name || 'State'}`,
@@ -240,21 +266,21 @@ export const PolicyAreaUpdateModal: React.FC<PolicyAreaUpdateModalProps> = ({
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-center">
                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="block text-[10px] text-slate-400 font-bold uppercase">Target Horizon</span>
-                    <span className="text-sm font-black text-slate-900 dark:text-white">{targetYear}</span>
-                  </div>
-                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
-                    <span className="block text-[10px] text-slate-400 font-bold uppercase">Regional Budget</span>
-                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">
-                      {regionalBudgetCr.trim() === '' ? 'Not specified' : `₹${regionalBudgetCr} Cr`}
+                    <span className="text-sm font-black text-slate-900 dark:text-white">
+                      {targetYear.trim() || 'Not specified'}
                     </span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
+                    <span className="block text-[10px] text-slate-400 font-bold uppercase">Regional Budget</span>
+                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">{formatBudget(regionalBudgetCr)}</span>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="block text-[10px] text-slate-400 font-bold uppercase">Agri Preservation</span>
-                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">{targetAgriPct}%</span>
+                    <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">{formatPercentage(targetAgriPct)}</span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="block text-[10px] text-slate-400 font-bold uppercase">Reclaim Sodic</span>
-                    <span className="text-sm font-black text-blue-600 dark:text-blue-400">{Number(targetReclaimHa).toLocaleString()} ha</span>
+                    <span className="text-sm font-black text-blue-600 dark:text-blue-400">{formatHectares(targetReclaimHa)}</span>
                   </div>
                 </div>
 
@@ -392,53 +418,53 @@ export const PolicyAreaUpdateModal: React.FC<PolicyAreaUpdateModalProps> = ({
                       Regional Budget (₹ Cr)
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       value={regionalBudgetCr}
                       onChange={(e) => setRegionalBudgetCr(e.target.value)}
-                      placeholder="480"
+                      placeholder="e.g. 480 or To be sanctioned"
+                      maxLength={120}
                       className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                      Target Year
+                      Target Horizon
                     </label>
-                    <select
+                    <input
+                      type="text"
                       value={targetYear}
-                      onChange={(e) => setTargetYear(Number(e.target.value))}
+                      onChange={(e) => setTargetYear(e.target.value)}
+                      placeholder="e.g. 2028 or Long term"
+                      maxLength={120}
                       className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                    >
-                      <option value={2026}>2026</option>
-                      <option value={2028}>2028</option>
-                      <option value={2030}>2030</option>
-                      <option value={2035}>2035</option>
-                    </select>
+                    />
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                      Agri Preservation %
+                      Agri Preservation
                     </label>
                     <input
-                      type="number"
-                      step="0.1"
+                      type="text"
                       value={targetAgriPct}
                       onChange={(e) => setTargetAgriPct(e.target.value)}
-                      placeholder="65.0"
+                      placeholder="e.g. 65 or Maintain current level"
+                      maxLength={120}
                       className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
 
                   <div>
                     <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-1">
-                      Reclaim Sodic (ha)
+                      Sodic Reclamation
                     </label>
                     <input
-                      type="number"
+                      type="text"
                       value={targetReclaimHa}
                       onChange={(e) => setTargetReclaimHa(e.target.value)}
-                      placeholder="8500"
+                      placeholder="e.g. 8500 or Survey pending"
+                      maxLength={120}
                       className="w-full px-3 py-2 text-xs font-semibold rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                     />
                   </div>
