@@ -840,7 +840,10 @@ export const api = {
       method: 'DELETE'
     });
     const json = await res.json();
-    return json.success === true;
+    if (!res.ok || json.success !== true) {
+      throw new Error(json.error || 'Failed to delete user');
+    }
+    return true;
   },
 
   async inspectPolicy(id: string, updates: {

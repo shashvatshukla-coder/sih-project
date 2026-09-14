@@ -600,6 +600,15 @@ class Database {
         PRIMARY KEY (content_type, content_id)
       )
     `);
+    await queryable.query(`
+      ALTER TABLE bhu_content_store
+      DROP CONSTRAINT IF EXISTS bhu_content_store_content_type_check
+    `);
+    await queryable.query(`
+      ALTER TABLE bhu_content_store
+      ADD CONSTRAINT bhu_content_store_content_type_check
+      CHECK (content_type IN ('policy', 'research', 'user'))
+    `);
     this.contentStoreReady = true;
   }
 
@@ -626,9 +635,13 @@ class Database {
 
   private mergePersistentContent(rows: any[]): void {
     for (const row of rows) {
-      if (row.content_type !== 'policy' && row.content_type !== 'research') continue;
+      if (row.content_type !== 'policy' && row.content_type !== 'research' && row.content_type !== 'user') continue;
 
-      const collection: any[] = row.content_type === 'policy' ? this.policies : this.research;
+      const collection: any[] = row.content_type === 'policy'
+        ? this.policies
+        : row.content_type === 'research'
+          ? this.research
+          : this.users;
       const index = collection.findIndex(item => item.id === row.content_id);
 
       if (row.deleted) {
@@ -688,9 +701,9 @@ class Database {
   }
 
   private async persistContent(
-    contentType: 'policy' | 'research',
+    contentType: 'policy' | 'research' | 'user',
     contentId: string,
-    payload: Policy | ResearchPaper,
+    payload: Policy | ResearchPaper | UserRegistryRecord,
     deleted: boolean = false
   ): Promise<void> {
     await this.ready;
@@ -1374,32 +1387,47 @@ class Database {
     };
   }
 
-  public updateUserRole(id: string, newRole: 'public' | 'researcher' | 'policymaker' | 'admin' | 'inspector'): UserRegistryRecord | undefined {
+  public async updateUserRole(id: string, newRole: 'public' | 'researcher' | 'policymaker' | 'admin' | 'inspector'): Promise<UserRegistryRecord | undefined> {
     const user = this.getUserById(id);
     if (!user) return undefined;
     const prevRole = user.role;
-    user.role = newRole;
-    user.lastActiveAt = new Date().toISOString();
+    const updatedUser = {
+      ...user,
+      role: newRole,
+      lastActiveAt: new Date().toISOString()
+    };
+    await this.persistContent('user', user.id, updatedUser);
+    Object.assign(user, updatedUser);
     this.logAudit('CHANGE_USER_ROLE', 'ChiefInspector', { id, prevRole, newRole });
     return user;
   }
 
-  public updateUserFeatures(id: string, features_granted: string[]): UserRegistryRecord | undefined {
+  public async updateUserFeatures(id: string, features_granted: string[]): Promise<UserRegistryRecord | undefined> {
     const user = this.getUserById(id);
     if (!user) return undefined;
-    user.features_granted = features_granted;
-    user.lastActiveAt = new Date().toISOString();
+    const updatedUser = {
+      ...user,
+      features_granted,
+      lastActiveAt: new Date().toISOString()
+    };
+    await this.persistContent('user', user.id, updatedUser);
+    Object.assign(user, updatedUser);
     this.logAudit('UPDATE_USER_FEATURES', 'ChiefInspector', { id, features_granted });
     return user;
   }
 
-  public toggleUserStar(id: string, is_starred?: boolean, is_inspection_verified?: boolean, inspection_notes?: string): UserRegistryRecord | undefined {
+  public async toggleUserStar(id: string, is_starred?: boolean, is_inspection_verified?: boolean, inspection_notes?: string): Promise<UserRegistryRecord | undefined> {
     const user = this.getUserById(id);
     if (!user) return undefined;
-    if (typeof is_starred === 'boolean') user.is_starred = is_starred;
-    if (typeof is_inspection_verified === 'boolean') user.is_inspection_verified = is_inspection_verified;
-    if (inspection_notes !== undefined) user.inspection_notes = inspection_notes;
-    user.lastActiveAt = new Date().toISOString();
+    const updatedUser = {
+      ...user,
+      ...(typeof is_starred === 'boolean' ? { is_starred } : {}),
+      ...(typeof is_inspection_verified === 'boolean' ? { is_inspection_verified } : {}),
+      ...(inspection_notes !== undefined ? { inspection_notes } : {}),
+      lastActiveAt: new Date().toISOString()
+    };
+    await this.persistContent('user', user.id, updatedUser);
+    Object.assign(user, updatedUser);
     this.logAudit('STAR_VERIFY_USER', 'ChiefInspector', {
       id,
       is_starred: user.is_starred,
@@ -1408,10 +1436,12 @@ class Database {
     return user;
   }
 
-  public deleteUser(id: string): boolean {
+  public async deleteUser(id: string): Promise<boolean> {
     const idx = this.users.findIndex(u => u.id === id);
     if (idx >= 0) {
-      const removed = this.users.splice(idx, 1)[0];
+      const removed = this.users[idx];
+      await this.persistContent('user', removed.id, removed, true);
+      this.users.splice(idx, 1);
       this.logAudit('DELETE_USER', 'ChiefInspector', { id: removed.id, email: removed.email });
       return true;
     }

@@ -170,10 +170,10 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- 10. Durable application content overrides
--- Stores the complete policy/research object so uploaded fields, edits, ordering,
--- inspection state, and deletion tombstones survive server restarts.
+-- Stores complete policy, research, and user registry objects so uploads, edits,
+-- powers, ordering, inspection state, and deletion tombstones survive restarts.
 CREATE TABLE IF NOT EXISTS bhu_content_store (
-  content_type TEXT NOT NULL CHECK (content_type IN ('policy', 'research')),
+  content_type TEXT NOT NULL CHECK (content_type IN ('policy', 'research', 'user')),
   content_id TEXT NOT NULL,
   payload JSONB NOT NULL DEFAULT '{}'::jsonb,
   deleted BOOLEAN NOT NULL DEFAULT FALSE,

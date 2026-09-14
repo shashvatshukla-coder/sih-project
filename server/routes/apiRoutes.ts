@@ -990,8 +990,10 @@ router.get('/admin/audit-logs', (req: Request, res: Response) => {
 // ==========================================
 
 // 1. Get registry census statistics
-router.get('/inspection/stats', (req: Request, res: Response) => {
+router.get('/inspection/stats', async (req: Request, res: Response) => {
   try {
+    await db.waitUntilReady();
+    await db.refreshPersistentContent();
     const stats = db.getInspectionStats();
     res.json({ success: true, data: stats });
   } catch (err: any) {
@@ -1000,8 +1002,10 @@ router.get('/inspection/stats', (req: Request, res: Response) => {
 });
 
 // 2. Get registered users list
-router.get('/inspection/users', (req: Request, res: Response) => {
+router.get('/inspection/users', async (req: Request, res: Response) => {
   try {
+    await db.waitUntilReady();
+    await db.refreshPersistentContent();
     const users = db.getUsers();
     res.json({ success: true, count: users.length, data: users });
   } catch (err: any) {
@@ -1010,11 +1014,11 @@ router.get('/inspection/users', (req: Request, res: Response) => {
 });
 
 // 3. Update user role
-router.put('/inspection/users/:id/role', (req: Request, res: Response) => {
+router.put('/inspection/users/:id/role', async (req: Request, res: Response) => {
   try {
     const { role } = req.body;
     if (!role) return res.status(400).json({ success: false, error: 'Role is required' });
-    const updated = db.updateUserRole(req.params.id, role);
+    const updated = await db.updateUserRole(req.params.id, role);
     if (!updated) return res.status(404).json({ success: false, error: 'User not found' });
     res.json({ success: true, message: `User role updated to ${role}`, data: updated });
   } catch (err: any) {
@@ -1023,13 +1027,13 @@ router.put('/inspection/users/:id/role', (req: Request, res: Response) => {
 });
 
 // 4. Update user features / powers
-router.put('/inspection/users/:id/features', (req: Request, res: Response) => {
+router.put('/inspection/users/:id/features', async (req: Request, res: Response) => {
   try {
     const { features_granted } = req.body;
     if (!Array.isArray(features_granted)) {
       return res.status(400).json({ success: false, error: 'features_granted must be an array' });
     }
-    const updated = db.updateUserFeatures(req.params.id, features_granted);
+    const updated = await db.updateUserFeatures(req.params.id, features_granted);
     if (!updated) return res.status(404).json({ success: false, error: 'User not found' });
     res.json({ success: true, message: 'User granted capabilities updated', data: updated });
   } catch (err: any) {
@@ -1038,10 +1042,10 @@ router.put('/inspection/users/:id/features', (req: Request, res: Response) => {
 });
 
 // 5. Star / Verify user (e.g. certify researcher)
-router.put('/inspection/users/:id/star', (req: Request, res: Response) => {
+router.put('/inspection/users/:id/star', async (req: Request, res: Response) => {
   try {
     const { is_starred, is_inspection_verified, inspection_notes } = req.body;
-    const updated = db.toggleUserStar(req.params.id, is_starred, is_inspection_verified, inspection_notes);
+    const updated = await db.toggleUserStar(req.params.id, is_starred, is_inspection_verified, inspection_notes);
     if (!updated) return res.status(404).json({ success: false, error: 'User not found' });
     res.json({ success: true, message: 'User inspection verification status updated', data: updated });
   } catch (err: any) {
@@ -1050,9 +1054,9 @@ router.put('/inspection/users/:id/star', (req: Request, res: Response) => {
 });
 
 // 6. Delete user
-router.delete('/inspection/users/:id', (req: Request, res: Response) => {
+router.delete('/inspection/users/:id', async (req: Request, res: Response) => {
   try {
-    const deleted = db.deleteUser(req.params.id);
+    const deleted = await db.deleteUser(req.params.id);
     if (!deleted) return res.status(404).json({ success: false, error: 'User not found' });
     res.json({ success: true, message: 'User record removed from registry' });
   } catch (err: any) {
