@@ -1,10 +1,10 @@
-// Production always uses the same-origin Vercel rewrite. This prevents a Vercel
-// environment override from accidentally restoring browser-to-Render CORS errors.
-// Local development can still point directly to PolicyLab with VITE_POLICYLAB_URL.
+// PolicyLab is a separate Render service. Call it directly in production so
+// the browser reaches the live ML service without relying on a Vercel proxy.
+// CORS is enabled by the PolicyLab FastAPI service.
 const viteEnv = ((import.meta as any).env || {}) as Record<string, any>;
-const developmentBase =
-  viteEnv.VITE_POLICYLAB_URL?.trim() || 'https://bhu-drishti-policylab.onrender.com';
-const API_BASE = (viteEnv.PROD ? '/policylab-api' : developmentBase).replace(/\/+$/, '');
+const API_BASE = (
+  viteEnv.VITE_POLICYLAB_URL?.trim() || 'https://bhu-drishti-policylab.onrender.com'
+).replace(/\/+$/, '');
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   let response: Response;
@@ -20,7 +20,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
     });
   } catch {
     throw new Error(
-      'PolicyLab network connection failed. Confirm the latest Vercel production deployment and the Render model service are online.'
+      'PolicyLab network connection failed. Confirm the Render PolicyLab service is online.'
     );
   }
 
