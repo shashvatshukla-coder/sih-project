@@ -25,7 +25,6 @@ import {
   TrendingUp,
   FileText,
   Trash2,
-  Award,
   Star,
   Download,
   AlertCircle
@@ -35,7 +34,7 @@ import { PolicyAreaUpdateModal } from './PolicyAreaUpdateModal';
 import { ResearchUploadModal } from '../research/ResearchUploadModal';
 
 export const PolicyRepository: React.FC = () => {
-  const { states, selectedState, allDistricts, userProfile, dedicatedFixedId, setActivePage } = useApp();
+  const { states, selectedState, allDistricts, userProfile, setActivePage } = useApp();
 
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
@@ -231,11 +230,6 @@ export const PolicyRepository: React.FC = () => {
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
-              <span>Executive ID:</span>
-              <span className="font-mono font-bold text-amber-700 dark:text-amber-400">
-                {dedicatedFixedId || 'BHU-POL-8763-9201'}
-              </span>
-              <span>•</span>
               <span className="text-slate-600 dark:text-slate-400">
                 Central Directorate of Land Records & Cadastral Policy
               </span>

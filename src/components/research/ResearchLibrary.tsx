@@ -13,9 +13,7 @@ import {
   UploadCloud,
   FileEdit,
   ShieldCheck,
-  Fingerprint,
   PlusCircle,
-  Award,
   Layers,
   Star,
   Download,
@@ -29,7 +27,7 @@ interface ResearchLibraryProps {
 }
 
 export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'publications' }) => {
-  const { saveItem, isSaved, runAIQuery, userProfile, dedicatedFixedId, setIsAuthModalOpen, setIsIdCardModalOpen } = useApp();
+  const { saveItem, isSaved, runAIQuery, userProfile, setIsAuthModalOpen } = useApp();
   const isCaseStudyPage = mode === 'case-studies';
   const [papers, setPapers] = useState<ResearchPaper[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -120,11 +118,11 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
         </div>
       )}
 
-      {/* Researcher Identity & Action Strip */}
+      {/* Researcher Profile & Action Strip */}
       <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-sky-500/10 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-sky-950/20 border border-emerald-500/20 dark:border-emerald-800/40 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-            <Fingerprint className="w-5 h-5" />
+            <BookOpen className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -137,16 +135,6 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-slate-500">
-              <span>Dedicated Fixed ID:</span>
-              <button
-                onClick={() => setIsIdCardModalOpen(true)}
-                className="font-mono font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                title="View Institutional ID Badge"
-              >
-                <span>{dedicatedFixedId}</span>
-                <Award className="w-3 h-3" />
-              </button>
-              <span>•</span>
               <span className="text-slate-600 dark:text-slate-400">{userProfile?.affiliation}</span>
             </div>
           </div>
@@ -228,7 +216,7 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
                   type="text"
                   placeholder={isCaseStudyPage
                     ? 'Search case studies by title, geography, author, or keywords...'
-                    : 'Search papers by author, title, journal, keywords, dedicated UID, geography...'}
+                    : 'Search papers by author, title, journal, keywords, or geography...'}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 text-xs md:text-sm rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
@@ -271,7 +259,6 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
             {papers.map(paper => {
               const saved = isSaved(paper.id);
               const isCopied = copiedId === paper.id;
-              const hasDedicatedId = paper.dedicatedResearcherId;
 
               return (
                 <div
@@ -288,12 +275,6 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
                         <span className="text-[11px] text-slate-400 font-medium">
                           Published: {paper.year} • {paper.authors.join(', ')}
                         </span>
-                        {hasDedicatedId && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                            <Fingerprint className="w-3 h-3" />
-                            UID: {paper.dedicatedResearcherId}
-                          </span>
-                        )}
                         {paper.isUserAuthored && (
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300">
                             Researcher Authored

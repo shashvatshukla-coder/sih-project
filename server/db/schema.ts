@@ -120,7 +120,6 @@ export interface Policy {
   current_area_target?: AreaTarget;
   is_user_modified?: boolean;
   status?: 'Active' | 'Gazette Notified' | 'Under Revision' | 'Draft Amendment';
-  policyMakerId?: string;
   policyMakerName?: string;
   allocated_budget_cr?: number | null;
   documentText?: string;
@@ -142,7 +141,6 @@ export interface Policy {
 
 export interface UserRegistryRecord {
   id: string;
-  dedicatedFixedId: string;
   email: string;
   name: string;
   avatar?: string;
@@ -195,7 +193,6 @@ export interface ResearchPaper {
   ai_summary: string;
   related_dataset_ids: string[];
   related_policy_ids: string[];
-  dedicatedResearcherId?: string;
   authorEmail?: string;
   fileAttachment?: {
     name: string;

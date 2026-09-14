@@ -488,7 +488,6 @@ router.post('/policies', async (req: Request, res: Response) => {
       documents_url,
       allocated_budget_cr,
       area_targets,
-      policyMakerId,
       policyMakerName,
       status
     } = req.body;
@@ -527,7 +526,6 @@ router.post('/policies', async (req: Request, res: Response) => {
       allocated_budget_cr: allocated_budget_cr === '' || allocated_budget_cr == null
         ? null
         : Number(allocated_budget_cr),
-      policyMakerId: policyMakerId || 'BHU-POL-8763-9201',
       policyMakerName: policyMakerName || 'Policy Maker'
     };
 
@@ -685,7 +683,6 @@ router.post('/policies/upload', async (req: Request, res: Response) => {
       allocated_budget_cr: allocated_budget_cr === '' || allocated_budget_cr == null
         ? null
         : Number(allocated_budget_cr),
-      policyMakerId: 'BHU-POL-8763-9201',
       policyMakerName: policyMakerName || 'Policy Maker',
       documentText: typeof fileContent === 'string' ? fileContent.substring(0, 2000) : '',
       fileAttachment: fileName ? {
@@ -806,7 +803,6 @@ router.post('/research', async (req: Request, res: Response) => {
       tags,
       citation_apa,
       source_url,
-      dedicatedResearcherId,
       authorEmail,
       contentMarkdown,
       fileAttachment
@@ -835,13 +831,12 @@ router.post('/research', async (req: Request, res: Response) => {
         'Documented longitudinal spatial shift across study area.',
         'Validated through Grounded Statistical Engine benchmarks.'
       ],
-      citation_apa: citation_apa || `${cleanAuthors.join(', ')} (${currentYear}). ${title}. ${journal || 'Bhu-Drishti Land Studies'}. Dedicated UID: ${dedicatedResearcherId || 'RES-OFFICIAL-2026'}`,
+      citation_apa: citation_apa || `${cleanAuthors.join(', ')} (${currentYear}). ${title}. ${journal || 'Bhu-Drishti Land Studies'}.`,
       source_url: source_url || `/research/${paperId}`,
       tags: Array.isArray(tags) && tags.length > 0 ? tags : ['Land Use', 'Cadastral Maps', 'Research Paper'],
       ai_summary: `Author study by ${cleanAuthors.join(', ')} focusing on ${geography || 'land dynamics'}. Explores land shifts, policy correlations, and decadal trends.`,
       related_dataset_ids: ['DS-DES-LUS', 'DS-BHUVAN-LULC'],
       related_policy_ids: ['POL-DILRMP-2008', 'POL-PMKSY-2015'],
-      dedicatedResearcherId: dedicatedResearcherId || 'BHU-RES-8763-9201',
       authorEmail: authorEmail || 'researcher@bhu-drishti.gov.in',
       contentMarkdown: contentMarkdown || '',
       fileAttachment: fileAttachment || null,
@@ -859,7 +854,7 @@ router.post('/research', async (req: Request, res: Response) => {
 // Upload Document Endpoint
 router.post('/research/upload', async (req: Request, res: Response) => {
   try {
-    const { fileName, fileSize, fileType, fileContent, fileData, title, author, dedicatedResearcherId, geography, tags } = req.body;
+    const { fileName, fileSize, fileType, fileContent, fileData, title, author, geography, tags } = req.body;
     if (!fileName) {
       return res.status(400).json({ success: false, error: 'File name is required.' });
     }
@@ -878,13 +873,13 @@ router.post('/research/upload', async (req: Request, res: Response) => {
       year: new Date().getFullYear(),
       publisher: 'Bhu-Drishti Ingested Document Archive',
       journal: 'Institutional Field Surveys & Land Documents',
-      abstract: `Ingested document: ${fileName} (${(fileSize ? Math.round(fileSize / 1024) : 0)} KB). Contains cadastral and land-use assessment observations uploaded by authenticated researcher ${dedicatedResearcherId || 'BHU-RES-8763-9201'}.`,
+      abstract: `Ingested document: ${fileName} (${(fileSize ? Math.round(fileSize / 1024) : 0)} KB). Contains cadastral and land-use assessment observations uploaded by an authenticated researcher.`,
       research_area: geography || 'Field Survey & Policy',
       geography: geography || 'India',
       methodology: 'Direct researcher document upload and automated cadastral indexing.',
       key_findings: [
         `Uploaded document file: ${fileName}`,
-        `Authenticated researcher ID: ${dedicatedResearcherId || 'BHU-RES-8763-9201'}`
+        'Uploaded through an authenticated research submission.'
       ],
       citation_apa: `${author || 'Researcher'} (${new Date().getFullYear()}). ${paperTitle}. Bhu-Drishti Land Ingestion Portal. File: ${fileName}.`,
       source_url: `/research/${paperId}`,
@@ -892,7 +887,6 @@ router.post('/research/upload', async (req: Request, res: Response) => {
       ai_summary: `Document analysis for ${fileName}. Uploaded with verified researcher credentials.`,
       related_dataset_ids: ['DS-DES-LUS'],
       related_policy_ids: ['POL-DILRMP-2008'],
-      dedicatedResearcherId: dedicatedResearcherId || 'BHU-RES-8763-9201',
       contentMarkdown: typeof fileContent === 'string' ? fileContent.substring(0, 50000) : '',
       fileAttachment: {
         name: fileName,

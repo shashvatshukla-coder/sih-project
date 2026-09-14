@@ -556,7 +556,6 @@ export const api = {
     fileData: string;
     title?: string;
     author?: string;
-    dedicatedResearcherId?: string;
     geography?: string;
     tags?: string[];
   }): Promise<ResearchPaper> {

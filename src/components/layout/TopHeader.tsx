@@ -16,8 +16,6 @@ import {
   Users,
   Check,
   UserCheck,
-  Fingerprint,
-  Award,
   ShieldCheck,
   LogOut,
   ChevronDown,
@@ -35,9 +33,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
     userRole,
     setUserRole,
     userProfile,
-    dedicatedFixedId,
     setIsAuthModalOpen,
-    setIsIdCardModalOpen,
     logout,
     isDarkMode,
     toggleDarkMode,
@@ -99,24 +95,6 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
 
       {/* Right Controls */}
       <div className="flex items-center gap-2.5 sm:gap-3 ml-4">
-        {/* Dedicated Fixed ID Badge */}
-        <button
-          onClick={() => setIsIdCardModalOpen(true)}
-          className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all cursor-pointer shadow-2xs group"
-          title="Click to view Official Cadastral Researcher ID Badge"
-        >
-          <Fingerprint className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <div className="text-left leading-none">
-            <span className="block text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Fixed Researcher ID
-            </span>
-            <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
-              {dedicatedFixedId}
-            </span>
-          </div>
-          <Award className="w-3.5 h-3.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
-        </button>
-
         {/* Dark Mode Toggle */}
         <button
           onClick={toggleDarkMode}
@@ -148,10 +126,6 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   <p className="font-semibold">Research Feature Active</p>
                   <p className="text-[11px] opacity-80">Authoring studio & drag-and-drop file ingestion enabled.</p>
                 </div>
-                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                  <p className="font-semibold">Dedicated Researcher UID</p>
-                  <p className="text-[11px] opacity-80">{dedicatedFixedId} bound to your profile.</p>
-                </div>
               </div>
             </div>
           )}
@@ -179,7 +153,6 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[110px]">
                     {userProfile.name}
                   </p>
-                  <span className="text-[9px] font-bold px-1 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300">ID</span>
                 </div>
                 <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate capitalize">
                   {currentRoleObj.title}
@@ -210,40 +183,10 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 truncate">{userProfile?.email}</p>
-                <div className="mt-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-between">
-                  <div>
-                    <span className="block text-[8px] uppercase tracking-wider font-bold text-emerald-700 dark:text-emerald-300">
-                      Dedicated Fixed ID
-                    </span>
-                    <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">
-                      {dedicatedFixedId}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setRoleMenuOpen(false);
-                      setIsIdCardModalOpen(true);
-                    }}
-                    className="p-1 rounded bg-white dark:bg-slate-800 text-emerald-600 hover:bg-emerald-50"
-                    title="View ID Badge"
-                  >
-                    <Award className="w-3.5 h-3.5" />
-                  </button>
-                </div>
               </div>
 
               {/* Quick Profile Actions */}
               <div className="space-y-1">
-                <button
-                  onClick={() => {
-                    setRoleMenuOpen(false);
-                    setIsIdCardModalOpen(true);
-                  }}
-                  className="w-full flex items-center gap-2 p-2 rounded-xl text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium"
-                >
-                  <Award className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>View Official Researcher ID Badge</span>
-                </button>
                 <button
                   onClick={() => {
                     setRoleMenuOpen(false);

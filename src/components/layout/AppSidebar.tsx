@@ -16,7 +16,6 @@ import {
   ChevronRight,
   Sparkles,
   Sprout,
-  Award,
   ShieldCheck,
   KeyRound
 } from 'lucide-react';
@@ -34,7 +33,7 @@ export const AppSidebar: React.FC<SidebarProps> = ({
   mobileOpen,
   setMobileOpen
 }) => {
-  const { activePage, setActivePage, userRole, userProfile, dedicatedFixedId, setIsIdCardModalOpen, isMasterUser } = useApp();
+  const { activePage, setActivePage, userRole, isMasterUser } = useApp();
 
   interface NavItem {
     id: PageId;
@@ -159,59 +158,24 @@ export const AppSidebar: React.FC<SidebarProps> = ({
           })}
         </div>
 
-        {/* Bottom Sustainability & Researcher ID Banner */}
+        {/* Bottom Sustainability Banner */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800 space-y-2">
           {!collapsed ? (
-            <>
-              {/* Dedicated Fixed ID quick button (shown when logged in) */}
-              {userProfile?.isGoogleVerified && (
-                <button
-                  onClick={() => setIsIdCardModalOpen(true)}
-                  className="w-full p-2 rounded-xl bg-slate-50 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 text-left transition-all group flex items-center justify-between cursor-pointer"
-                  title="Click to view your Dedicated Fixed Researcher ID Card"
-                >
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-lg bg-emerald-600/10 dark:bg-emerald-500/20 text-emerald-600 flex items-center justify-center">
-                      <Award className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">
-                        Researcher UID
-                      </span>
-                      <span className="font-mono text-[11px] font-black text-emerald-700 dark:text-emerald-300">
-                        {dedicatedFixedId}
-                      </span>
-                    </div>
-                  </div>
-                  <ChevronRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-emerald-600 transition-colors" />
-                </button>
-              )}
-
-              <div className="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 flex items-center gap-2.5">
-                <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
-                  <Sprout className="w-4 h-4" />
-                </div>
-                <div className="min-w-0 text-left">
-                  <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
-                    Land for People,
-                  </p>
-                  <p className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 leading-tight">
-                    Prosperity & Sustainable Future
-                  </p>
-                </div>
+            <div className="p-3 rounded-xl bg-emerald-50/80 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900/50 flex items-center gap-2.5">
+              <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+                <Sprout className="w-4 h-4" />
               </div>
-            </>
+              <div className="min-w-0 text-left">
+                <p className="text-xs font-bold text-slate-900 dark:text-slate-100 leading-tight">
+                  Land for People,
+                </p>
+                <p className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400 leading-tight">
+                  Prosperity & Sustainable Future
+                </p>
+              </div>
+            </div>
           ) : (
             <div className="flex flex-col items-center gap-2 p-1">
-              {userProfile?.isGoogleVerified && (
-                <button
-                  onClick={() => setIsIdCardModalOpen(true)}
-                  className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 text-emerald-600 flex items-center justify-center shadow-xs hover:scale-105 transition-transform"
-                  title={`Researcher ID: ${dedicatedFixedId}`}
-                >
-                  <Award className="w-4 h-4" />
-                </button>
-              )}
               <div className="w-8 h-8 rounded-lg bg-emerald-600 text-white flex items-center justify-center shadow-xs">
                 <Sprout className="w-4 h-4" />
               </div>

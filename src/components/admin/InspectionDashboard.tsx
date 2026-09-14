@@ -440,8 +440,7 @@ export const InspectionDashboard: React.FC = () => {
         year: new Date().getFullYear(),
         is_inspection_verified: true,
         is_starred: true,
-        priority_order: 1,
-        dedicatedResearcherId: 'INSPECT-OMBUDS-01'
+        priority_order: 1
       });
 
       showMessage(`Research "${created.title}" published and certified!`);
@@ -457,8 +456,7 @@ export const InspectionDashboard: React.FC = () => {
   const filteredUsers = users.filter(u => {
     const matchesSearch =
       u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.dedicatedFixedId.toLowerCase().includes(userSearch.toLowerCase());
+      u.email.toLowerCase().includes(userSearch.toLowerCase());
     const matchesRole = userRoleFilter === 'all' || u.role === userRoleFilter;
     return matchesSearch && matchesRole;
   });
@@ -900,7 +898,7 @@ export const InspectionDashboard: React.FC = () => {
                 type="text"
                 value={userSearch}
                 onChange={e => setUserSearch(e.target.value)}
-                placeholder="Search registered user by name, email, or Dedicated UID..."
+                placeholder="Search registered user by name or email..."
                 className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none"
               />
             </div>
@@ -958,9 +956,6 @@ export const InspectionDashboard: React.FC = () => {
                         </div>
                         <p className="text-xs text-slate-500 truncate">{user.email}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">
-                            UID: {user.dedicatedFixedId}
-                          </span>
                           <span className="text-[10px] text-slate-400">
                             Registered: {new Date(user.registeredAt).toLocaleDateString()}
                           </span>
@@ -1308,11 +1303,6 @@ export const InspectionDashboard: React.FC = () => {
                           </span>
                           <span>Year: {paper.year}</span>
                           <span>Region: {paper.geography}</span>
-                          {paper.dedicatedResearcherId && (
-                            <span className="font-mono text-emerald-600 dark:text-emerald-400">
-                              UID: {paper.dedicatedResearcherId}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>

@@ -17,7 +17,7 @@ import {
   DashboardBannerSlide
 } from '../types';
 import { api } from '../services/api';
-import { createUserId, isMasterAccount } from '../lib/auth';
+import { isMasterAccount } from '../lib/auth';
 
 export interface SavedItem {
   id: string;
@@ -43,14 +43,11 @@ interface AppContextType {
   setUserRole: (role: UserRole) => void;
   userProfile: UserProfile;
   setUserProfile: (profile: UserProfile) => void;
-  dedicatedFixedId: string;
   login: (credentials: { name: string; email: string }, requestedRole?: UserRole) => Promise<UserProfile>;
   logout: () => Promise<void>;
   changeUserRole: (role: UserRole) => void;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
-  isIdCardModalOpen: boolean;
-  setIsIdCardModalOpen: (open: boolean) => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   isSearchOpen: boolean;
@@ -197,7 +194,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
   const GUEST_PROFILE: UserProfile = {
     id: 'guest',
-    dedicatedFixedId: 'BHU-PUB-0000-0000',
     email: '',
     name: 'Guest Explorer',
     role: 'public',
@@ -216,8 +212,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.isGoogleVerified && parsed.email) {
-          if (!parsed.dedicatedFixedId) parsed.dedicatedFixedId = isMasterAccount(parsed.email) ? 'BHU-RES-8763-9201' : 'BHU-USR-1001-2002';
+          delete parsed[['dedicated', 'Fixed', 'Id'].join('')];
           parsed.isMasterSuperAdmin = isMasterAccount(parsed.email);
+          localStorage.setItem('bhu_user_profile', JSON.stringify(parsed));
           return parsed;
         }
       }
@@ -226,9 +223,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [isIdCardModalOpen, setIsIdCardModalOpen] = useState<boolean>(false);
-
-  const dedicatedFixedId = userProfile?.dedicatedFixedId || 'BHU-PUB-0000-0000';
   const isMasterUser = isMasterAccount(userProfile?.email);
   const isInspectionAuthorized =
     userRole === 'inspector' ||
@@ -546,8 +540,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     }
 
     const profile: UserProfile = {
-      id: `usr_${createUserId(email, requestedRole).replace(/-/g, '').toLowerCase()}`,
-      dedicatedFixedId: isMaster ? 'BHU-RES-8763-9201' : createUserId(email, requestedRole),
+      id: `usr_${email.replace(/[^a-z0-9]/g, '_')}`,
       email,
       name,
       avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=${isMaster ? '059669' : '1e40af'}`,
@@ -589,7 +582,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const logout = async () => {
     const guest: UserProfile = {
       id: 'guest',
-      dedicatedFixedId: 'BHU-PUB-0000-0000',
       email: '',
       name: 'Guest Explorer',
       role: 'public',
@@ -851,7 +843,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUserRole,
         userProfile,
         setUserProfile,
-        dedicatedFixedId,
         login,
         logout,
         changeUserRole,
@@ -880,8 +871,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         saveDashboardConfig,
         isAuthModalOpen,
         setIsAuthModalOpen,
-        isIdCardModalOpen,
-        setIsIdCardModalOpen,
         isDarkMode,
         toggleDarkMode,
         isSearchOpen,

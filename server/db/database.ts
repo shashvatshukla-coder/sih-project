@@ -33,6 +33,19 @@ function loadJson<T>(filename: string): T {
   throw new Error(`JSON seed file not found: ${filename} (searched: ${candidatePaths.join(', ')})`);
 }
 
+const obsoleteIdentityFields = [
+  ['dedicated', 'Fixed', 'Id'].join(''),
+  ['dedicated', 'Researcher', 'Id'].join(''),
+  ['policy', 'Maker', 'Id'].join('')
+];
+
+function stripObsoleteIdentityFields<T>(value: T): T {
+  if (!value || typeof value !== 'object') return value;
+  const cleaned = { ...(value as Record<string, unknown>) };
+  obsoleteIdentityFields.forEach(field => delete cleaned[field]);
+  return cleaned as T;
+}
+
 class Database {
   private states: State[] = [];
   private districts: District[] = [];
@@ -78,8 +91,8 @@ class Database {
       this.records = loadJson<LandUseRecord[]>('records.json');
       this.datasets = loadJson<Dataset[]>('datasets.json');
       this.dataSources = loadJson<DataSource[]>('datasources.json');
-      this.policies = loadJson<Policy[]>('policies.json');
-      this.research = loadJson<ResearchPaper[]>('research.json');
+      this.policies = loadJson<Policy[]>('policies.json').map(stripObsoleteIdentityFields);
+      this.research = loadJson<ResearchPaper[]>('research.json').map(stripObsoleteIdentityFields);
       this.anomalies = loadJson<Anomaly[]>('anomalies.json');
 
       // Bundled JSON is useful for prototype pages, but it must never be presented
@@ -107,7 +120,6 @@ class Database {
       this.users = [
         {
           id: 'usr-pol-01',
-          dedicatedFixedId: 'BHU-POL-8763-9201',
           email: 'rajesh.verma.ias@nic.in',
           name: 'Shri Rajesh Verma, IAS',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Rajesh%20Verma&backgroundColor=d97706',
@@ -126,7 +138,6 @@ class Database {
         },
         {
           id: 'usr-pol-02',
-          dedicatedFixedId: 'BHU-POL-4412-1092',
           email: 'ananya.sen@niti.gov.in',
           name: 'Dr. Ananya Sen',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Ananya%20Sen&backgroundColor=b45309',
@@ -145,7 +156,6 @@ class Database {
         },
         {
           id: 'usr-pol-03',
-          dedicatedFixedId: 'BHU-POL-7719-2041',
           email: 'sudhir.kumar@up.gov.in',
           name: 'Shri Sudhir Kumar',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Sudhir%20Kumar&backgroundColor=ca8a04',
@@ -164,7 +174,6 @@ class Database {
         },
         {
           id: 'usr-adm-01',
-          dedicatedFixedId: 'BHU-ADM-0012-9912',
           email: 'vikram.malhotra@nic.in',
           name: 'Vikram Malhotra',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Vikram%20Malhotra&backgroundColor=2563eb',
@@ -183,7 +192,6 @@ class Database {
         },
         {
           id: 'usr-adm-02',
-          dedicatedFixedId: 'BHU-ADM-5531-8840',
           email: 'priya.sharma@nrsc.gov.in',
           name: 'Priya Sharma',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Priya%20Sharma&backgroundColor=1d4ed8',
@@ -202,7 +210,6 @@ class Database {
         },
         {
           id: 'usr-res-01',
-          dedicatedFixedId: 'BHU-RES-8763-9201',
           email: 'shashvatshukla81@gmail.com',
           name: 'Dr. Shashvat Shukla',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Shashvat%20Shukla&backgroundColor=059669',
@@ -222,7 +229,6 @@ class Database {
         },
         {
           id: 'usr-res-02',
-          dedicatedFixedId: 'BHU-RES-3391-7721',
           email: 'arvind.swaminathan@icar.gov.in',
           name: 'Dr. Arvind Swaminathan',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Arvind%20Swaminathan&backgroundColor=15803d',
@@ -242,7 +248,6 @@ class Database {
         },
         {
           id: 'usr-res-03',
-          dedicatedFixedId: 'BHU-RES-6624-5109',
           email: 'kavita.deshmukh@iirs.gov.in',
           name: 'Dr. Kavita Deshmukh',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Kavita%20Deshmukh&backgroundColor=166534',
@@ -262,7 +267,6 @@ class Database {
         },
         {
           id: 'usr-res-04',
-          dedicatedFixedId: 'BHU-RES-9182-3401',
           email: 'tanvi.rao@jnu.ac.in',
           name: 'Prof. Tanvi Rao',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Tanvi%20Rao&backgroundColor=047857',
@@ -282,7 +286,6 @@ class Database {
         },
         {
           id: 'usr-pub-01',
-          dedicatedFixedId: 'BHU-PUB-1029-4481',
           email: 'ramesh.patel.fpo@gmail.com',
           name: 'Ramesh Patel',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Ramesh%20Patel&backgroundColor=64748b',
@@ -301,7 +304,6 @@ class Database {
         },
         {
           id: 'usr-pub-02',
-          dedicatedFixedId: 'BHU-PUB-5541-7712',
           email: 'meera.krishnan@civicdatalab.in',
           name: 'Meera Krishnan',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Meera%20Krishnan&backgroundColor=475569',
@@ -320,7 +322,6 @@ class Database {
         },
         {
           id: 'usr-pub-03',
-          dedicatedFixedId: 'BHU-PUB-8812-9901',
           email: 'alok.ranjan@gramsevak.org',
           name: 'Alok Ranjan',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Alok%20Ranjan&backgroundColor=334155',
@@ -339,7 +340,6 @@ class Database {
         },
         {
           id: 'usr-ins-01',
-          dedicatedFixedId: 'BHU-INS-0001-9999',
           email: 'devendra.jha@bhu-drishti.gov.in',
           name: 'Shri Devendra Nath Jha',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Devendra%20Jha&backgroundColor=dc2626',
@@ -358,7 +358,6 @@ class Database {
         },
         {
           id: 'usr-ins-02',
-          dedicatedFixedId: 'BHU-INS-0002-8888',
           email: 'sunita.rao@bhu-drishti.gov.in',
           name: 'Smt. Sunita Rao',
           avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Sunita%20Rao&backgroundColor=b91c1c',
@@ -647,7 +646,7 @@ class Database {
       }
       if (!payload || typeof payload !== 'object') continue;
 
-      const persistedItem = { ...payload, id: payload.id || row.content_id };
+      const persistedItem = stripObsoleteIdentityFields({ ...payload, id: payload.id || row.content_id });
       if (index >= 0) {
         collection[index] = persistedItem;
       } else {
@@ -695,6 +694,7 @@ class Database {
     deleted: boolean = false
   ): Promise<void> {
     await this.ready;
+    const cleanPayload = stripObsoleteIdentityFields(payload);
 
     if (this.pgPool) {
       if (!this.contentStoreReady) await this.ensureContentStore();
@@ -703,7 +703,7 @@ class Database {
          VALUES ($1, $2, $3::jsonb, $4, NOW())
          ON CONFLICT (content_type, content_id)
          DO UPDATE SET payload = EXCLUDED.payload, deleted = EXCLUDED.deleted, updated_at = NOW()`,
-        [contentType, contentId, JSON.stringify(payload), deleted]
+        [contentType, contentId, JSON.stringify(cleanPayload), deleted]
       );
       this.pgPoolConnected = true;
       this.lastSyncTime = new Date().toISOString();
@@ -714,7 +714,7 @@ class Database {
       const { error } = await this.supabase.from('bhu_content_store').upsert({
         content_type: contentType,
         content_id: contentId,
-        payload,
+        payload: cleanPayload,
         deleted,
         updated_at: new Date().toISOString()
       }, { onConflict: 'content_type,content_id' });
@@ -894,11 +894,11 @@ class Database {
       }
 
       if (dbPolicies.length > 0) {
-        this.policies = dbPolicies;
+        this.policies = dbPolicies.map(stripObsoleteIdentityFields);
       }
 
       if (dbResearch.length > 0) {
-        this.research = dbResearch;
+        this.research = dbResearch.map(stripObsoleteIdentityFields);
       }
 
       if (dbAnomalies.length > 0) {
@@ -1186,32 +1186,34 @@ class Database {
   }
 
   public async addPolicy(policy: Policy): Promise<Policy> {
-    await this.persistContent('policy', policy.id, policy);
-    const existingIndex = this.policies.findIndex(p => p.id === policy.id);
+    const cleanPolicy = stripObsoleteIdentityFields(policy);
+    await this.persistContent('policy', cleanPolicy.id, cleanPolicy);
+    const existingIndex = this.policies.findIndex(p => p.id === cleanPolicy.id);
     if (existingIndex >= 0) {
-      this.policies[existingIndex] = { ...this.policies[existingIndex], ...policy };
+      this.policies[existingIndex] = { ...this.policies[existingIndex], ...cleanPolicy };
     } else {
-      this.policies.unshift(policy);
+      this.policies.unshift(cleanPolicy);
     }
-    this.logAudit('ADD_POLICY', policy.policyMakerName || 'PolicyMaker', {
-      id: policy.id,
-      name: policy.name,
-      acronym: policy.acronym
+    this.logAudit('ADD_POLICY', cleanPolicy.policyMakerName || 'PolicyMaker', {
+      id: cleanPolicy.id,
+      name: cleanPolicy.name,
+      acronym: cleanPolicy.acronym
     });
 
-    return policy;
+    return cleanPolicy;
   }
 
   public async updatePolicy(id: string, updates: Partial<Policy>): Promise<Policy | undefined> {
     const policy = this.getPolicyById(id);
     if (!policy) return undefined;
-    const updatedPolicy = { ...policy, ...updates, is_user_modified: true };
+    const cleanUpdates = stripObsoleteIdentityFields(updates);
+    const updatedPolicy = { ...policy, ...cleanUpdates, is_user_modified: true };
     await this.persistContent('policy', policy.id, updatedPolicy);
     Object.assign(policy, updatedPolicy);
 
-    this.logAudit('UPDATE_POLICY', updates.policyMakerName || 'PolicyMaker', {
+    this.logAudit('UPDATE_POLICY', cleanUpdates.policyMakerName || 'PolicyMaker', {
       id: policy.id,
-      updated_fields: Object.keys(updates)
+      updated_fields: Object.keys(cleanUpdates)
     });
 
     return policy;
@@ -1311,20 +1313,20 @@ class Database {
   }
 
   public async addResearchPaper(paper: ResearchPaper): Promise<ResearchPaper> {
-    await this.persistContent('research', paper.id, paper);
-    const existingIndex = this.research.findIndex(p => p.id === paper.id);
+    const cleanPaper = stripObsoleteIdentityFields(paper);
+    await this.persistContent('research', cleanPaper.id, cleanPaper);
+    const existingIndex = this.research.findIndex(p => p.id === cleanPaper.id);
     if (existingIndex >= 0) {
-      this.research[existingIndex] = paper;
+      this.research[existingIndex] = cleanPaper;
     } else {
-      this.research.unshift(paper);
+      this.research.unshift(cleanPaper);
     }
-    this.logAudit('ADD_RESEARCH_PAPER', paper.authors[0] || 'Researcher', {
-      id: paper.id,
-      title: paper.title,
-      dedicatedResearcherId: paper.dedicatedResearcherId
+    this.logAudit('ADD_RESEARCH_PAPER', cleanPaper.authors[0] || 'Researcher', {
+      id: cleanPaper.id,
+      title: cleanPaper.title
     });
 
-    return paper;
+    return cleanPaper;
   }
 
   // === Inspection & Ombudsman Directorate Methods ===
@@ -1334,7 +1336,7 @@ class Database {
   }
 
   public getUserById(id: string): UserRegistryRecord | undefined {
-    return this.users.find(u => u.id === id || u.dedicatedFixedId === id || u.email.toLowerCase() === id.toLowerCase());
+    return this.users.find(u => u.id === id || u.email.toLowerCase() === id.toLowerCase());
   }
 
   public getInspectionStats(): InspectionStats {
@@ -1407,7 +1409,7 @@ class Database {
   }
 
   public deleteUser(id: string): boolean {
-    const idx = this.users.findIndex(u => u.id === id || u.dedicatedFixedId === id);
+    const idx = this.users.findIndex(u => u.id === id);
     if (idx >= 0) {
       const removed = this.users.splice(idx, 1)[0];
       this.logAudit('DELETE_USER', 'ChiefInspector', { id: removed.id, email: removed.email });

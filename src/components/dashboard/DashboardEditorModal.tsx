@@ -127,7 +127,6 @@ export const DashboardEditorModal: React.FC<DashboardEditorModalProps> = ({ isOp
                 <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
                   Inspection Super-User Directorate
                 </span>
-                <span className="text-xs text-slate-400">UID: BHU-RES-8763-9201</span>
               </div>
               <h2 className="text-lg font-bold text-white mt-0.5">
                 Dashboard Master Control Console

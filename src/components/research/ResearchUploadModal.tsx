@@ -15,7 +15,6 @@ import {
   MapPin,
   Tag,
   BookOpen,
-  Fingerprint,
   ArrowRight
 } from 'lucide-react';
 
@@ -32,7 +31,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   onPaperCreated,
   requiredTag
 }) => {
-  const { userProfile, dedicatedFixedId, states, selectedState } = useApp();
+  const { userProfile, states, selectedState } = useApp();
 
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -101,7 +100,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
     } else {
       setFilePreview(`Binary document ${selectedFile.name} (${Math.round(selectedFile.size / 1024)} KB). Ready for cadastral indexing and citation archiving.`);
       if (!abstract) {
-        setAbstract(`Empirical land intelligence study and field observations uploaded under Dedicated Researcher UID ${dedicatedFixedId}. Documents spatial patterns and policy correlations.`);
+        setAbstract('Empirical land intelligence study and field observations documenting spatial patterns and policy correlations.');
       }
     }
   };
@@ -147,7 +146,6 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
         fileData,
         title: title.trim(),
         author: userProfile?.name || 'Dr. Shashvat Shukla',
-        dedicatedResearcherId: dedicatedFixedId,
         geography: geography,
         tags: requiredTag && !tags.includes(requiredTag) ? [...tags, requiredTag] : tags
       });
@@ -180,13 +178,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 Upload & Ingest Cadastral Research Document
               </h3>
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                <span>Researcher ID:</span>
-                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                  <Fingerprint className="w-3 h-3" />
-                  {dedicatedFixedId}
-                </span>
-              </div>
+              <p className="text-[11px] text-slate-500">Authenticated research submission</p>
             </div>
           </div>
           <button
@@ -209,8 +201,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
                   Document Uploaded & Published Successfully!
                 </h4>
                 <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                  Your research paper has been bound to Dedicated Fixed ID{' '}
-                  <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{dedicatedFixedId}</strong> and is now queryable across the platform.
+                  Your research paper is now queryable across the platform.
                 </p>
               </div>
 
@@ -332,9 +323,6 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
                     </label>
                     <div className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs flex items-center justify-between">
                       <span className="font-semibold">{userProfile?.name || 'Dr. Shashvat Shukla'}</span>
-                      <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                        {dedicatedFixedId}
-                      </span>
                     </div>
                   </div>
 

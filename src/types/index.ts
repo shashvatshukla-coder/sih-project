@@ -149,7 +149,6 @@ export interface Policy {
   current_area_target?: AreaTarget;
   is_user_modified?: boolean;
   status?: 'Active' | 'Gazette Notified' | 'Under Revision' | 'Draft Amendment';
-  policyMakerId?: string;
   policyMakerName?: string;
   allocated_budget_cr?: number | null;
   documentText?: string;
@@ -171,7 +170,6 @@ export interface Policy {
 
 export interface UserRegistryRecord {
   id: string;
-  dedicatedFixedId: string;
   email: string;
   name: string;
   avatar?: string;
@@ -208,7 +206,6 @@ export interface InspectionStats {
 
 export interface UserProfile {
   id: string;
-  dedicatedFixedId: string; // Permanent Dedicated Researcher ID (e.g. BHU-RES-8763-9201)
   email: string;
   name: string;
   avatar?: string;
@@ -246,7 +243,6 @@ export interface ResearchPaper {
   related_dataset_ids: string[];
   related_policy_ids: string[];
   // Extended researcher authoring & upload fields
-  dedicatedResearcherId?: string;
   authorEmail?: string;
   contentMarkdown?: string;
   fileAttachment?: {

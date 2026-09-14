@@ -291,7 +291,7 @@ export const ExecutiveDashboard: React.FC = () => {
                   INSPECTION DIRECTORATE MASTER CONTROL
                 </span>
                 <span className="text-[11px] font-mono text-emerald-300 font-bold">
-                  {userProfile.name} • {userProfile.dedicatedFixedId}
+                  {userProfile.name}
                 </span>
               </div>
               <p className="text-xs text-slate-300 mt-1 font-medium">
