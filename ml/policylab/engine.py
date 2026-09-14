@@ -2,6 +2,7 @@
 
 Uses the existing 3-feature Random Forest pipeline:
 current LULC + slope + road distance -> predicted future LULC.
+Policy parameters then modify the predicted conversion transitions.
 """
 from __future__ import annotations
 
@@ -36,14 +37,8 @@ def _find_existing(base: Path, candidates: list[str]) -> Path:
 
 def _paths(base: Path) -> dict[str, Path]:
     return {
-        "lulc_2015": _find_existing(base, [
-            "lulc/lulc_2015_classified.tif",
-            "lulc_2015_classified.tif",
-        ]),
-        "slope": _find_existing(base, [
-            "dem/ghaziabad_slope_aligned_30m.tif",
-            "dem/ghaziabad_slope_utm43.tif",
-        ]),
+        "lulc_2015": _find_existing(base, ["lulc/lulc_2015_classified.tif", "lulc_2015_classified.tif"]),
+        "slope": _find_existing(base, ["dem/ghaziabad_slope_aligned_30m.tif", "dem/ghaziabad_slope_utm43.tif"]),
         "road_distance": _find_existing(base, [
             "roads/road_distance_ghaziabad_30m_aligned.tif",
             "roads/road_distance_ghaziabad_30m_aligned_30m.tif",
@@ -77,7 +72,6 @@ def _load_rasters(paths: dict[str, Path]):
 def predict(model_path: Path = DEFAULT_MODEL, base: Path = DEFAULT_BASE) -> dict[str, Any]:
     paths = _paths(base)
     arrays, profile, transform = _load_rasters(paths)
-
     model = joblib.load(model_path)
     lulc = arrays["lulc_2015"]
     slope = arrays["slope"]
@@ -98,7 +92,6 @@ def predict(model_path: Path = DEFAULT_MODEL, base: Path = DEFAULT_BASE) -> dict
     counts = {CLASSES[int(code)]: int(np.sum(prediction == code)) for code in CLASSES}
     pixel_area_km2 = abs(transform.a * transform.e) / 1_000_000
     areas = {name: round(count * pixel_area_km2, 4) for name, count in counts.items()}
-
     return {
         "output": str(output),
         "shape": list(prediction.shape),
@@ -112,7 +105,27 @@ def predict(model_path: Path = DEFAULT_MODEL, base: Path = DEFAULT_BASE) -> dict
     }
 
 
-def apply_scenarios(base: Path = DEFAULT_BASE) -> dict[str, Any]:
+def _protect_transition(target: np.ndarray, source_lulc: np.ndarray, prediction: np.ndarray, source_class: int, protection: float) -> np.ndarray:
+    """Return a copy where the requested percentage of source->built transitions is protected."""
+    result = target.copy()
+    protection = max(0.0, min(100.0, float(protection)))
+    rows, cols = np.where((source_lulc == source_class) & (prediction == 1))
+    count = len(rows)
+    if count == 0 or protection <= 0:
+        return result
+    n_protect = int(round(count * protection / 100.0))
+    if n_protect:
+        result[rows[:n_protect], cols[:n_protect]] = source_class
+    return result
+
+
+def apply_scenarios(
+    base: Path = DEFAULT_BASE,
+    agriculture_protection: float = 50,
+    water_protection: float = 0,
+    forest_protection: float = 0,
+    policy_text: str | None = None,
+) -> dict[str, Any]:
     prediction_path = base / "lulc_2030_prediction.tif"
     if not prediction_path.exists():
         predict(base=base)
@@ -131,41 +144,33 @@ def apply_scenarios(base: Path = DEFAULT_BASE) -> dict[str, Any]:
     out.mkdir(parents=True, exist_ok=True)
 
     bau = prediction.copy()
-    controlled = prediction.copy()
-    sustainable = prediction.copy()
+    custom = prediction.copy()
+    custom = _protect_transition(custom, lulc_2015, prediction, 2, agriculture_protection)
+    custom = _protect_transition(custom, lulc_2015, prediction, 6, water_protection)
+    custom = _protect_transition(custom, lulc_2015, prediction, 3, forest_protection)
 
-    agri = np.where((lulc_2015 == 2) & (prediction == 1))
-    n_controlled = int(len(agri[0]) * 0.50)
-    n_sustainable = int(len(agri[0]) * 0.80)
-    if n_controlled:
-        controlled[agri[0][:n_controlled], agri[1][:n_controlled]] = 2
-    if n_sustainable:
-        sustainable[agri[0][:n_sustainable], agri[1][:n_sustainable]] = 2
-
-    water = np.where((lulc_2015 == 6) & (prediction == 1))
-    n_water = int(len(water[0]) * 0.80)
-    if n_water:
-        sustainable[water[0][:n_water], water[1][:n_water]] = 6
-
-    forest = np.where((lulc_2015 == 3) & (prediction == 1))
-    n_forest = int(len(forest[0]) * 0.50)
-    if n_forest:
-        sustainable[forest[0][:n_forest], forest[1][:n_forest]] = 3
+    # Keep the original benchmark scenarios for continuity with the earlier PolicyLab workflow.
+    controlled = _protect_transition(prediction, lulc_2015, prediction, 2, 50)
+    sustainable = _protect_transition(prediction, lulc_2015, prediction, 2, 80)
+    sustainable = _protect_transition(sustainable, lulc_2015, prediction, 6, 80)
+    sustainable = _protect_transition(sustainable, lulc_2015, prediction, 3, 50)
 
     profile.update(dtype="uint8", count=1, compress="lzw")
     scenario_arrays = {
         "BAU": bau,
+        "Custom Policy": custom,
         "Controlled Urban Growth": controlled,
         "Sustainable Development": sustainable,
     }
+    filenames = {
+        "BAU": "scenario_bau_2030.tif",
+        "Custom Policy": "scenario_custom_policy_2030.tif",
+        "Controlled Urban Growth": "scenario_controlled_growth_2030.tif",
+        "Sustainable Development": "scenario_sustainable_development_2030.tif",
+    }
     paths = {}
     for name, raster in scenario_arrays.items():
-        filename = {
-            "BAU": "scenario_bau_2030.tif",
-            "Controlled Urban Growth": "scenario_controlled_growth_2030.tif",
-            "Sustainable Development": "scenario_sustainable_development_2030.tif",
-        }[name]
-        path = out / filename
+        path = out / filenames[name]
         with rasterio.open(path, "w", **profile) as dst:
             dst.write(raster.astype("uint8"), 1)
         paths[name] = str(path)
@@ -175,12 +180,7 @@ def apply_scenarios(base: Path = DEFAULT_BASE) -> dict[str, Any]:
     for scenario, raster in scenario_arrays.items():
         for code, land_use in CLASSES.items():
             count = int(np.sum(raster == code))
-            summary.append({
-                "scenario": scenario,
-                "class": code,
-                "land_use": land_use,
-                "area_km2": round(count * pixel_area_km2, 4),
-            })
+            summary.append({"scenario": scenario, "class": code, "land_use": land_use, "area_km2": round(count * pixel_area_km2, 4)})
 
     import csv
     summary_file = out / "policy_scenario_area_summary.csv"
@@ -205,13 +205,17 @@ def apply_scenarios(base: Path = DEFAULT_BASE) -> dict[str, Any]:
         "scenario_rasters": paths,
         "area_summary": summary,
         "comparison": comparison,
-        "files": {
-            "area_summary_csv": str(summary_file),
-            "comparison_csv": str(comparison_file),
+        "policy": {
+            "agriculture_protection": agriculture_protection,
+            "water_protection": water_protection,
+            "forest_protection": forest_protection,
+            "policy_text": policy_text,
         },
+        "files": {"area_summary_csv": str(summary_file), "comparison_csv": str(comparison_file)},
         "assumptions": {
+            "Custom Policy": "Protect the requested percentage of Agriculture, Water/Wetland, and Forest -> Built-up transitions.",
             "Controlled Urban Growth": "Protect 50% of Agriculture -> Built-up transitions.",
             "Sustainable Development": "Protect 80% of Agriculture -> Built-up, 80% Water/Wetland -> Built-up, and 50% Forest -> Built-up transitions.",
         },
-        "note": "Policy simulations based on explicit assumptions, not certain future facts.",
+        "note": "Policy simulations are explicit what-if assumptions applied to the Random Forest baseline, not certain future facts.",
     }
