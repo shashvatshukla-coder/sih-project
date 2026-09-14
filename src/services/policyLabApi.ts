@@ -1,9 +1,8 @@
-// PolicyLab is hosted as a dedicated public ML service on Render.
-// Vercel can override the endpoint, while the production URL remains a safe
-// fallback so PolicyLab continues working when the variable is not configured.
-const DEFAULT_POLICYLAB_URL = 'https://bhu-drishti-policylab.onrender.com';
+// PolicyLab requests use a same-origin Vercel rewrite in production. This avoids
+// browser CORS failures while still allowing an explicit endpoint override for
+// local development or another hosting provider.
 const metaEnv = ((import.meta as any).env || {}) as Record<string, string | undefined>;
-const API_BASE = (metaEnv.VITE_POLICYLAB_URL?.trim() || DEFAULT_POLICYLAB_URL).replace(/\/+$/, '');
+const API_BASE = (metaEnv.VITE_POLICYLAB_URL?.trim() || '/policylab-api').replace(/\/+$/, '');
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE}${path}`, {
