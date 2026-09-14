@@ -1,4 +1,7 @@
-const rawBase = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_BACKEND_URL || (import.meta as any).env?.VITE_API_BASE_URL || '/api';
+const configuredBase = (import.meta as any).env?.VITE_API_URL || (import.meta as any).env?.VITE_BACKEND_URL || (import.meta as any).env?.VITE_API_BASE_URL;
+// Vercel serves the frontend separately from the Render API. Keep an explicit production fallback
+// so PolicyLab does not accidentally call Vercel's own /api route and return 404.
+const rawBase = configuredBase || 'https://bhu-drishti-api.onrender.com/api';
 const API_BASE = String(rawBase).replace(/\/+$/, '');
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
