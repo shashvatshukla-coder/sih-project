@@ -1269,6 +1269,9 @@ class Database {
 
     const updatedPolicy: Policy = {
       ...policy,
+      // Keep the policy-level budget in sync with the latest area calibration.
+      // Some policy views read this summary field after a refresh.
+      allocated_budget_cr: cleanTarget.regional_budget_cr,
       area_targets: areaTargets,
       current_area_target: cleanTarget,
       is_user_modified: true,

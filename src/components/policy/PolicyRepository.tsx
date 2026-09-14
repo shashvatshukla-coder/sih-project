@@ -415,7 +415,9 @@ export const PolicyRepository: React.FC = () => {
           filteredPolicies.map((policy) => {
             // Check if there is an active area target for this policy
             const activeAreaTarget = policy.current_area_target || (policy.area_targets && policy.area_targets.length > 0 ? policy.area_targets[0] : null);
-            const displayBudget = activeAreaTarget?.regional_budget_cr ?? policy.allocated_budget_cr;
+            const displayBudget = activeAreaTarget
+              ? activeAreaTarget.regional_budget_cr
+              : policy.allocated_budget_cr;
 
             return (
               <div

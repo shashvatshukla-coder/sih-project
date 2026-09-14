@@ -244,7 +244,9 @@ export const PolicyAreaUpdateModal: React.FC<PolicyAreaUpdateModalProps> = ({
                   </div>
                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="block text-[10px] text-slate-400 font-bold uppercase">Regional Budget</span>
-                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">₹{regionalBudgetCr} Cr</span>
+                    <span className="text-sm font-black text-amber-600 dark:text-amber-400">
+                      {regionalBudgetCr.trim() === '' ? 'Not specified' : `₹${regionalBudgetCr} Cr`}
+                    </span>
                   </div>
                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700">
                     <span className="block text-[10px] text-slate-400 font-bold uppercase">Agri Preservation</span>
