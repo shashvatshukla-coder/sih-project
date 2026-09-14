@@ -69,26 +69,13 @@ def _load_rasters(paths: dict[str, Path]):
             src.close()
 
 
-def predict(model_path: Path = DEFAULT_MODEL, base: Path = DEFAULT_BASE) -> dict[str, Any]:
-    paths = _paths(base)
-    arrays, profile, transform = _load_rasters(paths)
-    model = joblib.load(model_path)
-    lulc = arrays["lulc_2015"]
-    slope = arrays["slope"]
-    road = arrays["road_distance"]
-
-    x = np.column_stack([lulc.ravel(), slope.ravel(), road.ravel()])
-    valid = np.isfinite(x).all(axis=1) & (slope.ravel() != -9999) & (road.ravel() != -9999)
-    prediction = np.full(lulc.size, 7, dtype=np.uint8)
-    prediction[valid] = model.predict(x[valid]).astype(np.uint8)
-    prediction = prediction.reshape(lulc.shape)
-
-    output = base / "lulc_2030_prediction.tif"
-    out_profile = profile.copy()
-    out_profile.update(dtype="uint8", count=1, nodata=7, compress="lzw")
-    with rasterio.open(output, "w", **out_profile) as dst:
-        dst.write(prediction, 1)
-
+def _prediction_summary(
+    prediction: np.ndarray,
+    transform: Any,
+    output: Path,
+    model_path: Path,
+    cached: bool,
+) -> dict[str, Any]:
     counts = {CLASSES[int(code)]: int(np.sum(prediction == code)) for code in CLASSES}
     pixel_area_km2 = abs(transform.a * transform.e) / 1_000_000
     areas = {name: round(count * pixel_area_km2, 4) for name, count in counts.items()}
@@ -102,7 +89,65 @@ def predict(model_path: Path = DEFAULT_MODEL, base: Path = DEFAULT_BASE) -> dict
         "features": ["lulc_2015", "slope", "road_distance"],
         "methodology": "Random Forest classification using the existing 3-feature pipeline.",
         "note": "Baseline model extrapolation; not a certain future forecast.",
+        "cached": cached,
     }
+
+
+def predict(model_path: Path = DEFAULT_MODEL, base: Path = DEFAULT_BASE) -> dict[str, Any]:
+    output = base / "lulc_2030_prediction.tif"
+
+    # The baseline is deterministic for a deployed model and input set. Reuse the
+    # precomputed raster so web requests do not repeat expensive inference.
+    if output.exists():
+        with rasterio.open(output) as src:
+            prediction = src.read(1)
+            transform = src.transform
+        return _prediction_summary(prediction, transform, output, model_path, cached=True)
+
+    paths = _paths(base)
+    arrays, profile, transform = _load_rasters(paths)
+    model = joblib.load(model_path)
+
+    # A free Render instance has limited memory. Avoid parallel forest workers and
+    # never construct a full-scene Nx3 float64 feature matrix.
+    if hasattr(model, "n_jobs"):
+        model.n_jobs = 1
+
+    lulc = arrays["lulc_2015"].ravel()
+    slope = arrays["slope"].ravel()
+    road = arrays["road_distance"].ravel()
+    prediction = np.full(lulc.size, 7, dtype=np.uint8)
+
+    chunk_size = 100_000
+    for start in range(0, lulc.size, chunk_size):
+        end = min(start + chunk_size, lulc.size)
+        lulc_chunk = lulc[start:end]
+        slope_chunk = slope[start:end]
+        road_chunk = road[start:end]
+        valid = (
+            np.isfinite(lulc_chunk)
+            & np.isfinite(slope_chunk)
+            & np.isfinite(road_chunk)
+            & (slope_chunk != -9999)
+            & (road_chunk != -9999)
+        )
+        if not np.any(valid):
+            continue
+
+        features = np.column_stack(
+            [lulc_chunk[valid], slope_chunk[valid], road_chunk[valid]]
+        ).astype(np.float32, copy=False)
+        chunk_prediction = model.predict(features).astype(np.uint8, copy=False)
+        prediction_chunk = prediction[start:end]
+        prediction_chunk[valid] = chunk_prediction
+
+    prediction = prediction.reshape(arrays["lulc_2015"].shape)
+    out_profile = profile.copy()
+    out_profile.update(dtype="uint8", count=1, nodata=7, compress="lzw")
+    with rasterio.open(output, "w", **out_profile) as dst:
+        dst.write(prediction, 1)
+
+    return _prediction_summary(prediction, transform, output, model_path, cached=False)
 
 
 def _protect_transition(target: np.ndarray, source_lulc: np.ndarray, prediction: np.ndarray, source_class: int, protection: float) -> np.ndarray:
