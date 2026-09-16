@@ -2,14 +2,15 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
+from typing import Literal
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from .engine_runtime import DEFAULT_BASE, DEFAULT_MODEL, apply_scenarios, predict
+from .engine_runtime import DEFAULT_BASE, DEFAULT_MODEL, apply_scenarios, predict, resolve_model
 
-app = FastAPI(title="BHU-DRISHTI PolicyLab", version="1.0.0")
+app = FastAPI(title="BHU-DRISHTI PolicyLab", version="1.1.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,6 +24,7 @@ app.add_middleware(
 class RunRequest(BaseModel):
     base_dir: str | None = None
     model_path: str | None = None
+    model_mode: Literal["optimized", "full"] = "optimized"
 
 
 class ScenarioRequest(RunRequest):
@@ -34,14 +36,23 @@ class ScenarioRequest(RunRequest):
 
 @app.get("/health")
 def health():
-    return {"status": "healthy", "service": "PolicyLab", "engine": "random-forest-3-feature"}
+    return {
+        "status": "healthy",
+        "service": "PolicyLab",
+        "engine": "random-forest-3-feature",
+        "capabilities": ["prediction", "policy-scenarios", "spatial-visuals", "ai-insights", "report-ready-output"],
+    }
+
+
+def _model(req: RunRequest) -> Path:
+    return resolve_model(req.model_mode, Path(req.model_path) if req.model_path else None)
 
 
 @app.post("/predict")
 def run_prediction(req: RunRequest = RunRequest()):
     try:
         base = Path(req.base_dir or os.getenv("POLICYLAB_DATA_DIR", str(DEFAULT_BASE)))
-        model = Path(req.model_path or os.getenv("POLICYLAB_MODEL_PATH", str(DEFAULT_MODEL)))
+        model = _model(req)
         if not model.exists():
             raise FileNotFoundError(f"Model not found: {model}")
         return {"success": True, "data": predict(model_path=model, base=base)}
@@ -53,14 +64,14 @@ def run_prediction(req: RunRequest = RunRequest()):
 def run_scenarios(req: ScenarioRequest = ScenarioRequest()):
     try:
         base = Path(req.base_dir or os.getenv("POLICYLAB_DATA_DIR", str(DEFAULT_BASE)))
-        model = Path(req.model_path or os.getenv("POLICYLAB_MODEL_PATH", str(DEFAULT_MODEL)))
-        prediction_path = base / "lulc_2030_prediction.tif"
-        if not prediction_path.exists():
-            predict(model_path=model, base=base)
+        model = _model(req)
+        if not model.exists():
+            raise FileNotFoundError(f"Model not found: {model}")
         return {
             "success": True,
             "data": apply_scenarios(
                 base=base,
+                model_path=model,
                 agriculture_protection=req.agriculture_protection,
                 water_protection=req.water_protection,
                 forest_protection=req.forest_protection,
