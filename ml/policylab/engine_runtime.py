@@ -1,4 +1,4 @@
-"""Memory-safe runtime engine for the deployed BHU-DRISHTI PolicyLab."""
+"""Memory-safe runtime engine for the BHU-DRISHTI PolicyLab."""
 from __future__ import annotations
 
 from pathlib import Path
@@ -8,6 +8,8 @@ import csv
 import joblib
 import numpy as np
 import rasterio
+
+from .visuals import build_visuals
 
 CLASSES = {
     1: "Built-up",
@@ -21,6 +23,7 @@ CLASSES = {
 
 DEFAULT_BASE = Path("data/processed/ghaziabad")
 DEFAULT_MODEL = Path("ml/models/optimized/lulc_2011_to_2015_optimized.pkl")
+FULL_MODEL = Path("ml/models/lulc_2011_to_2015.pkl")
 
 
 def _find(base: Path, *names: str) -> Path:
@@ -44,9 +47,24 @@ def _inputs(base: Path) -> dict[str, Path]:
     }
 
 
+def resolve_model(model_mode: str | None = None, model_path: Path | None = None) -> Path:
+    if model_path:
+        return model_path
+    if (model_mode or "optimized").lower() == "full":
+        return FULL_MODEL
+    return DEFAULT_MODEL
+
+
+def _output_for(base: Path, model: Path) -> Path:
+    if model.resolve().name == FULL_MODEL.name:
+        return base / "lulc_2030_prediction_full.tif"
+    return base / "lulc_2030_prediction.tif"
+
+
 def _summary(prediction: np.ndarray, transform: Any, output: Path, model: Path, cached: bool) -> dict[str, Any]:
     pixel_area = abs(transform.a * transform.e) / 1_000_000
     counts = {name: int(np.sum(prediction == code)) for code, name in CLASSES.items()}
+    mode = "full" if model.name == FULL_MODEL.name else "optimized"
     return {
         "output": str(output),
         "shape": list(prediction.shape),
@@ -54,6 +72,7 @@ def _summary(prediction: np.ndarray, transform: Any, output: Path, model: Path, 
         "pixel_counts": counts,
         "area_km2": {name: round(count * pixel_area, 4) for name, count in counts.items()},
         "model": str(model),
+        "model_mode": mode,
         "features": ["lulc_2015", "slope", "road_distance"],
         "methodology": "Random Forest classification using the existing 3-feature pipeline.",
         "note": "Baseline model extrapolation; not a certain future forecast.",
@@ -62,7 +81,7 @@ def _summary(prediction: np.ndarray, transform: Any, output: Path, model: Path, 
 
 
 def predict(model_path: Path = DEFAULT_MODEL, base: Path = DEFAULT_BASE) -> dict[str, Any]:
-    output = base / "lulc_2030_prediction.tif"
+    output = _output_for(base, model_path)
     if output.exists():
         with rasterio.open(output) as src:
             prediction = src.read(1)
@@ -118,10 +137,69 @@ def _protect(target: np.ndarray, source: np.ndarray, prediction: np.ndarray, sou
     return result
 
 
-def apply_scenarios(base: Path = DEFAULT_BASE, agriculture_protection: float = 50, water_protection: float = 0, forest_protection: float = 0, policy_text: str | None = None) -> dict[str, Any]:
-    prediction_path = base / "lulc_2030_prediction.tif"
+def _transition_summary(source: np.ndarray, prediction: np.ndarray, pixel_area: float) -> list[dict[str, Any]]:
+    rows: list[dict[str, Any]] = []
+    for from_code, from_name in CLASSES.items():
+        for to_code, to_name in CLASSES.items():
+            if from_code == to_code:
+                continue
+            count = int(np.sum((source == from_code) & (prediction == to_code)))
+            if count:
+                rows.append({"from": from_name, "to": to_name, "pixels": count, "area_km2": round(count * pixel_area, 4)})
+    return sorted(rows, key=lambda item: item["area_km2"], reverse=True)
+
+
+def _ai_insights(summary: list[dict[str, Any]], policy: dict[str, Any], transitions: list[dict[str, Any]]) -> dict[str, Any]:
+    by_scenario: dict[str, dict[str, float]] = {}
+    for row in summary:
+        by_scenario.setdefault(row["scenario"], {})[row["land_use"]] = row["area_km2"]
+
+    bau = by_scenario.get("BAU", {})
+    custom = by_scenario.get("Custom Policy", {})
+    built_saved = round(bau.get("Built-up", 0) - custom.get("Built-up", 0), 2)
+    agriculture_retained = round(custom.get("Agriculture", 0) - bau.get("Agriculture", 0), 2)
+    top = transitions[:5]
+    top_text = ", ".join(f"{x['from']} → {x['to']} ({x['area_km2']} km²)" for x in top)
+
+    insights = [
+        f"The BAU baseline contains approximately {bau.get('Built-up', 0):,.2f} km² of projected built-up land by 2030 under the selected model.",
+        f"The selected policy scenario changes projected built-up area by {built_saved:+,.2f} km² relative to BAU and changes agriculture by {agriculture_retained:+,.2f} km².",
+        f"The largest modelled transition pathways are: {top_text or 'no transitions detected'}.",
+        "Spatial differences should be treated as priority locations for GIS inspection and ground verification, not as automatic land-use approvals or restrictions.",
+        "Because the 'Other' class is a residual heuristic class, Other → Built-up should not be interpreted automatically as confirmed urban encroachment.",
+    ]
+
+    actions = [
+        "Inspect the highest-area Agriculture → Built-up transition zones against cadastral and land-record evidence.",
+        "Overlay water/wetland and forest protection areas with the policy-difference map before any planning decision.",
+        "Use the scenario comparison to identify locations where a policy assumption materially changes the simulated outcome.",
+        "Ground-truth priority hotspots with current imagery or field verification before policy implementation.",
+    ]
+    return {
+        "headline": "AI-assisted evidence interpretation",
+        "insights": insights,
+        "suggested_actions": actions,
+        "policy_readback": {
+            "agriculture_protection": policy["agriculture_protection"],
+            "water_protection": policy["water_protection"],
+            "forest_protection": policy["forest_protection"],
+            "text": policy.get("policy_text"),
+        },
+        "disclaimer": "These are evidence-oriented interpretations generated from the simulation outputs. They are not legal, cadastral, or final policy decisions.",
+    }
+
+
+def apply_scenarios(
+    base: Path = DEFAULT_BASE,
+    agriculture_protection: float = 50,
+    water_protection: float = 0,
+    forest_protection: float = 0,
+    policy_text: str | None = None,
+    model_path: Path = DEFAULT_MODEL,
+) -> dict[str, Any]:
+    prediction_path = _output_for(base, model_path)
     if not prediction_path.exists():
-        predict(base=base)
+        predict(model_path=model_path, base=base)
 
     with rasterio.open(base / "lulc/lulc_2015_classified.tif") as src:
         source = src.read(1)
@@ -168,22 +246,37 @@ def apply_scenarios(base: Path = DEFAULT_BASE, agriculture_protection: float = 5
         comparison.setdefault(row["land_use"], {})[row["scenario"]] = row["area_km2"]
 
     summary_file = out / "policy_scenario_area_summary.csv"
+    comparison_file = out / "policy_scenario_comparison.csv"
     with summary_file.open("w", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=["scenario", "class", "land_use", "area_km2"])
         writer.writeheader()
         writer.writerows(summary)
+    with comparison_file.open("w", newline="", encoding="utf-8") as f:
+        writer = csv.DictWriter(f, fieldnames=["land_use", *scenarios.keys()])
+        writer.writeheader()
+        for land_use, values in comparison.items():
+            writer.writerow({"land_use": land_use, **values})
+
+    transitions = _transition_summary(source, prediction, pixel_area)
+    visuals = build_visuals(source, prediction, scenarios)
+    policy = {
+        "agriculture_protection": agriculture_protection,
+        "water_protection": water_protection,
+        "forest_protection": forest_protection,
+        "policy_text": policy_text,
+    }
 
     return {
         "scenario_rasters": paths,
         "area_summary": summary,
         "comparison": comparison,
-        "policy": {
-            "agriculture_protection": agriculture_protection,
-            "water_protection": water_protection,
-            "forest_protection": forest_protection,
-            "policy_text": policy_text,
-        },
-        "files": {"area_summary_csv": str(summary_file)},
+        "policy": policy,
+        "model": str(model_path),
+        "model_mode": "full" if model_path.name == FULL_MODEL.name else "optimized",
+        "transition_summary": transitions,
+        "visuals": visuals,
+        "ai_insights": _ai_insights(summary, policy, transitions),
+        "files": {"area_summary_csv": str(summary_file), "comparison_csv": str(comparison_file)},
         "assumptions": {
             "Custom Policy": "Protect the requested percentage of Agriculture, Water/Wetland, and Forest -> Built-up transitions.",
             "Controlled Urban Growth": "Protect 50% of Agriculture -> Built-up transitions.",
