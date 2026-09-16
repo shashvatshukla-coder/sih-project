@@ -8,6 +8,7 @@ import { GeminiService } from '../services/geminiService.ts';
 import { PolicyLabService } from '../services/policyLabService.ts';
 
 const router = express.Router();
+const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
 
 // PolicyLab ML service bridge
 router.get('/policylab/health', async (_req: Request, res: Response) => {
@@ -30,6 +31,149 @@ router.post('/policylab/scenarios', async (req: Request, res: Response) => {
     res.status(502).json({ success: false, error: error instanceof Error ? error.message : String(error) });
   }
 });
+
+function decodeUploadedFile(fileData: unknown, fallbackType: string) {
+  if (typeof fileData !== 'string' || !fileData.trim()) return null;
+
+  const dataUrlMatch = fileData.match(/^data:([^;,]+)?;base64,([A-Za-z0-9+/=\r\n]+)$/);
+  const suppliedMimeType = dataUrlMatch?.[1] || fallbackType || '';
+  const mimeType = /^[a-zA-Z0-9.+-]+\/[a-zA-Z0-9.+-]+$/.test(suppliedMimeType)
+    ? suppliedMimeType
+    : 'application/octet-stream';
+  const dataBase64 = (dataUrlMatch?.[2] || fileData).replace(/\s/g, '');
+
+  if (!/^[A-Za-z0-9+/]*={0,2}$/.test(dataBase64)) {
+    throw new Error('The uploaded file data is not valid Base64 content.');
+  }
+
+  const buffer = Buffer.from(dataBase64, 'base64');
+  if (buffer.length === 0) throw new Error('The uploaded file is empty.');
+  if (buffer.length > MAX_DOCUMENT_BYTES) {
+    throw new Error('The uploaded file exceeds the 25 MB limit.');
+  }
+
+  return { mimeType, dataBase64, size: buffer.length };
+}
+
+function sendAttachment(
+  res: Response,
+  file: { name: string; type: string; size: number; dataBase64: string }
+) {
+  const buffer = Buffer.from(file.dataBase64, 'base64');
+  const originalName = file.name.replace(/[\r\n]/g, '').trim() || 'bhu-drishti-document';
+  const asciiName = originalName.replace(/[^\x20-\x7E]/g, '_').replace(/["\\]/g, '_');
+
+  res.setHeader('Content-Type', file.type || 'application/octet-stream');
+  res.setHeader('Content-Length', buffer.length.toString());
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Cache-Control', 'private, no-store');
+  res.setHeader(
+    'Content-Disposition',
+    `attachment; filename="${asciiName}"; filename*=UTF-8''${encodeURIComponent(originalName)}`
+  );
+  res.send(buffer);
+}
+
+function csvCell(value: unknown): string {
+  if (value === null || value === undefined) return '';
+  const text = typeof value === 'object' ? JSON.stringify(value) : String(value);
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+function safeFileStem(value: unknown, fallback: string): string {
+  const stem = String(value || '')
+    .normalize('NFKD')
+    .replace(/[^a-zA-Z0-9_-]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 80);
+  return stem || fallback;
+}
+
+function numberedLines(values: unknown): string[] {
+  if (!Array.isArray(values) || values.length === 0) return ['Not provided'];
+  return values.map((value, index) => `${index + 1}. ${String(value)}`);
+}
+
+function sendGeneratedTextAttachment(res: Response, name: string, content: string) {
+  const buffer = Buffer.from(content, 'utf8');
+  sendAttachment(res, {
+    name,
+    type: 'text/plain; charset=utf-8',
+    size: buffer.length,
+    dataBase64: buffer.toString('base64')
+  });
+}
+
+function buildPolicyRepositoryExport(policy: any): string {
+  return [
+    'BHU-DRISHTI POLICY REPOSITORY EXPORT',
+    'Export type: Repository metadata summary (the original source file is not stored)',
+    '',
+    `Repository ID: ${policy.id}`,
+    `Policy: ${policy.name}`,
+    `Acronym: ${policy.acronym || 'Not provided'}`,
+    `Ministry / Department: ${policy.ministry || 'Not provided'}`,
+    `Launch year: ${policy.launch_year || 'Not provided'}`,
+    `Status: ${policy.status || 'Not provided'}`,
+    `Target region: ${policy.target_region || 'Not provided'}`,
+    '',
+    'DESCRIPTION',
+    policy.description || 'Not provided',
+    '',
+    'OBJECTIVES',
+    ...numberedLines(policy.objectives),
+    '',
+    'RELATED INDICATORS',
+    ...numberedLines(policy.related_indicators),
+    '',
+    'OBSERVED IMPACT SUMMARY',
+    policy.observed_impact_summary || 'Not provided',
+    '',
+    'METHODOLOGY NOTE',
+    policy.methodology_note || 'Not provided',
+    '',
+    `Official source: ${policy.documents_url || 'Not provided'}`,
+    '',
+    'This file is a BHU-DRISHTI repository export. Check the official source before relying on it as an authoritative policy document.'
+  ].join('\n');
+}
+
+function buildResearchRepositoryExport(paper: any): string {
+  const authoredContent = typeof paper.contentMarkdown === 'string' && paper.contentMarkdown.trim()
+    ? ['','AUTHORED CONTENT', paper.contentMarkdown.trim()]
+    : [];
+
+  return [
+    'BHU-DRISHTI RESEARCH REPOSITORY EXPORT',
+    'Export type: Repository metadata summary (the original source file is not stored)',
+    '',
+    `Repository ID: ${paper.id}`,
+    `Title: ${paper.title}`,
+    `Authors: ${Array.isArray(paper.authors) ? paper.authors.join(', ') : 'Not provided'}`,
+    `Year: ${paper.year || 'Not provided'}`,
+    `Publisher: ${paper.publisher || 'Not provided'}`,
+    `Journal: ${paper.journal || 'Not provided'}`,
+    `Research area: ${paper.research_area || 'Not provided'}`,
+    `Geography: ${paper.geography || 'Not provided'}`,
+    '',
+    'ABSTRACT',
+    paper.abstract || 'Not provided',
+    '',
+    'METHODOLOGY',
+    paper.methodology || 'Not provided',
+    '',
+    'KEY FINDINGS',
+    ...numberedLines(paper.key_findings),
+    '',
+    'CITATION',
+    paper.citation_apa || 'Not provided',
+    '',
+    `Source: ${paper.source_url || 'Not provided'}`,
+    ...authoredContent,
+    '',
+    'This file is a BHU-DRISHTI repository export. Check the cited source before relying on it as an authoritative publication.'
+  ].join('\n');
+}
 
 // System & Database Health
 router.get('/health', (req: Request, res: Response) => {
@@ -133,11 +277,13 @@ router.get('/land-use/trends', (req: Request, res: Response) => {
   const state = db.getStateByCode(stateCode);
   const district = districtCode && districtCode !== 'ALL' ? db.getDistrictByCode(districtCode) : undefined;
 
+  // Compute 2030 and 2035 predictive forecast
   const lastVal = series[series.length - 1]?.value || 66.0;
   const cagrRate = metrics.cagr / 100;
   const forecast2030 = Math.max(0, Math.min(100, Number((lastVal * Math.pow(1 + cagrRate, 5)).toFixed(2))));
   const forecast2035 = Math.max(0, Math.min(100, Number((lastVal * Math.pow(1 + cagrRate, 10)).toFixed(2))));
 
+  // Tehsil breakdown for Amethi
   const tehsilTrends = [
     {
       tehsil: 'Gauriganj (District HQ)',
@@ -227,18 +373,30 @@ router.get('/land-use/compare', (req: Request, res: Response) => {
   const geo1 = (req.query.geo1 as string) || 'IN-UP';
   const geo2 = (req.query.geo2 as string) || 'IN-BR';
   const year = req.query.year ? Number(req.query.year) : 2025;
+
   const recs1 = db.getLandUseRecords({ state_code: geo1, year });
   const recs2 = db.getLandUseRecords({ state_code: geo2, year });
+
   const r1 = recs1[0] || db.getLandUseRecords({ state_code: geo1 })[0];
   const r2 = recs2[0] || db.getLandUseRecords({ state_code: geo2 })[0];
+
   const state1 = db.getStateByCode(geo1);
   const state2 = db.getStateByCode(geo2);
+
   res.json({
     success: true,
     year,
     comparison: {
-      geo1: { code: geo1, name: state1?.state_name || geo1, record: r1 },
-      geo2: { code: geo2, name: state2?.state_name || geo2, record: r2 },
+      geo1: {
+        code: geo1,
+        name: state1?.state_name || geo1,
+        record: r1
+      },
+      geo2: {
+        code: geo2,
+        name: state2?.state_name || geo2,
+        record: r2
+      },
       deltas: r1 && r2 ? {
         agricultural_diff: Number((r1.agricultural_pct - r2.agricultural_pct).toFixed(2)),
         forest_diff: Number((r1.forest_pct - r2.forest_pct).toFixed(2)),
@@ -264,6 +422,32 @@ router.get('/datasets/:id', (req: Request, res: Response) => {
   res.json({ success: true, data: dataset });
 });
 
+router.get('/datasets/:id/download', (req: Request, res: Response) => {
+  const dataset = db.getDatasetById(req.params.id);
+  if (!dataset) return res.status(404).json({ success: false, error: 'Dataset not found' });
+
+  const matchingRecords = db
+    .getLandUseRecords({})
+    .filter(record => record.dataset_name === dataset.title || record.source_id === dataset.id);
+  const rows: any[] = matchingRecords.length > 0 ? matchingRecords : (dataset.sample_rows || []);
+
+  if (rows.length === 0) {
+    return res.status(404).json({ success: false, error: 'This dataset has no downloadable rows.' });
+  }
+
+  const columns = Array.from(new Set(rows.flatMap(row => Object.keys(row))));
+  const csv = [
+    columns.map(csvCell).join(','),
+    ...rows.map(row => columns.map(column => csvCell(row[column])).join(','))
+  ].join('\n');
+  const safeTitle = dataset.title.replace(/[^a-zA-Z0-9-_]+/g, '_').replace(/^_+|_+$/g, '') || dataset.id;
+
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Disposition', `attachment; filename="${safeTitle}.csv"`);
+  res.send(`\uFEFF${csv}`);
+});
+
 // Data Sources
 router.get('/data-sources', (req: Request, res: Response) => {
   res.json({ success: true, data: db.getDataSources() });
@@ -276,19 +460,44 @@ router.post('/data-sources/:id/sync', (req: Request, res: Response) => {
 });
 
 // Policies
-router.get('/policies', (req: Request, res: Response) => {
+router.get('/policies', async (req: Request, res: Response) => {
+  await db.waitUntilReady();
+  await db.refreshPersistentContent();
   const { state, district, includeHidden } = req.query;
+  res.set('Cache-Control', 'no-store');
   res.json({ success: true, data: db.getPolicies(state as string, district as string, includeHidden === 'true') });
 });
 
-router.get('/policies/:id', (req: Request, res: Response) => {
+router.get('/policies/:id', async (req: Request, res: Response) => {
+  await db.waitUntilReady();
+  await db.refreshPersistentContent();
   const policy = db.getPolicyById(req.params.id);
   if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
   res.json({ success: true, data: policy });
 });
 
+router.get('/policies/:id/download', async (req: Request, res: Response) => {
+  try {
+    await db.waitUntilReady();
+    await db.refreshPersistentContent();
+    const policy = db.getPolicyById(req.params.id);
+    if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
+
+    const file = await db.getFileAttachment('policy', policy.id);
+    if (file) {
+      sendAttachment(res, file);
+      return;
+    }
+
+    const fileName = `${safeFileStem(policy.name, policy.id)}-policy.txt`;
+    sendGeneratedTextAttachment(res, fileName, buildPolicyRepositoryExport(policy));
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to download policy document' });
+  }
+});
+
 // Create new Policy (Policy Maker)
-router.post('/policies', (req: Request, res: Response) => {
+router.post('/policies', async (req: Request, res: Response) => {
   try {
     const {
       name,
@@ -302,7 +511,6 @@ router.post('/policies', (req: Request, res: Response) => {
       documents_url,
       allocated_budget_cr,
       area_targets,
-      policyMakerId,
       policyMakerName,
       status
     } = req.body;
@@ -319,101 +527,687 @@ router.post('/policies', (req: Request, res: Response) => {
       ministry: ministry || 'Ministry of Agriculture & Farmers Welfare / DoLR',
       launch_year: Number(launch_year) || new Date().getFullYear(),
       description: description.trim(),
-      target_region: target_region || 'India',
-      objectives: Array.isArray(objectives) ? objectives : [],
-      related_indicators: Array.isArray(related_indicators) ? related_indicators : [],
-      documents_url: documents_url || '',
-      pre_period: '',
-      post_period: '',
-      observed_impact_summary: '',
-      methodology_note: 'User-authored policy record.',
-      linked_dataset_ids: [],
+      target_region: target_region || 'Pan-India',
+      objectives: Array.isArray(objectives) && objectives.length > 0 ? objectives : [
+        'Optimize regional land-use efficiency and cadastral clarity.',
+        'Preserve cultivable agricultural land and rehabilitate sodic/barren soils.'
+      ],
+      related_indicators: Array.isArray(related_indicators) && related_indicators.length > 0 ? related_indicators : [
+        'Agricultural Land %',
+        'Irrigated Area %',
+        'Barren / Wasteland %'
+      ],
+      documents_url: documents_url || `/policies/${id}`,
+      pre_period: `${(Number(launch_year) || 2020) - 5}-${Number(launch_year) || 2020}`,
+      post_period: `${Number(launch_year) || 2020}-2026`,
+      observed_impact_summary: `Policy initiated targeting ${target_region || 'targeted regional land landscapes'} under active monitoring.`,
+      methodology_note: 'Synthesized policy directive and cadastral telemetry tracking baseline.',
+      linked_dataset_ids: ['DS-DES-LUS', 'DS-NRSC-BHUVAN'],
       area_targets: Array.isArray(area_targets) ? area_targets : [],
-      allocated_budget_cr: Number(allocated_budget_cr) || 0,
-      policyMakerId,
-      policyMakerName,
-      status: status || 'Draft Amendment'
+      is_user_modified: true,
+      status: status || 'Active',
+      allocated_budget_cr: allocated_budget_cr === '' || allocated_budget_cr == null
+        ? null
+        : Number(allocated_budget_cr),
+      policyMakerName: policyMakerName || 'Policy Maker'
     };
 
-    const saved = PolicyService.createPolicy(newPolicy as any);
-    res.status(201).json({ success: true, data: saved });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    const saved = await db.addPolicy(newPolicy as any);
+    res.json({ success: true, message: 'Policy registered successfully', data: saved });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Policy impact
+// Update Policy (Policy Maker)
+router.put('/policies/:id', async (req: Request, res: Response) => {
+  try {
+    const updated = await db.updatePolicy(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: 'Policy not found' });
+    res.json({ success: true, message: 'Policy updated successfully', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Update Policy Area Target (Policy Maker updates on the basis of area)
+router.post('/policies/:id/area', async (req: Request, res: Response) => {
+  try {
+    const {
+      state_code,
+      state_name,
+      district_code,
+      district_name,
+      target_year,
+      regional_budget_cr,
+      target_agricultural_pct,
+      target_reclaim_ha,
+      priority_tier,
+      directives,
+      notes,
+      updated_by
+    } = req.body;
+
+    if (!state_code || !state_name) {
+      return res.status(400).json({ success: false, error: 'State code and state name are required for area-based policy updates.' });
+    }
+
+    const parseOptionalNumberOrText = (
+      value: unknown,
+      fieldName: string,
+      allowNull = false
+    ): number | string | null | undefined => {
+      if (value == null) return allowNull ? null : undefined;
+      if (typeof value === 'number') {
+        if (!Number.isFinite(value)) throw new Error(`${fieldName} must be a valid value.`);
+        return value;
+      }
+      if (typeof value !== 'string') throw new Error(`${fieldName} must be text or a number.`);
+
+      const trimmed = value.trim();
+      if (!trimmed) return allowNull ? null : undefined;
+      if (trimmed.length > 120) throw new Error(`${fieldName} must be 120 characters or fewer.`);
+
+      const parsed = Number(trimmed);
+      return Number.isFinite(parsed) ? parsed : trimmed;
+    };
+
+    const areaTarget = {
+      state_code,
+      state_name,
+      district_code: district_code || undefined,
+      district_name: district_name || undefined,
+      target_year: parseOptionalNumberOrText(target_year, 'Target horizon') ?? 2028,
+      regional_budget_cr: parseOptionalNumberOrText(regional_budget_cr, 'Regional budget', true),
+      target_agricultural_pct: parseOptionalNumberOrText(target_agricultural_pct, 'Agricultural preservation'),
+      target_reclaim_ha: parseOptionalNumberOrText(target_reclaim_ha, 'Sodic reclamation'),
+      priority_tier: priority_tier || 'Critical Focus',
+      directives: Array.isArray(directives) && directives.length > 0 ? directives : [
+        `Strict enforcement of cadastral zoning across ${district_name || state_name}.`,
+        `Prioritize micro-irrigation allocation and solar pump subsidies.`,
+        `Prevent non-agricultural diversion of prime double-cropped fertile parcels.`
+      ],
+      notes: notes || `Area target calibrated for ${district_name ? district_name + ', ' : ''}${state_name} by Policy Maker.`,
+      updated_by: updated_by || 'Policy Maker',
+      last_updated: new Date().toISOString()
+    };
+
+    const updated = await db.updatePolicyArea(req.params.id, areaTarget as any);
+    if (!updated) return res.status(404).json({ success: false, error: 'Policy not found' });
+
+    res.json({
+      success: true,
+      message: `Policy successfully configured and updated for ${district_name ? district_name + ', ' : ''}${state_name}`,
+      data: updated
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Drag & Drop Ingestion for Policies / Gazette Notifications
+router.post('/policies/upload', async (req: Request, res: Response) => {
+  try {
+    const {
+      fileName,
+      fileSize,
+      fileType,
+      fileContent,
+      fileData,
+      name,
+      acronym,
+      ministry,
+      target_region,
+      state_code,
+      state_name,
+      district_name,
+      allocated_budget_cr,
+      directives,
+      policyMakerName
+    } = req.body;
+
+    if (!fileName && !name) {
+      return res.status(400).json({ success: false, error: 'File or policy details are required.' });
+    }
+
+    const detectedTitle = name || fileName?.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ') || 'Gazette Land Policy Directive';
+    const cleanAcronym = acronym || detectedTitle.split(' ').map((w: string) => w[0]).join('').substring(0, 6).toUpperCase() || 'GAZ-POL';
+    const policyId = 'POL-' + cleanAcronym + '-' + Date.now().toString(36).toUpperCase().substring(0, 4);
+
+    const detectedDirectives = Array.isArray(directives) && directives.length > 0 ? directives : [
+      'Statutory verification of cadastral parcels against master land-use registers.',
+      'Mandatory GIS geofencing before approval of any non-agricultural land diversion.',
+      'Accelerated sodic soil reclamation with target allocation to regional SHGs and smallholders.'
+    ];
+
+    const initialAreaTarget = state_code && state_name ? {
+      state_code,
+      state_name,
+      district_name: district_name || undefined,
+      target_year: 2028,
+      regional_budget_cr: allocated_budget_cr === '' || allocated_budget_cr == null
+        ? null
+        : Number(allocated_budget_cr),
+      priority_tier: 'Critical Focus' as const,
+      directives: detectedDirectives,
+      last_updated: new Date().toISOString(),
+      updated_by: policyMakerName || 'Policy Maker'
+    } : undefined;
+
+    const decodedFile = fileName ? decodeUploadedFile(fileData, fileType) : null;
+    if (fileName && !decodedFile) {
+      return res.status(400).json({ success: false, error: 'The original policy file content is required.' });
+    }
+
+    const newPolicy = {
+      id: policyId,
+      name: detectedTitle,
+      acronym: cleanAcronym,
+      ministry: ministry || 'Ministry of Agriculture & Farmers Welfare / Revenue Board',
+      launch_year: new Date().getFullYear(),
+      description: `Official gazetted policy notification ingested via Bhu-Drishti policy pipeline from document '${fileName || 'gazette_order.pdf'}'. Mandates enforceable land targets and area compliance.`,
+      target_region: target_region || (state_name ? `${state_name}${district_name ? ' (' + district_name + ')' : ''}` : 'National Priority Corridor'),
+      objectives: detectedDirectives,
+      related_indicators: [
+        'Agricultural Land %',
+        'Cadastral Digitization %',
+        'Irrigated Area %'
+      ],
+      documents_url: `/policies/${policyId}`,
+      pre_period: '2015-2020',
+      post_period: '2021-2026',
+      observed_impact_summary: `Policy active in target area. Baseline monitoring initialized post-gazette upload.`,
+      methodology_note: 'Gazette directive ingested with digital hash verification and spatial jurisdiction binding.',
+      linked_dataset_ids: ['DS-DES-LUS'],
+      area_targets: initialAreaTarget ? [initialAreaTarget] : [],
+      current_area_target: initialAreaTarget,
+      is_user_modified: true,
+      status: 'Gazette Notified' as const,
+      allocated_budget_cr: allocated_budget_cr === '' || allocated_budget_cr == null
+        ? null
+        : Number(allocated_budget_cr),
+      policyMakerName: policyMakerName || 'Policy Maker',
+      documentText: typeof fileContent === 'string' ? fileContent.substring(0, 2000) : '',
+      fileAttachment: fileName ? {
+        name: fileName,
+        size: decodedFile?.size || fileSize || 0,
+        type: decodedFile?.mimeType || fileType || 'application/pdf',
+        url: `/api/policies/${policyId}/download`
+      } : undefined
+    };
+
+    if (decodedFile && fileName) {
+      await db.saveFileAttachment('policy', policyId, {
+        name: fileName,
+        type: decodedFile.mimeType,
+        size: decodedFile.size,
+        dataBase64: decodedFile.dataBase64
+      });
+    }
+
+    let created;
+    try {
+      created = await db.addPolicy(newPolicy as any);
+    } catch (error) {
+      if (decodedFile) await db.deleteFileAttachment('policy', policyId).catch(() => undefined);
+      throw error;
+    }
+    res.json({
+      success: true,
+      message: `Policy '${detectedTitle}' successfully ingested, parsed, and registered in National Repository.`,
+      data: created
+    });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.delete('/policies/:id', async (req: Request, res: Response) => {
+  try {
+    const deleted = await db.deletePolicy(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: 'Policy not found' });
+    res.json({ success: true, message: 'Policy deleted successfully' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 router.get('/policies/:id/impact', (req: Request, res: Response) => {
   try {
-    const policy = db.getPolicyById(req.params.id);
-    if (!policy) return res.status(404).json({ success: false, error: 'Policy not found' });
-    res.json({ success: true, data: PolicyService.analyzeImpact(policy) });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    const stateCode = (req.query.state as string) || 'IN-UP';
+    const impact = PolicyService.analyzePolicyImpact(req.params.id, stateCode);
+    res.json({ success: true, data: impact });
+  } catch (err: any) {
+    res.status(400).json({ success: false, error: err.message });
   }
 });
 
-// Research
-router.get('/research', (req: Request, res: Response) => {
-  const { search, area, geography, year } = req.query;
-  res.json({ success: true, data: db.getResearchPapers(search as string, area as string, geography as string, year ? Number(year) : undefined) });
+// Research Papers
+router.get('/research', async (req: Request, res: Response) => {
+  await db.waitUntilReady();
+  await db.refreshPersistentContent();
+  const { search, tag, includeHidden } = req.query;
+  const papers = db.getResearchPapers(search as string, tag as string, includeHidden === 'true');
+  res.set('Cache-Control', 'no-store');
+  res.json({ success: true, count: papers.length, data: papers });
 });
 
-router.get('/research/:id', (req: Request, res: Response) => {
+router.delete('/research/:id', async (req: Request, res: Response) => {
+  try {
+    const deleted = await db.deleteResearchPaper(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: 'Research paper not found' });
+    res.json({ success: true, message: 'Research paper deleted successfully' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.get('/research/:id', async (req: Request, res: Response) => {
+  await db.waitUntilReady();
+  await db.refreshPersistentContent();
   const paper = db.getResearchPaperById(req.params.id);
   if (!paper) return res.status(404).json({ success: false, error: 'Research paper not found' });
   res.json({ success: true, data: paper });
 });
 
-// Anomalies
-router.get('/anomalies', (req: Request, res: Response) => {
-  const { geographyType, state, district, severity, limit } = req.query;
-  const anomalies = db.getAnomalies({
-    geographyType: geographyType as string,
-    stateCode: state as string,
-    districtCode: district as string,
-    severity: severity as string
-  });
-  res.json({ success: true, count: anomalies.length, data: anomalies.slice(0, limit ? Number(limit) : 100) });
-});
-
-// AI
-router.post('/ai/query', async (req: Request, res: Response) => {
+router.get('/research/:id/download', async (req: Request, res: Response) => {
   try {
-    const { query, context } = req.body || {};
-    if (!query) return res.status(400).json({ success: false, error: 'Query is required.' });
-    const result = await AIService.processQuery(query, context);
-    res.json({ success: true, data: result });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    await db.waitUntilReady();
+    await db.refreshPersistentContent();
+    const paper = db.getResearchPaperById(req.params.id);
+    if (!paper) return res.status(404).json({ success: false, error: 'Research paper not found' });
+
+    const file = await db.getFileAttachment('research', paper.id);
+    if (file) {
+      sendAttachment(res, file);
+      return;
+    }
+
+    const fileName = `${safeFileStem(paper.title, paper.id)}-research.txt`;
+    sendGeneratedTextAttachment(res, fileName, buildResearchRepositoryExport(paper));
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to download research document' });
   }
 });
 
-router.get('/ai/recent-queries', (_req: Request, res: Response) => {
-  res.json({ success: true, data: AIService.getRecentQueries() });
+// Create / Author new Research Paper
+router.post('/research', async (req: Request, res: Response) => {
+  try {
+    const {
+      title,
+      abstract,
+      authors,
+      year,
+      publisher,
+      journal,
+      geography,
+      methodology,
+      key_findings,
+      tags,
+      citation_apa,
+      source_url,
+      authorEmail,
+      contentMarkdown,
+      fileAttachment
+    } = req.body;
+
+    if (!title || !abstract) {
+      return res.status(400).json({ success: false, error: 'Title and abstract are required.' });
+    }
+
+    const currentYear = year || new Date().getFullYear();
+    const cleanAuthors = Array.isArray(authors) && authors.length > 0 ? authors : ['Researcher'];
+    const paperId = 'PAP-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 5).toUpperCase();
+
+    const newPaper = {
+      id: paperId,
+      title: title.trim(),
+      authors: cleanAuthors,
+      year: currentYear,
+      publisher: publisher || 'Bhu-Drishti National Land Knowledge Repository',
+      journal: journal || 'Empirical Land Policy & Cadastral Research (MoA&FW)',
+      abstract: abstract.trim(),
+      research_area: geography || 'National / Multi-State',
+      geography: geography || 'India',
+      methodology: methodology || 'Multi-decadal geospatial satellite LULC mapping and econometric trend balance sheets.',
+      key_findings: Array.isArray(key_findings) && key_findings.length > 0 ? key_findings : [
+        'Documented longitudinal spatial shift across study area.',
+        'Validated through Grounded Statistical Engine benchmarks.'
+      ],
+      citation_apa: citation_apa || `${cleanAuthors.join(', ')} (${currentYear}). ${title}. ${journal || 'Bhu-Drishti Land Studies'}.`,
+      source_url: source_url || `/research/${paperId}`,
+      tags: Array.isArray(tags) && tags.length > 0 ? tags : ['Land Use', 'Cadastral Maps', 'Research Paper'],
+      ai_summary: `Author study by ${cleanAuthors.join(', ')} focusing on ${geography || 'land dynamics'}. Explores land shifts, policy correlations, and decadal trends.`,
+      related_dataset_ids: ['DS-DES-LUS', 'DS-BHUVAN-LULC'],
+      related_policy_ids: ['POL-DILRMP-2008', 'POL-PMKSY-2015'],
+      authorEmail: authorEmail || 'researcher@bhu-drishti.gov.in',
+      contentMarkdown: contentMarkdown || '',
+      fileAttachment: fileAttachment || null,
+      isUserAuthored: true,
+      status: 'published' as const
+    };
+
+    const saved = await db.addResearchPaper(newPaper as any);
+    res.status(201).json({ success: true, message: 'Research paper published successfully', data: saved });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to save research paper' });
+  }
+});
+
+// Upload Document Endpoint
+router.post('/research/upload', async (req: Request, res: Response) => {
+  try {
+    const { fileName, fileSize, fileType, fileContent, fileData, title, author, geography, tags } = req.body;
+    if (!fileName) {
+      return res.status(400).json({ success: false, error: 'File name is required.' });
+    }
+
+    const paperId = 'PAP-UPL-' + Date.now().toString(36).toUpperCase();
+    const paperTitle = title || fileName.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+    const decodedFile = decodeUploadedFile(fileData, fileType);
+    if (!decodedFile) {
+      return res.status(400).json({ success: false, error: 'The original research file content is required.' });
+    }
+
+    const newPaper = {
+      id: paperId,
+      title: paperTitle,
+      authors: [author || 'Institutional Researcher'],
+      year: new Date().getFullYear(),
+      publisher: 'Bhu-Drishti Ingested Document Archive',
+      journal: 'Institutional Field Surveys & Land Documents',
+      abstract: `Ingested document: ${fileName} (${(fileSize ? Math.round(fileSize / 1024) : 0)} KB). Contains cadastral and land-use assessment observations uploaded by an authenticated researcher.`,
+      research_area: geography || 'Field Survey & Policy',
+      geography: geography || 'India',
+      methodology: 'Direct researcher document upload and automated cadastral indexing.',
+      key_findings: [
+        `Uploaded document file: ${fileName}`,
+        'Uploaded through an authenticated research submission.'
+      ],
+      citation_apa: `${author || 'Researcher'} (${new Date().getFullYear()}). ${paperTitle}. Bhu-Drishti Land Ingestion Portal. File: ${fileName}.`,
+      source_url: `/research/${paperId}`,
+      tags: Array.isArray(tags) && tags.length > 0 ? tags : ['Uploaded Paper', 'Cadastral Maps', 'Field Survey'],
+      ai_summary: `Document analysis for ${fileName}. Uploaded with verified researcher credentials.`,
+      related_dataset_ids: ['DS-DES-LUS'],
+      related_policy_ids: ['POL-DILRMP-2008'],
+      contentMarkdown: typeof fileContent === 'string' ? fileContent.substring(0, 50000) : '',
+      fileAttachment: {
+        name: fileName,
+        size: decodedFile.size || fileSize || 0,
+        type: decodedFile.mimeType || fileType || 'application/pdf',
+        dataUrl: `/api/research/${paperId}/download`,
+        uploadedAt: new Date().toISOString()
+      },
+      isUserAuthored: true,
+      status: 'published' as const
+    };
+
+    await db.saveFileAttachment('research', paperId, {
+      name: fileName,
+      type: decodedFile.mimeType,
+      size: decodedFile.size,
+      dataBase64: decodedFile.dataBase64
+    });
+
+    let saved;
+    try {
+      saved = await db.addResearchPaper(newPaper as any);
+    } catch (error) {
+      await db.deleteFileAttachment('research', paperId).catch(() => undefined);
+      throw error;
+    }
+    res.status(201).json({ success: true, message: 'Document uploaded and indexed successfully', data: saved });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to upload document' });
+  }
+});
+
+// Anomalies
+router.get('/anomalies', (req: Request, res: Response) => {
+  const stateCode = req.query.state as string;
+  res.json({ success: true, data: db.getAnomalies(stateCode) });
+});
+
+// AI Query Endpoint
+router.post('/ai/query', async (req: Request, res: Response) => {
+  const { query, apiKey } = req.body;
+  if (!query || typeof query !== 'string') {
+    return res.status(400).json({ success: false, error: 'Query string is required' });
+  }
+
+  try {
+    const answer = await AIService.answerQuery(query, apiKey);
+    res.json({ success: true, data: answer });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: 'Failed to process AI query', details: err.message });
+  }
+});
+
+router.get('/ai/recent-queries', (req: Request, res: Response) => {
+  res.json({ success: true, data: db.getRecentAIQueries() });
+});
+
+// Test Gemini API Endpoint
+router.get('/ai/test-gemini', async (req: Request, res: Response) => {
+  const apiKey = req.query.apiKey as string | undefined;
+  const result = await GeminiService.testConnection(apiKey);
+  res.json(result);
 });
 
 router.post('/ai/test-gemini', async (req: Request, res: Response) => {
+  const { apiKey } = req.body;
+  const result = await GeminiService.testConnection(apiKey);
+  res.json(result);
+});
+
+// Admin Ingestion
+router.post('/admin/upload', (req: Request, res: Response) => {
+  const { rawRows, columnMapping, metadata } = req.body;
+  if (!rawRows || !columnMapping || !metadata) {
+    return res.status(400).json({ success: false, error: 'Missing rawRows, columnMapping, or metadata payload' });
+  }
+
+  const result = IngestionService.validateAndTransform(rawRows, columnMapping, metadata);
+  if (!result.validation.isValid) {
+    return res.status(422).json({ success: false, validation: result.validation });
+  }
+
+  if (result.dataset && result.records) {
+    db.addUploadedDataset(result.dataset, result.records);
+  }
+
+  res.json({
+    success: true,
+    message: `Successfully ingested ${result.records?.length} records into dataset "${result.dataset?.title}"`,
+    validation: result.validation,
+    dataset: result.dataset
+  });
+});
+
+router.get('/admin/audit-logs', (req: Request, res: Response) => {
+  res.json({ success: true, data: db.getAuditLogs() });
+});
+
+// ==========================================
+// Inspection Directorate & Ombudsman Routes
+// ==========================================
+
+// 1. Get registry census statistics
+router.get('/inspection/stats', async (req: Request, res: Response) => {
   try {
-    const result = await GeminiService.testConnection(req.body?.apiKey);
-    res.json({ success: true, data: result });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    await db.waitUntilReady();
+    await db.refreshPersistentContent();
+    const stats = db.getInspectionStats();
+    res.json({ success: true, data: stats });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-// Admin upload
-router.post('/admin/upload', async (req: Request, res: Response) => {
+// 2. Get registered users list
+router.get('/inspection/users', async (req: Request, res: Response) => {
   try {
-    const result = await IngestionService.processUpload(req);
-    res.json({ success: true, data: result });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    await db.waitUntilReady();
+    await db.refreshPersistentContent();
+    const users = db.getUsers();
+    res.json({ success: true, count: users.length, data: users });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
   }
 });
 
-router.get('/admin/audit-logs', (_req: Request, res: Response) => {
-  res.json({ success: true, data: IngestionService.getAuditLogs() });
+// 3. Update user role
+router.put('/inspection/users/:id/role', async (req: Request, res: Response) => {
+  try {
+    const { role } = req.body;
+    if (!role) return res.status(400).json({ success: false, error: 'Role is required' });
+    const updated = await db.updateUserRole(req.params.id, role);
+    if (!updated) return res.status(404).json({ success: false, error: 'User not found' });
+    res.json({ success: true, message: `User role updated to ${role}`, data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 4. Update user features / powers
+router.put('/inspection/users/:id/features', async (req: Request, res: Response) => {
+  try {
+    const { features_granted } = req.body;
+    if (!Array.isArray(features_granted)) {
+      return res.status(400).json({ success: false, error: 'features_granted must be an array' });
+    }
+    const updated = await db.updateUserFeatures(req.params.id, features_granted);
+    if (!updated) return res.status(404).json({ success: false, error: 'User not found' });
+    res.json({ success: true, message: 'User granted capabilities updated', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 5. Star / Verify user (e.g. certify researcher)
+router.put('/inspection/users/:id/star', async (req: Request, res: Response) => {
+  try {
+    const { is_starred, is_inspection_verified, inspection_notes } = req.body;
+    const updated = await db.toggleUserStar(req.params.id, is_starred, is_inspection_verified, inspection_notes);
+    if (!updated) return res.status(404).json({ success: false, error: 'User not found' });
+    res.json({ success: true, message: 'User inspection verification status updated', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 6. Delete user
+router.delete('/inspection/users/:id', async (req: Request, res: Response) => {
+  try {
+    const deleted = await db.deleteUser(req.params.id);
+    if (!deleted) return res.status(404).json({ success: false, error: 'User not found' });
+    res.json({ success: true, message: 'User record removed from registry' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 7. Inspect Policy (Star, Verify, Hide/Show, Reorder, Add Notes)
+router.put('/inspection/policies/:id/inspect', async (req: Request, res: Response) => {
+  try {
+    const updated = await db.inspectPolicy(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: 'Policy not found' });
+    res.json({ success: true, message: 'Policy inspection verdict saved', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 8. Reorder Policies
+router.post('/inspection/policies/reorder', async (req: Request, res: Response) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ success: false, error: 'orderedIds must be an array' });
+    }
+    const policies = await db.reorderPolicies(orderedIds);
+    res.json({ success: true, message: 'Policies reordered successfully', data: policies });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 9. Inspect Research Paper (Star, Verify, Hide/Show, Reorder, Add Notes)
+router.put('/inspection/research/:id/inspect', async (req: Request, res: Response) => {
+  try {
+    const updated = await db.inspectResearch(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: 'Research paper not found' });
+    res.json({ success: true, message: 'Research paper inspection status saved', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 10. Reorder Research Papers
+router.post('/inspection/research/reorder', async (req: Request, res: Response) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ success: false, error: 'orderedIds must be an array' });
+    }
+    const papers = await db.reorderResearch(orderedIds);
+    res.json({ success: true, message: 'Research papers reordered successfully', data: papers });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 11. Dashboard Live Control & Overrides (Inspection Directorate)
+router.get('/inspection/dashboard-data', async (req: Request, res: Response) => {
+  try {
+    await db.waitUntilReady();
+    const data = db.getDashboardData();
+    res.json({ success: true, data });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/inspection/dashboard-data', (req: Request, res: Response) => {
+  try {
+    const updated = db.updateDashboardData(req.body);
+    res.json({ success: true, message: 'Dashboard configuration calibrated successfully', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/inspection/reset-dashboard-data', (req: Request, res: Response) => {
+  try {
+    const resetData = db.resetDashboardData();
+    res.json({ success: true, message: 'Dashboard restored to official national baseline', data: resetData });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// 12. Land Use Records Override by Inspection Directorate
+router.put('/land-use/records/:id', (req: Request, res: Response) => {
+  try {
+    const updated = db.updateLandUseRecord(req.params.id, req.body);
+    if (!updated) return res.status(404).json({ success: false, error: 'Land use record not found' });
+    res.json({ success: true, message: 'Cadastral record calibrated successfully', data: updated });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+router.post('/land-use/override', (req: Request, res: Response) => {
+  try {
+    const { state_code, district_code, year, updates } = req.body;
+    if (!state_code || !year || !updates) {
+      return res.status(400).json({ success: false, error: 'state_code, year, and updates are required' });
+    }
+    const record = db.updateLandUseRecordByLocation(state_code, district_code, Number(year), updates);
+    res.json({ success: true, message: 'Land use figures updated across national registry', data: record });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 export default router;

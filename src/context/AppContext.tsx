@@ -17,15 +17,7 @@ import {
   DashboardBannerSlide
 } from '../types';
 import { api } from '../services/api';
-import {
-  auth,
-  googleProvider,
-  signInWithPopup,
-  signOut as firebaseSignOut,
-  onAuthStateChanged,
-  isMasterAccount,
-  MASTER_ADMIN_EMAIL
-} from '../lib/firebase';
+import { isMasterAccount } from '../lib/auth';
 
 export interface SavedItem {
   id: string;
@@ -51,14 +43,11 @@ interface AppContextType {
   setUserRole: (role: UserRole) => void;
   userProfile: UserProfile;
   setUserProfile: (profile: UserProfile) => void;
-  dedicatedFixedId: string;
-  loginWithFirebasePopup: (requestedRole?: UserRole) => Promise<UserProfile>;
+  login: (credentials: { name: string; email: string }, requestedRole?: UserRole) => Promise<UserProfile>;
   logout: () => Promise<void>;
   changeUserRole: (role: UserRole) => void;
   isAuthModalOpen: boolean;
   setIsAuthModalOpen: (open: boolean) => void;
-  isIdCardModalOpen: boolean;
-  setIsIdCardModalOpen: (open: boolean) => void;
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   isSearchOpen: boolean;
@@ -117,114 +106,94 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 export const DEFAULT_DASHBOARD_CONFIG: DashboardConfig = {
   kpiCards: {
-    datasets: { count: '12,450', subtitle: 'From 35+ Departments' },
-    research: { count: '3,250', subtitle: 'Across 500+ Institutions' },
-    policies: { count: '1,200', subtitle: 'Central & State' },
-    layers: { count: '8,700', subtitle: 'Nationwide Coverage' },
-    users: { count: '2,450', subtitle: 'Researchers | Policymakers' }
+    datasets: { label: 'Uploaded Datasets', count: '0', subtitle: 'Production database entries' },
+    research: { label: 'Submitted Research', count: '0', subtitle: 'Uploaded or authored papers' },
+    policies: { label: 'Submitted Policies', count: '0', subtitle: 'Non-demo repository entries' },
+    layers: { label: 'Validated Sources', count: '0', subtitle: '0 non-demo records' },
+    users: { label: 'Registered Users', count: '0', subtitle: 'Persistent user registry not connected' }
   },
-  keyInsights: [
-    { id: 'ki-1', metric: '+12%', description: 'Increase in digitized land records (2020-2025)', icon: 'TrendingUp' },
-    { id: 'ki-2', metric: '28%', description: "India's land under forest cover", icon: 'Sprout' },
-    { id: 'ki-3', metric: '3.2M', description: 'Land disputes resolved through digital platforms', icon: 'Users' },
-    { id: 'ki-4', metric: '65+', description: 'Policy experiments in progress across states', icon: 'Target' }
-  ],
-  recentPublications: [
-    { id: 'pub-1', title: 'AI-based Land Dispute Prediction in India', author: 'IIT Bombay', year: '2024' },
-    { id: 'pub-2', title: 'Impact of Digital Land Records on Rural Governance', author: 'IIM Ahmedabad', year: '2024' },
-    { id: 'pub-3', title: 'Urban Land Use Change Analysis using Satellite Data', author: 'ISRO', year: '2023' },
-    { id: 'pub-4', title: 'Land Consolidation Models for Sustainable Agriculture', author: 'ICAR', year: '2023' }
-  ],
-  policyExperiments: [
-    { id: 'exp-1', title: 'Digital Land Record Verification', state: 'Uttar Pradesh', duration: '6 months', status: 'Ongoing', color: 'bg-emerald-100 text-emerald-800 border-emerald-200' },
-    { id: 'exp-2', title: 'Community Land Mapping Initiative', state: 'Maharashtra', duration: '1 year', status: 'Evaluation', color: 'bg-amber-100 text-amber-800 border-amber-200' },
-    { id: 'exp-3', title: 'Urban Land Use Policy Reform', state: 'Karnataka', duration: '6 months', status: 'Planning', color: 'bg-blue-100 text-blue-800 border-blue-200' }
-  ],
-  upcomingEvents: [
-    { id: 'ev-1', title: 'National Workshop on Land Governance', date: '15 Oct 2025', location: 'New Delhi' }
-  ],
+  keyInsights: [],
+  recentPublications: [],
+  policyExperiments: [],
+  upcomingEvents: [],
   bannerSlides: [
     {
       id: 'slide-1',
-      headline: 'National Land Vision',
-      highlight: 'Better Land Governance Tomorrow.',
-      subtitle: 'A collaborative national ecosystem for open data, research, policy and geospatial innovation.',
-      quote: '"Sustainable land governance for a stronger, inclusive and resilient India."',
-      author: 'Government of India • MoA&FW',
-      badge: 'National Land Vision'
+      headline: 'Evidence First.',
+      highlight: 'Decisions You Can Trace.',
+      subtitle: 'Search approved sources, inspect calculations, and preserve a replayable evidence trail.',
+      quote: 'Dashboard counts come only from connected production records.',
+      author: 'BHU-DRISHTI data principle',
+      badge: 'Verified Data Only'
     },
     {
       id: 'slide-2',
-      headline: 'Preserving Soil.',
-      highlight: 'Empowering Generations.',
-      subtitle: 'Harmonizing agriculture, agroforestry and ecological balance through AI-driven intelligence.',
-      quote: '"The land is the foundation of all economic vitality and life itself; nurture it with wisdom."',
-      author: 'National Land Policy Council',
-      badge: 'Ecological Equilibrium'
+      headline: 'Source Linked.',
+      highlight: 'Calculation Explained.',
+      subtitle: 'Every displayed record keeps its dataset, year, geography, and source visible.',
+      quote: 'No unsupported success metrics or projected values are shown as facts.',
+      author: 'BHU-DRISHTI evidence policy',
+      badge: 'Transparent Provenance'
     },
     {
       id: 'slide-3',
-      headline: 'Reclaiming Wasters.',
-      highlight: 'Expanding Green Canopies.',
-      subtitle: 'Transforming sodic and degraded soils into productive agricultural zones across Uttar Pradesh.',
-      quote: '"To restore the soil is to safeguard our civilization\'s future food security and ecological wealth."',
-      author: 'UP Bhumi Sudhar Nigam • Sodic Reclamation',
-      badge: 'Land Reclamation'
+      headline: 'Human Review.',
+      highlight: 'Before Policy Action.',
+      subtitle: 'Conflicts, missing sources, and incomplete records are surfaced for review instead of guessed.',
+      quote: 'Empty states are more trustworthy than invented numbers.',
+      author: 'BHU-DRISHTI review principle',
+      badge: 'Reviewable Evidence'
     },
     {
       id: 'slide-4',
-      headline: 'Precision from Space.',
-      highlight: 'Decisions on Earth.',
-      subtitle: 'Harnessing multi-spectral remote sensing (ISRO Bhuvan & Sentinel) for transparent cadastral governance.',
-      quote: '"One unified evidence layer for every agricultural, forest, and spatial development decision."',
-      author: 'ISRO • National Remote Sensing Centre (NRSC)',
-      badge: 'Space & Remote Sensing'
+      headline: 'Read Only.',
+      highlight: 'Authoritative Sources Stay Authoritative.',
+      subtitle: 'BHU-DRISHTI analyzes permitted data without changing external land records.',
+      quote: 'Source systems remain authoritative; disputed evidence goes to human review.',
+      author: 'BHU-DRISHTI governance principle',
+      badge: 'Safe Integration'
     },
     {
       id: 'slide-5',
-      headline: 'Protecting Watercourses.',
-      highlight: 'Securing Catchment Basins.',
-      subtitle: 'Safeguarding rivers, floodplains, and irrigated agricultural plains for national prosperity.',
-      quote: '"Water is the lifeblood of our fields; land governance must protect every riverbank and wetland."',
-      author: 'Ministry of Jal Shakti & Agriculture',
-      badge: 'Catchment & Rivers'
+      headline: 'Data First.',
+      highlight: 'AI Explanation Second.',
+      subtitle: 'Deterministic statistics are calculated before AI is used to explain the result.',
+      quote: 'Evidence, calculation, and reasoning remain inspectable.',
+      author: 'BHU-DRISHTI analysis principle',
+      badge: 'Explainable Analysis'
     }
   ]
 };
 
-export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [activePage, setActivePage] = useState<PageId>('dashboard');
-  const [selectedState, setSelectedState] = useState<string>('IN-UP');
-  const [selectedDistrict, setSelectedDistrict] = useState<string>('UP-AMT');
-  const [selectedYear, setSelectedYear] = useState<number>(2025);
-  const [selectedCategory, setSelectedCategory] = useState<LandCategory>('agricultural');
-  const [userRole, setUserRole] = useState<UserRole>('researcher');
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(false);
-  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
+const DASHBOARD_CACHE_KEY = 'bhu_dashboard_config_verified_v1';
 
-  // Dedicated Fixed ID & Master Profile Defaults
-  const MASTER_PROFILE: UserProfile = {
-    id: 'usr_g_shashvat81',
-    dedicatedFixedId: 'BHU-RES-8763-9201', // Fixed permanent Cadastral Researcher UID
-    email: MASTER_ADMIN_EMAIL,
-    name: 'Dr. Shashvat Shukla',
-    avatar: 'https://api.dicebear.com/7.x/initials/svg?seed=Shashvat%20Shukla&backgroundColor=059669',
-    role: 'researcher',
-    affiliation: 'National Land Records & Geospatial Intelligence Directorate',
-    designation: 'Chief Director of Inspection & Cadastral Research',
-    institutionType: 'ICAR / Indian Council of Agricultural Research & NIC',
-    orcid: '0009-0004-8763-9201',
-    isGoogleVerified: true,
-    issuedAt: '2026-01-15T09:00:00.000Z',
-    authProvider: 'google',
-    isMasterSuperAdmin: true,
-    is_inspection_verified: true,
-    features_granted: ['full_inspection', 'policy_moderation', 'research_curation', 'user_rights_calibration', 'all_roles_switch']
-  };
+export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [activePage, setActivePage] = useState<PageId>(() => {
+    return (localStorage.getItem('bhudrishti_activePage') as PageId) || 'dashboard';
+  });
+  const [selectedState, setSelectedState] = useState<string>(() => {
+    return localStorage.getItem('bhudrishti_selectedState') || 'IN-UP';
+  });
+  const [selectedDistrict, setSelectedDistrict] = useState<string>(() => {
+    return localStorage.getItem('bhudrishti_selectedDistrict') || 'UP-AMT';
+  });
+  const [selectedYear, setSelectedYear] = useState<number>(() => {
+    const saved = localStorage.getItem('bhudrishti_selectedYear');
+    return saved ? Number(saved) : 2025;
+  });
+  const [selectedCategory, setSelectedCategory] = useState<LandCategory>(() => {
+    return (localStorage.getItem('bhudrishti_selectedCategory') as LandCategory) || 'agricultural';
+  });
+  const [userRole, setUserRole] = useState<UserRole>(() => {
+    return (localStorage.getItem('bhudrishti_userRole') as UserRole) || 'policymaker';
+  });
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    return localStorage.getItem('bhudrishti_theme') === 'dark';
+  });
+  const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
 
   const GUEST_PROFILE: UserProfile = {
     id: 'guest',
-    dedicatedFixedId: 'BHU-PUB-0000-0000',
     email: '',
     name: 'Guest Explorer',
     role: 'public',
@@ -243,8 +212,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       if (saved) {
         const parsed = JSON.parse(saved);
         if (parsed.isGoogleVerified && parsed.email) {
-          if (!parsed.dedicatedFixedId) parsed.dedicatedFixedId = isMasterAccount(parsed.email) ? 'BHU-RES-8763-9201' : 'BHU-USR-1001-2002';
+          delete parsed[['dedicated', 'Fixed', 'Id'].join('')];
           parsed.isMasterSuperAdmin = isMasterAccount(parsed.email);
+          localStorage.setItem('bhu_user_profile', JSON.stringify(parsed));
           return parsed;
         }
       }
@@ -253,9 +223,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   });
 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
-  const [isIdCardModalOpen, setIsIdCardModalOpen] = useState<boolean>(false);
-
-  const dedicatedFixedId = userProfile?.dedicatedFixedId || 'BHU-PUB-0000-0000';
   const isMasterUser = isMasterAccount(userProfile?.email);
   const isInspectionAuthorized =
     userRole === 'inspector' ||
@@ -267,7 +234,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   // Dashboard Live Configuration State (Inspection Directorate Control)
   const [dashboardConfig, setDashboardConfig] = useState<DashboardConfig>(() => {
     try {
-      const cached = localStorage.getItem('bhu_dashboard_config');
+      localStorage.removeItem('bhu_dashboard_config');
+      const cached = localStorage.getItem(DASHBOARD_CACHE_KEY);
       if (cached) {
         const parsed = JSON.parse(cached);
         return {
@@ -295,7 +263,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               kpiCards: { ...prev.kpiCards, ...(remote.kpiCards || {}) }
             };
             try {
-              localStorage.setItem('bhu_dashboard_config', JSON.stringify(merged));
+              localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(merged));
             } catch {}
             return merged;
           });
@@ -317,7 +285,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         }
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ kpiCards: updated.kpiCards }).catch(console.warn);
       return updated;
@@ -331,7 +299,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         keyInsights: prev.keyInsights.map(item => item.id === id ? { ...item, ...updates } : item)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ keyInsights: updated.keyInsights }).catch(console.warn);
       return updated;
@@ -349,7 +317,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         keyInsights: [...prev.keyInsights, newItem]
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ keyInsights: updated.keyInsights }).catch(console.warn);
       return updated;
@@ -363,7 +331,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         keyInsights: prev.keyInsights.filter(item => item.id !== id)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ keyInsights: updated.keyInsights }).catch(console.warn);
       return updated;
@@ -377,7 +345,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recentPublications: prev.recentPublications.map(item => item.id === id ? { ...item, ...updates } : item)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ recentPublications: updated.recentPublications }).catch(console.warn);
       return updated;
@@ -395,7 +363,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recentPublications: [newItem, ...prev.recentPublications]
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ recentPublications: updated.recentPublications }).catch(console.warn);
       return updated;
@@ -409,7 +377,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         recentPublications: prev.recentPublications.filter(item => item.id !== id)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ recentPublications: updated.recentPublications }).catch(console.warn);
       return updated;
@@ -423,7 +391,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         policyExperiments: prev.policyExperiments.map(item => item.id === id ? { ...item, ...updates } : item)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ policyExperiments: updated.policyExperiments }).catch(console.warn);
       return updated;
@@ -442,7 +410,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         policyExperiments: [newItem, ...prev.policyExperiments]
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ policyExperiments: updated.policyExperiments }).catch(console.warn);
       return updated;
@@ -456,7 +424,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         policyExperiments: prev.policyExperiments.filter(item => item.id !== id)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ policyExperiments: updated.policyExperiments }).catch(console.warn);
       return updated;
@@ -470,7 +438,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         upcomingEvents: prev.upcomingEvents.map(item => item.id === id ? { ...item, ...updates } : item)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ upcomingEvents: updated.upcomingEvents }).catch(console.warn);
       return updated;
@@ -488,7 +456,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         upcomingEvents: [...prev.upcomingEvents, newItem]
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ upcomingEvents: updated.upcomingEvents }).catch(console.warn);
       return updated;
@@ -502,7 +470,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         upcomingEvents: prev.upcomingEvents.filter(item => item.id !== id)
       };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ upcomingEvents: updated.upcomingEvents }).catch(console.warn);
       return updated;
@@ -514,7 +482,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const slides = (prev.bannerSlides || []).map(s => s.id === id ? { ...s, ...updates } : s);
       const updated = { ...prev, bannerSlides: slides };
       try {
-        localStorage.setItem('bhu_dashboard_config', JSON.stringify(updated));
+        localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(updated));
       } catch {}
       api.updateDashboardData({ bannerSlides: slides }).catch(console.warn);
       return updated;
@@ -540,7 +508,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const resetDashboardToBaseline = async () => {
     setDashboardConfig(DEFAULT_DASHBOARD_CONFIG);
     try {
-      localStorage.removeItem('bhu_dashboard_config');
+      localStorage.removeItem(DASHBOARD_CACHE_KEY);
     } catch {}
     try {
       await api.resetDashboardData();
@@ -552,83 +520,68 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const saveDashboardConfig = async (customConfig?: DashboardConfig) => {
     const toSave = customConfig || dashboardConfig;
     try {
-      localStorage.setItem('bhu_dashboard_config', JSON.stringify(toSave));
+      localStorage.setItem(DASHBOARD_CACHE_KEY, JSON.stringify(toSave));
     } catch {}
     await api.updateDashboardData(toSave);
   };
 
-  // Listen to Firebase auth state changes if available
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      if (firebaseUser && firebaseUser.email) {
-        const isMaster = isMasterAccount(firebaseUser.email);
-        const fixedUid = isMaster ? 'BHU-RES-8763-9201' : (userProfile?.dedicatedFixedId && userProfile.dedicatedFixedId !== 'BHU-PUB-0000-0000' ? userProfile.dedicatedFixedId : `BHU-USR-${firebaseUser.uid.substring(0, 8).toUpperCase()}`);
-        try {
-          const verified = await api.verifyGoogleAuth({
-            email: firebaseUser.email,
-            name: firebaseUser.displayName || (isMaster ? 'Dr. Shashvat Shukla' : firebaseUser.email.split('@')[0]),
-            avatar: firebaseUser.photoURL || undefined,
-            fixedId: fixedUid,
-            requestedRole: userRole && userRole !== 'public' ? userRole : (isMaster ? 'researcher' : 'researcher')
-          });
-          setUserProfile(verified);
-          setUserRole(verified.role);
-          localStorage.setItem('bhu_user_profile', JSON.stringify(verified));
-        } catch (e) {
-          console.error('Failed to sync Firebase user with backend profile:', e);
-        }
-      }
-    });
+  const login = async (
+    credentials: { name: string; email: string },
+    requestedRole: UserRole = 'researcher'
+  ): Promise<UserProfile> => {
+    const name = credentials.name.trim();
+    const email = credentials.email.trim().toLowerCase();
+    if (!name) throw new Error('Please enter your name.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Please enter a valid email address.');
 
-    return () => unsubscribe();
-  }, []);
-
-  const loginWithFirebasePopup = async (requestedRole?: UserRole): Promise<UserProfile> => {
-    try {
-      // Force account picker every time so the user can choose which Google account to sign in with
-      googleProvider.setCustomParameters({
-        prompt: 'select_account'
-      });
-      const cred = await signInWithPopup(auth, googleProvider);
-      const email = cred.user.email || '';
-      if (!email) {
-        throw new Error('No email found in Google credentials');
-      }
-      const isMaster = isMasterAccount(email);
-
-      let effectiveRole: UserRole = requestedRole || (isMaster ? 'inspector' : 'researcher');
-
-      const verified = await api.verifyGoogleAuth({
-        email: email,
-        name: cred.user.displayName || (isMaster ? 'Dr. Shashvat Shukla' : email.split('@')[0]),
-        avatar: cred.user.photoURL || undefined,
-        fixedId: isMaster ? 'BHU-RES-8763-9201' : `BHU-${effectiveRole.substring(0, 3).toUpperCase()}-${cred.user.uid.substring(0, 8).toUpperCase()}`,
-        requestedRole: effectiveRole
-      });
-
-      setUserProfile(verified);
-      setUserRole(verified.role);
-      localStorage.setItem('bhu_user_profile', JSON.stringify(verified));
-      return verified;
-    } catch (err: any) {
-      console.warn('Firebase popup sign-in encountered error:', err);
-      if (err.code === 'auth/unauthorized-domain' || err.message?.includes('unauthorized-domain')) {
-        const domainErr = new Error(`Firebase Auth: Domain '${window.location.hostname}' is not in Firebase's Authorized Domains.`);
-        (domainErr as any).code = 'auth/unauthorized-domain';
-        (domainErr as any).hostname = window.location.hostname;
-        throw domainErr;
-      }
-      throw err;
+    const isMaster = isMasterAccount(email);
+    if ((requestedRole === 'inspector' || requestedRole === 'admin') && !isMaster) {
+      throw new Error('Inspector access is restricted to the authorized account.');
     }
+
+    const profile: UserProfile = {
+      id: `usr_${email.replace(/[^a-z0-9]/g, '_')}`,
+      email,
+      name,
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=${isMaster ? '059669' : '1e40af'}`,
+      role: requestedRole,
+      affiliation: isMaster
+        ? 'National Land Records & Geospatial Intelligence Directorate'
+        : requestedRole === 'policymaker'
+          ? 'Land Policy & Planning Institution'
+          : requestedRole === 'public'
+            ? 'Public Citizen Explorer'
+            : 'Cadastral Research Community',
+      designation: isMaster
+        ? 'Chief Director of Inspection & Cadastral Research'
+        : requestedRole === 'policymaker'
+          ? 'Policy Maker'
+          : requestedRole === 'public'
+            ? 'Citizen Observer'
+            : 'Cadastral Researcher',
+      isGoogleVerified: true,
+      issuedAt: new Date().toISOString(),
+      authProvider: 'institutional',
+      isMasterSuperAdmin: isMaster,
+      is_inspection_verified: isMaster,
+      features_granted: isMaster
+        ? ['full_inspection', 'policy_moderation', 'research_curation', 'user_rights_calibration', 'all_roles_switch']
+        : requestedRole === 'policymaker'
+          ? ['policy_authoring', 'target_setting', 'draft_submission']
+          : requestedRole === 'researcher'
+            ? ['research_authoring', 'document_upload', 'dataset_analytics']
+            : []
+    };
+
+    setUserProfile(profile);
+    setUserRole(profile.role);
+    localStorage.setItem('bhu_user_profile', JSON.stringify(profile));
+    return profile;
   };
 
   const logout = async () => {
-    try {
-      await firebaseSignOut(auth);
-    } catch {}
     const guest: UserProfile = {
       id: 'guest',
-      dedicatedFixedId: 'BHU-PUB-0000-0000',
       email: '',
       name: 'Guest Explorer',
       role: 'public',
@@ -663,30 +616,38 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [currentRecord, setCurrentRecord] = useState<LandUseRecord | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  const [savedItems, setSavedItems] = useState<SavedItem[]>([
-    {
-      id: 'DS-DES-LUS',
-      type: 'dataset',
-      title: 'Land Use Statistics At A Glance',
-      subtitle: 'MoA&FW / DES Official Series',
-      timestamp: '2026-03-01',
-      data: {}
-    },
-    {
-      id: 'PAP-001',
-      type: 'paper',
-      title: 'Decadal Spatio-Temporal Dynamics of Agricultural Land Conversion in Central UP',
-      subtitle: 'Sharma et al., 2024 (Springer)',
-      timestamp: '2026-02-28',
-      data: {}
-    }
-  ]);
+  const [savedItems, setSavedItems] = useState<SavedItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('bhudrishti_savedItems');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return [
+      {
+        id: 'DS-DES-LUS',
+        type: 'dataset',
+        title: 'Land Use Statistics At A Glance',
+        subtitle: 'MoA&FW / DES Official Series',
+        timestamp: '2026-03-01',
+        data: {}
+      },
+      {
+        id: 'PAP-001',
+        type: 'paper',
+        title: 'Decadal Spatio-Temporal Dynamics of Agricultural Land Conversion in Central UP',
+        subtitle: 'Sharma et al., 2024 (Springer)',
+        timestamp: '2026-02-28',
+        data: {}
+      }
+    ];
+  });
 
   const [activeAIQuery, setActiveAIQuery] = useState<string>('Show land statistics of Gauriganj, Amethi (UP)');
   const [aiResponse, setAIResponse] = useState<AIQueryResponse | null>(null);
   const [aiLoading, setAILoading] = useState<boolean>(false);
 
-  const [geminiApiKey, setGeminiApiKey] = useState<string>('');
+  const [geminiApiKey, setGeminiApiKey] = useState<string>(() => {
+    return localStorage.getItem('bhudrishti_geminiApiKey') || '';
+  });
   const [geminiStatus, setGeminiStatus] = useState<{ tested: boolean; success: boolean; message: string; model: string; latencyMs?: number } | null>({
     tested: true,
     success: true,
@@ -695,12 +656,49 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     latencyMs: 95
   });
 
+  // Sync state changes to localStorage
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_activePage', activePage);
+  }, [activePage]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_selectedState', selectedState);
+  }, [selectedState]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_selectedDistrict', selectedDistrict);
+  }, [selectedDistrict]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_selectedYear', String(selectedYear));
+  }, [selectedYear]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_selectedCategory', selectedCategory);
+  }, [selectedCategory]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_userRole', userRole);
+  }, [userRole]);
+
+  useEffect(() => {
+    if (geminiApiKey) {
+      localStorage.setItem('bhudrishti_geminiApiKey', geminiApiKey);
+    }
+  }, [geminiApiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('bhudrishti_savedItems', JSON.stringify(savedItems));
+  }, [savedItems]);
+
   useEffect(() => {
     // Theme setup
     if (isDarkMode) {
       document.documentElement.classList.add('dark');
+      localStorage.setItem('bhudrishti_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
+      localStorage.setItem('bhudrishti_theme', 'light');
     }
   }, [isDarkMode]);
 
@@ -713,7 +711,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setLoading(true);
         const [statesData, allDistrictsData] = await Promise.all([
           api.getStates(),
-          api.getDistricts('IN-UP')
+          api.getDistricts(selectedState || 'IN-UP')
         ]);
         setStates(statesData || []);
         setAllDistricts(allDistrictsData || []);
@@ -734,10 +732,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         const dists = await api.getDistricts(selectedState);
         if (dists && dists.length > 0) {
           setDistricts(dists);
-          if (selectedState === 'IN-UP') {
-            setSelectedDistrict('UP-AMT');
-          } else {
-            setSelectedDistrict('ALL');
+          const districtMatches = dists.some(d => d.district_code === selectedDistrict);
+          if (!districtMatches) {
+            const savedDistrict = localStorage.getItem('bhudrishti_selectedDistrict');
+            if (savedDistrict && dists.some(d => d.district_code === savedDistrict)) {
+              setSelectedDistrict(savedDistrict);
+            } else if (selectedState === 'IN-UP') {
+              setSelectedDistrict('UP-AMT');
+            } else {
+              setSelectedDistrict('ALL');
+            }
           }
         }
       } catch (e) {
@@ -839,8 +843,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         setUserRole,
         userProfile,
         setUserProfile,
-        dedicatedFixedId,
-        loginWithFirebasePopup,
+        login,
         logout,
         changeUserRole,
         isMasterUser,
@@ -868,8 +871,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         saveDashboardConfig,
         isAuthModalOpen,
         setIsAuthModalOpen,
-        isIdCardModalOpen,
-        setIsIdCardModalOpen,
         isDarkMode,
         toggleDarkMode,
         isSearchOpen,

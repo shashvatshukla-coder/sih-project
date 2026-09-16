@@ -88,10 +88,10 @@ export interface AreaTarget {
   state_name: string;
   district_code?: string;
   district_name?: string;
-  target_year?: number;
-  regional_budget_cr?: number;
-  target_agricultural_pct?: number;
-  target_reclaim_ha?: number;
+  target_year?: number | string;
+  regional_budget_cr?: number | string | null;
+  target_agricultural_pct?: number | string;
+  target_reclaim_ha?: number | string;
   priority_tier: 'Critical Focus' | 'Active Monitoring' | 'Routine Sustenance';
   directives: string[];
   last_updated?: string;
@@ -120,9 +120,8 @@ export interface Policy {
   current_area_target?: AreaTarget;
   is_user_modified?: boolean;
   status?: 'Active' | 'Gazette Notified' | 'Under Revision' | 'Draft Amendment';
-  policyMakerId?: string;
   policyMakerName?: string;
-  allocated_budget_cr?: number;
+  allocated_budget_cr?: number | string | null;
   documentText?: string;
   fileAttachment?: {
     name: string;
@@ -142,7 +141,6 @@ export interface Policy {
 
 export interface UserRegistryRecord {
   id: string;
-  dedicatedFixedId: string;
   email: string;
   name: string;
   avatar?: string;
@@ -195,7 +193,6 @@ export interface ResearchPaper {
   ai_summary: string;
   related_dataset_ids: string[];
   related_policy_ids: string[];
-  dedicatedResearcherId?: string;
   authorEmail?: string;
   fileAttachment?: {
     name: string;

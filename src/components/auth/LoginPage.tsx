@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { AlertCircle, ArrowRight, Building2, LogOut, Search, ShieldCheck, Users } from 'lucide-react';
+import { AlertCircle, ArrowRight, Building2, LogOut, Mail, Search, ShieldCheck, UserRound, Users } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { PageId, UserRole } from '../../types';
 
@@ -23,46 +23,26 @@ const dashboardForRole = (role: UserRole): PageId => {
   return 'dashboard';
 };
 
-const getAuthError = (error: any): string => {
-  const code = error?.code || '';
-  const message = error?.message || '';
-
-  if (code === 'auth/popup-closed-by-user') return 'Sign-in was cancelled. Please try again.';
-  if (code === 'auth/popup-blocked') return 'Your browser blocked the Google sign-in window. Allow popups and try again.';
-  if (code === 'auth/network-request-failed') return 'Network error. Check your connection and try again.';
-  if (code === 'auth/unauthorized-domain' || message.includes('unauthorized-domain')) {
-    return `Google sign-in is not enabled for ${window.location.hostname}. Add this host to Firebase Authentication > Settings > Authorized domains.`;
-  }
-
-  return message || 'Google sign-in failed. Please try again.';
-};
-
-const GoogleIcon = () => (
-  <svg className="h-5 w-5" viewBox="0 0 24 24" aria-hidden="true">
-    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z" />
-    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.36 7.31 24 12 24z" />
-    <path fill="#FBBC05" d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.97 0 12s.46 3.84 1.26 5.42l4.02-3.15z" />
-    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z" />
-  </svg>
-);
-
 export const LoginPage: React.FC = () => {
-  const { loginWithFirebasePopup, logout, userProfile, userRole, setActivePage } = useApp();
+  const { login, logout, userProfile, userRole, setActivePage } = useApp();
   const initialRole = userRole === 'admin' ? 'inspector' : userRole;
   const [selectedRole, setSelectedRole] = useState<UserRole>(initialRole);
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const continueToDashboard = (role: UserRole) => setActivePage(dashboardForRole(role));
 
-  const handleGoogleSignIn = async () => {
+  const handleLogin = async (event: React.FormEvent) => {
+    event.preventDefault();
     try {
       setLoading(true);
       setErrorMessage(null);
-      const profile = await loginWithFirebasePopup(selectedRole);
+      const profile = await login({ name, email }, selectedRole);
       continueToDashboard(profile.role);
-    } catch (error) {
-      setErrorMessage(getAuthError(error));
+    } catch (error: any) {
+      setErrorMessage(error?.message || 'Sign-in failed. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -73,6 +53,8 @@ export const LoginPage: React.FC = () => {
     setErrorMessage(null);
     await logout();
     setSelectedRole('public');
+    setName('');
+    setEmail('');
     setLoading(false);
   };
 
@@ -84,7 +66,7 @@ export const LoginPage: React.FC = () => {
             <ShieldCheck className="h-6 w-6" />
           </div>
           <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Sign in to Bharat LandNet</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Choose a role, then continue with Google.</p>
+          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Enter your details and choose your role.</p>
         </div>
 
         {errorMessage && (
@@ -111,26 +93,17 @@ export const LoginPage: React.FC = () => {
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => continueToDashboard(userProfile.role)}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white transition-colors hover:bg-emerald-700"
-            >
+            <button type="button" onClick={() => continueToDashboard(userProfile.role)} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700">
               Continue to dashboard
               <ArrowRight className="h-4 w-4" />
             </button>
-            <button
-              type="button"
-              onClick={handleSignOut}
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"
-            >
+            <button type="button" onClick={handleSignOut} disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-600 hover:bg-slate-50 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">
               <LogOut className="h-4 w-4" />
               Sign out
             </button>
           </div>
         ) : (
-          <div className="space-y-5">
+          <form onSubmit={handleLogin} className="space-y-5">
             <fieldset>
               <legend className="mb-2 text-sm font-semibold text-slate-700 dark:text-slate-300">Select your role</legend>
               <div className="grid grid-cols-2 gap-2">
@@ -143,11 +116,7 @@ export const LoginPage: React.FC = () => {
                       type="button"
                       aria-pressed={selected}
                       onClick={() => setSelectedRole(role.id)}
-                      className={`rounded-xl border p-3 text-left transition-colors ${
-                        selected
-                          ? 'border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600 dark:bg-emerald-950/30'
-                          : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800'
-                      }`}
+                      className={`rounded-xl border p-3 text-left transition-colors ${selected ? 'border-emerald-600 bg-emerald-50 ring-1 ring-emerald-600 dark:bg-emerald-950/30' : 'border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800'}`}
                     >
                       <Icon className={`mb-2 h-4 w-4 ${selected ? 'text-emerald-600' : 'text-slate-400'}`} />
                       <span className="block text-sm font-semibold text-slate-900 dark:text-white">{role.title}</span>
@@ -158,28 +127,44 @@ export const LoginPage: React.FC = () => {
               </div>
             </fieldset>
 
-            <button
-              type="button"
-              onClick={handleGoogleSignIn}
-              disabled={loading}
-              className="flex w-full items-center justify-center gap-3 rounded-xl border border-slate-300 bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-700 dark:bg-slate-800 dark:text-white dark:hover:bg-slate-700"
-            >
-              <GoogleIcon />
-              {loading ? 'Signing in...' : 'Continue with Google'}
+            <div className="space-y-3">
+              <label className="relative block">
+                <UserRound className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(event) => setName(event.target.value)}
+                  placeholder="Full name"
+                  autoComplete="name"
+                  required
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </label>
+              <label className="relative block">
+                <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(event) => setEmail(event.target.value)}
+                  placeholder="Email address"
+                  autoComplete="email"
+                  required
+                  className="w-full rounded-xl border border-slate-300 bg-white py-2.5 pl-10 pr-3 text-sm text-slate-900 outline-none focus:border-emerald-600 focus:ring-2 focus:ring-emerald-600/20 dark:border-slate-700 dark:bg-slate-800 dark:text-white"
+                />
+              </label>
+            </div>
+
+            <button type="submit" disabled={loading} className="flex w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 px-4 py-3 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:opacity-60">
+              {loading ? 'Signing in...' : 'Continue'}
+              {!loading && <ArrowRight className="h-4 w-4" />}
             </button>
 
-            <button
-              type="button"
-              onClick={() => setActivePage('dashboard')}
-              className="w-full text-center text-sm font-medium text-slate-500 hover:text-emerald-600 dark:text-slate-400"
-            >
+            <button type="button" onClick={() => setActivePage('dashboard')} className="w-full text-center text-sm font-medium text-slate-500 hover:text-emerald-600 dark:text-slate-400">
               Continue as guest
             </button>
 
-            <p className="text-center text-xs text-slate-400">
-              Inspector access is granted only to the authorized Google account.
-            </p>
-          </div>
+            <p className="text-center text-xs text-slate-400">Inspector access is granted only to the authorized email.</p>
+          </form>
         )}
       </section>
     </div>

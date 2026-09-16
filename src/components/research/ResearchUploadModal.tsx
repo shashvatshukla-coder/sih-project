@@ -2,6 +2,7 @@ import React, { useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { ResearchPaper } from '../../types';
+import { readFileAsDataUrl, validateUploadFile } from '../../lib/files';
 import {
   UploadCloud,
   FileText,
@@ -14,7 +15,6 @@ import {
   MapPin,
   Tag,
   BookOpen,
-  Fingerprint,
   ArrowRight
 } from 'lucide-react';
 
@@ -22,14 +22,16 @@ interface ResearchUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPaperCreated?: (paper: ResearchPaper) => void;
+  requiredTag?: string;
 }
 
 export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   isOpen,
   onClose,
-  onPaperCreated
+  onPaperCreated,
+  requiredTag
 }) => {
-  const { userProfile, dedicatedFixedId, states, selectedState } = useApp();
+  const { userProfile, states, selectedState } = useApp();
 
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -37,12 +39,18 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   const [title, setTitle] = useState('');
   const [abstract, setAbstract] = useState('');
   const [geography, setGeography] = useState('Uttar Pradesh (Central)');
-  const [tags, setTags] = useState<string[]>(['Cadastral Survey', 'Land Use Dynamics', 'Field Telemetry']);
+  const [tags, setTags] = useState<string[]>([
+    'Cadastral Survey',
+    'Land Use Dynamics',
+    'Field Telemetry',
+    ...(requiredTag ? [requiredTag] : [])
+  ]);
   const [tagInput, setTagInput] = useState('');
   const [journal, setJournal] = useState('Bhu-Drishti Ingested Research Archives');
   const [uploading, setUploading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [createdPaper, setCreatedPaper] = useState<ResearchPaper | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -61,7 +69,16 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   };
 
   const processFile = (selectedFile: File) => {
+    const validationError = validateUploadFile(selectedFile);
+    if (validationError) {
+      setFile(null);
+      setFilePreview('');
+      setErrorMessage(validationError);
+      return;
+    }
+
     setFile(selectedFile);
+    setErrorMessage('');
     // Auto-generate title if empty
     const cleanTitle = selectedFile.name
       .replace(/\.[^/.]+$/, '')
@@ -83,7 +100,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
     } else {
       setFilePreview(`Binary document ${selectedFile.name} (${Math.round(selectedFile.size / 1024)} KB). Ready for cadastral indexing and citation archiving.`);
       if (!abstract) {
-        setAbstract(`Empirical land intelligence study and field observations uploaded under Dedicated Researcher UID ${dedicatedFixedId}. Documents spatial patterns and policy correlations.`);
+        setAbstract('Empirical land intelligence study and field observations documenting spatial patterns and policy correlations.');
       }
     }
   };
@@ -111,6 +128,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   };
 
   const handleRemoveTag = (tagToRemove: string) => {
+    if (tagToRemove === requiredTag) return;
     setTags(tags.filter((t) => t !== tagToRemove));
   };
 
@@ -118,24 +136,27 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
     if (!file || !title.trim()) return;
     try {
       setUploading(true);
+      setErrorMessage('');
+      const fileData = await readFileAsDataUrl(file);
       const paper = await api.uploadResearchDocument({
         fileName: file.name,
         fileSize: file.size,
         fileType: file.type,
         fileContent: filePreview,
+        fileData,
         title: title.trim(),
         author: userProfile?.name || 'Dr. Shashvat Shukla',
-        dedicatedResearcherId: dedicatedFixedId,
         geography: geography,
-        tags: tags
+        tags: requiredTag && !tags.includes(requiredTag) ? [...tags, requiredTag] : tags
       });
       setCreatedPaper(paper);
       setSuccess(true);
       if (onPaperCreated) {
         onPaperCreated(paper);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error('Failed to upload research document:', err);
+      setErrorMessage(err.message || 'Failed to upload the research document.');
     } finally {
       setUploading(false);
     }
@@ -157,13 +178,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                 Upload & Ingest Cadastral Research Document
               </h3>
-              <div className="flex items-center gap-1.5 text-[11px] text-slate-500">
-                <span>Researcher ID:</span>
-                <span className="font-mono font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                  <Fingerprint className="w-3 h-3" />
-                  {dedicatedFixedId}
-                </span>
-              </div>
+              <p className="text-[11px] text-slate-500">Authenticated research submission</p>
             </div>
           </div>
           <button
@@ -186,8 +201,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
                   Document Uploaded & Published Successfully!
                 </h4>
                 <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                  Your research paper has been bound to Dedicated Fixed ID{' '}
-                  <strong className="text-emerald-600 dark:text-emerald-400 font-mono">{dedicatedFixedId}</strong> and is now queryable across the platform.
+                  Your research paper is now queryable across the platform.
                 </p>
               </div>
 
@@ -212,6 +226,13 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
             </div>
           ) : (
             <>
+              {errorMessage && (
+                <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{errorMessage}</span>
+                </div>
+              )}
+
               {/* Drag and Drop Zone */}
               <div
                 onDragOver={handleDragOver}
@@ -259,7 +280,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
                         Drag and drop your research paper or cadastral file here
                       </p>
                       <p className="text-[11px] text-slate-500">
-                        Or click to browse from your device
+                        Or click to browse from your device • Maximum 25 MB
                       </p>
                     </div>
                     <div className="flex items-center justify-center gap-2 pt-1">
@@ -302,9 +323,6 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
                     </label>
                     <div className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 text-xs flex items-center justify-between">
                       <span className="font-semibold">{userProfile?.name || 'Dr. Shashvat Shukla'}</span>
-                      <span className="font-mono text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
-                        {dedicatedFixedId}
-                      </span>
                     </div>
                   </div>
 

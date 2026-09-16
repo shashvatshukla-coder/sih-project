@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { UserRole } from '../../types';
 import { api } from '../../services/api';
-import { MASTER_ADMIN_EMAIL } from '../../lib/firebase';
+import { MASTER_ADMIN_EMAIL } from '../../lib/auth';
 import {
   Search,
   Moon,
@@ -16,9 +16,6 @@ import {
   Users,
   Check,
   UserCheck,
-  Database,
-  Fingerprint,
-  Award,
   ShieldCheck,
   LogOut,
   ChevronDown,
@@ -36,9 +33,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
     userRole,
     setUserRole,
     userProfile,
-    dedicatedFixedId,
     setIsAuthModalOpen,
-    setIsIdCardModalOpen,
     logout,
     isDarkMode,
     toggleDarkMode,
@@ -100,35 +95,6 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
 
       {/* Right Controls */}
       <div className="flex items-center gap-2.5 sm:gap-3 ml-4">
-        {/* Dedicated Fixed ID Badge */}
-        <button
-          onClick={() => setIsIdCardModalOpen(true)}
-          className="hidden lg:flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/50 transition-all cursor-pointer shadow-2xs group"
-          title="Click to view Official Cadastral Researcher ID Badge"
-        >
-          <Fingerprint className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-          <div className="text-left leading-none">
-            <span className="block text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              Fixed Researcher ID
-            </span>
-            <span className="font-mono text-xs font-black text-slate-900 dark:text-white">
-              {dedicatedFixedId}
-            </span>
-          </div>
-          <Award className="w-3.5 h-3.5 text-emerald-500 opacity-60 group-hover:opacity-100" />
-        </button>
-
-        {/* Supabase Status Pill */}
-        <button
-          onClick={() => setActivePage('admin')}
-          className="hidden xl:flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700 hover:bg-slate-200 transition-colors cursor-pointer"
-          title="Database status (click to open Admin Storage Console)"
-        >
-          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-          <Database className="w-3 h-3 text-emerald-600" />
-          <span>{dbStatus?.supabase_connected ? 'Supabase Cloud' : (dbStatus?.postgres_connected ? 'PostgreSQL' : 'Hybrid DB')}</span>
-        </button>
-
         {/* Dark Mode Toggle */}
         <button
           onClick={toggleDarkMode}
@@ -160,16 +126,12 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   <p className="font-semibold">Research Feature Active</p>
                   <p className="text-[11px] opacity-80">Authoring studio & drag-and-drop file ingestion enabled.</p>
                 </div>
-                <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                  <p className="font-semibold">Dedicated Researcher UID</p>
-                  <p className="text-[11px] opacity-80">{dedicatedFixedId} bound to Google profile.</p>
-                </div>
               </div>
             </div>
           )}
         </div>
 
-        {/* Google User Profile & Role Switcher */}
+        {/* User Profile & Role Switcher */}
         <div className="relative">
           {userProfile?.isGoogleVerified ? (
             <button
@@ -191,9 +153,6 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   <p className="text-xs font-bold text-slate-900 dark:text-white truncate max-w-[110px]">
                     {userProfile.name}
                   </p>
-                  <span className="text-[9px] font-bold px-1 rounded bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300">
-                    G
-                  </span>
                 </div>
                 <p className="text-[10px] font-medium text-slate-500 dark:text-slate-400 truncate capitalize">
                   {currentRoleObj.title}
@@ -206,24 +165,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
               onClick={() => setActivePage('login')}
               className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-100 text-xs font-semibold shadow-xs transition-all cursor-pointer"
             >
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
-                <path
-                  fill="#4285F4"
-                  d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.66-5.17 3.66-9.17z"
-                />
-                <path
-                  fill="#34A853"
-                  d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.05c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.26v3.15C3.25 21.36 7.31 24 12 24z"
-                />
-                <path
-                  fill="#FBBC05"
-                  d="M5.28 14.27c-.25-.72-.38-1.49-.38-2.27s.13-1.55.38-2.27V6.58H1.26C.46 8.16 0 9.97 0 12s.46 3.84 1.26 5.42l4.02-3.15z"
-                />
-                <path
-                  fill="#EA4335"
-                  d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.31 0 3.25 2.64 1.26 6.58l4.02 3.15c.95-2.83 3.6-4.98 6.72-4.98z"
-                />
-              </svg>
+              <UserCheck className="w-3.5 h-3.5 text-emerald-600" />
               <span>Login Page</span>
             </button>
           )}
@@ -237,44 +179,14 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                     {userProfile?.name}
                   </p>
                   <span className="px-1.5 py-0.2 rounded text-[9px] font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300">
-                    Google
+                    Signed in
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 truncate">{userProfile?.email}</p>
-                <div className="mt-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/80 dark:border-emerald-800/80 flex items-center justify-between">
-                  <div>
-                    <span className="block text-[8px] uppercase tracking-wider font-bold text-emerald-700 dark:text-emerald-300">
-                      Dedicated Fixed ID
-                    </span>
-                    <span className="font-mono text-xs font-extrabold text-slate-900 dark:text-white">
-                      {dedicatedFixedId}
-                    </span>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setRoleMenuOpen(false);
-                      setIsIdCardModalOpen(true);
-                    }}
-                    className="p-1 rounded bg-white dark:bg-slate-800 text-emerald-600 hover:bg-emerald-50"
-                    title="View ID Badge"
-                  >
-                    <Award className="w-3.5 h-3.5" />
-                  </button>
-                </div>
               </div>
 
               {/* Quick Profile Actions */}
               <div className="space-y-1">
-                <button
-                  onClick={() => {
-                    setRoleMenuOpen(false);
-                    setIsIdCardModalOpen(true);
-                  }}
-                  className="w-full flex items-center gap-2 p-2 rounded-xl text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium"
-                >
-                  <Award className="w-3.5 h-3.5 text-emerald-600" />
-                  <span>View Official Researcher ID Badge</span>
-                </button>
                 <button
                   onClick={() => {
                     setRoleMenuOpen(false);
@@ -283,7 +195,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   className="w-full flex items-center gap-2 p-2 rounded-xl text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors font-medium"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-blue-600" />
-                  <span>Google Account Credentials</span>
+                  <span>Account details</span>
                 </button>
                 <button
                   onClick={() => {
@@ -360,7 +272,7 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
                   className="w-full flex items-center gap-2 p-2 rounded-xl text-xs text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors font-semibold"
                 >
                   <LogOut className="w-3.5 h-3.5" />
-                  <span>Sign Out of Google</span>
+                  <span>Sign out</span>
                 </button>
               </div>
             </div>
@@ -370,4 +282,3 @@ export const TopHeader: React.FC<HeaderProps> = ({ collapsed, onOpenMobile }) =>
     </header>
   );
 };
-

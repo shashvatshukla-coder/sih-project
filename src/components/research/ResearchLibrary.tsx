@@ -5,7 +5,6 @@ import { useApp } from '../../context/AppContext';
 import {
   BookOpen,
   Search,
-  Sparkles,
   ExternalLink,
   Bookmark,
   Check,
@@ -14,22 +13,29 @@ import {
   UploadCloud,
   FileEdit,
   ShieldCheck,
-  Fingerprint,
   PlusCircle,
-  Award,
   Layers,
-  Star
+  Star,
+  Download,
+  AlertCircle
 } from 'lucide-react';
 import { ResearchUploadModal } from './ResearchUploadModal';
 import { ResearchWriterStudio } from './ResearchWriterStudio';
 
-export const ResearchLibrary: React.FC = () => {
-  const { saveItem, isSaved, runAIQuery, userProfile, dedicatedFixedId, setIsAuthModalOpen, setIsIdCardModalOpen } = useApp();
+interface ResearchLibraryProps {
+  mode?: 'publications' | 'case-studies';
+}
+
+export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'publications' }) => {
+  const { saveItem, isSaved, runAIQuery, userProfile, setIsAuthModalOpen } = useApp();
+  const isCaseStudyPage = mode === 'case-studies';
   const [papers, setPapers] = useState<ResearchPaper[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('All');
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState('');
 
   // Active view: 'catalog' | 'author' | 'upload'
   const [activeTab, setActiveTab] = useState<'catalog' | 'author' | 'upload'>('catalog');
@@ -39,8 +45,15 @@ export const ResearchLibrary: React.FC = () => {
     async function loadPapers() {
       try {
         setLoading(true);
-        const data = await api.getResearchPapers(searchQuery, selectedTag);
-        setPapers(data || []);
+        const data = await api.getResearchPapers(searchQuery, isCaseStudyPage ? undefined : selectedTag);
+        const separatedPapers = (data || []).filter((paper) => {
+          const isCaseStudy =
+            paper.tags?.some(tag => tag.trim().toLowerCase().includes('case study')) ||
+            paper.research_area?.toLowerCase().includes('case study') ||
+            paper.title?.toLowerCase().includes('case study');
+          return isCaseStudyPage ? isCaseStudy : !isCaseStudy;
+        });
+        setPapers(separatedPapers);
       } catch (err) {
         console.error('Failed to load papers:', err);
       } finally {
@@ -48,7 +61,7 @@ export const ResearchLibrary: React.FC = () => {
       }
     }
     loadPapers();
-  }, [searchQuery, selectedTag]);
+  }, [searchQuery, selectedTag, isCaseStudyPage]);
 
   const tags = ['All', 'Indo-Gangetic Plain', 'DILRMP', 'PMKSY', 'Cadastral Maps', 'Urban Sprawl', 'Sodic Reclamation', 'Uploaded Paper'];
 
@@ -73,6 +86,21 @@ export const ResearchLibrary: React.FC = () => {
     setActiveTab('catalog');
   };
 
+  const handleDownload = async (paper: ResearchPaper) => {
+    try {
+      setDownloadingId(paper.id);
+      setDownloadError('');
+      await api.downloadResearchDocument(
+        paper.id,
+        paper.fileAttachment?.name || `${paper.id}-research.txt`
+      );
+    } catch (err: any) {
+      setDownloadError(err.message || 'The research document could not be downloaded.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6 text-left">
       {/* Upload Drag & Drop Modal */}
@@ -80,13 +108,21 @@ export const ResearchLibrary: React.FC = () => {
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onPaperCreated={handlePaperCreated}
+        requiredTag={isCaseStudyPage ? 'Case Study' : undefined}
       />
 
-      {/* Researcher Identity & Action Strip */}
+      {downloadError && (
+        <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{downloadError}</span>
+        </div>
+      )}
+
+      {/* Researcher Profile & Action Strip */}
       <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-sky-500/10 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-sky-950/20 border border-emerald-500/20 dark:border-emerald-800/40 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shadow-xs">
-            <Fingerprint className="w-5 h-5" />
+            <BookOpen className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -95,20 +131,10 @@ export const ResearchLibrary: React.FC = () => {
               </span>
               <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 text-blue-600" />
-                Google Verified
+                Profile Verified
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-slate-500">
-              <span>Dedicated Fixed ID:</span>
-              <button
-                onClick={() => setIsIdCardModalOpen(true)}
-                className="font-mono font-bold text-emerald-700 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                title="View Institutional ID Badge"
-              >
-                <span>{dedicatedFixedId}</span>
-                <Award className="w-3 h-3" />
-              </button>
-              <span>•</span>
               <span className="text-slate-600 dark:text-slate-400">{userProfile?.affiliation}</span>
             </div>
           </div>
@@ -116,24 +142,26 @@ export const ResearchLibrary: React.FC = () => {
 
         {/* Action Buttons */}
         <div className="flex items-center gap-2">
-          <button
-            onClick={() => setActiveTab(activeTab === 'author' ? 'catalog' : 'author')}
-            className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
-              activeTab === 'author'
-                ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
-                : 'bg-emerald-600 hover:bg-emerald-700 text-white'
-            }`}
-          >
-            <FileEdit className="w-3.5 h-3.5" />
-            <span>{activeTab === 'author' ? 'Back to Library' : 'Write Research Paper'}</span>
-          </button>
+          {!isCaseStudyPage && (
+            <button
+              onClick={() => setActiveTab(activeTab === 'author' ? 'catalog' : 'author')}
+              className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer ${
+                activeTab === 'author'
+                  ? 'bg-slate-900 dark:bg-white text-white dark:text-slate-900'
+                  : 'bg-emerald-600 hover:bg-emerald-700 text-white'
+              }`}
+            >
+              <FileEdit className="w-3.5 h-3.5" />
+              <span>{activeTab === 'author' ? 'Back to Library' : 'Write Research Paper'}</span>
+            </button>
+          )}
 
           <button
             onClick={() => setIsUploadModalOpen(true)}
             className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 text-xs font-bold transition-all shadow-xs cursor-pointer"
           >
             <UploadCloud className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-            <span>Drag & Drop Upload</span>
+            <span>{isCaseStudyPage ? 'Upload Case Study' : 'Drag & Drop Upload'}</span>
           </button>
         </div>
       </div>
@@ -165,15 +193,17 @@ export const ResearchLibrary: React.FC = () => {
               <div>
                 <div className="flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-1">
                   <BookOpen className="w-4 h-4" />
-                  <span>Peer-Reviewed Land Studies & Cadastral Repository</span>
+                  <span>{isCaseStudyPage ? 'Applied Land Governance Evidence' : 'Peer-Reviewed Land Studies & Cadastral Repository'}</span>
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                  Research Papers, Ingested Field Surveys & Grounded Evaluations
+                  {isCaseStudyPage
+                    ? 'Case Studies & Field Implementation Records'
+                    : 'Research Papers, Ingested Field Surveys & Grounded Evaluations'}
                 </h2>
               </div>
               <div className="flex items-center gap-2">
                 <span className="text-xs font-mono font-semibold px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
-                  {papers.length} Papers Available
+                  {papers.length} {isCaseStudyPage ? 'Case Studies' : 'Papers'} Available
                 </span>
               </div>
             </div>
@@ -184,14 +214,16 @@ export const ResearchLibrary: React.FC = () => {
                 <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3 pointer-events-none" />
                 <input
                   type="text"
-                  placeholder="Search papers by author, title, journal, keywords, dedicated UID, geography..."
+                  placeholder={isCaseStudyPage
+                    ? 'Search case studies by title, geography, author, or keywords...'
+                    : 'Search papers by author, title, journal, keywords, or geography...'}
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2 text-xs md:text-sm rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
                 />
               </div>
 
-              <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
+              {!isCaseStudyPage && <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
                 {tags.map(t => (
                   <button
                     key={t}
@@ -205,16 +237,28 @@ export const ResearchLibrary: React.FC = () => {
                     {t}
                   </button>
                 ))}
-              </div>
+              </div>}
             </div>
           </div>
 
           {/* Papers Grid */}
           <div className="space-y-4">
+            {!loading && papers.length === 0 && (
+              <div className="p-10 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-center space-y-2">
+                <BookOpen className="w-9 h-9 text-slate-300 mx-auto" />
+                <h3 className="text-sm font-bold text-slate-800 dark:text-slate-200">
+                  {isCaseStudyPage ? 'No case studies uploaded yet' : 'No research publications found'}
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {isCaseStudyPage
+                    ? 'Upload a case study and it will appear only in this section.'
+                    : 'Upload a publication or change the current search filters.'}
+                </p>
+              </div>
+            )}
             {papers.map(paper => {
               const saved = isSaved(paper.id);
               const isCopied = copiedId === paper.id;
-              const hasDedicatedId = paper.dedicatedResearcherId;
 
               return (
                 <div
@@ -231,12 +275,6 @@ export const ResearchLibrary: React.FC = () => {
                         <span className="text-[11px] text-slate-400 font-medium">
                           Published: {paper.year} • {paper.authors.join(', ')}
                         </span>
-                        {hasDedicatedId && (
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800">
-                            <Fingerprint className="w-3 h-3" />
-                            UID: {paper.dedicatedResearcherId}
-                          </span>
-                        )}
                         {paper.isUserAuthored && (
                           <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-teal-100 dark:bg-teal-950 text-teal-800 dark:text-teal-300">
                             Researcher Authored
@@ -288,19 +326,6 @@ export const ResearchLibrary: React.FC = () => {
                     {paper.abstract}
                   </p>
 
-                  {/* AI Summary Callout */}
-                  {paper.ai_summary && (
-                    <div className="p-3.5 rounded-xl bg-purple-50/60 dark:bg-purple-950/30 border border-purple-200 dark:border-purple-800/60 text-purple-950 dark:text-purple-200 space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-[11px] text-purple-700 dark:text-purple-300">
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>AI-Generated Concise Finding Summary</span>
-                      </div>
-                      <p className="text-[11px] leading-relaxed">
-                        {paper.ai_summary.replace('AI Summary: ', '')}
-                      </p>
-                    </div>
-                  )}
-
                   {/* Key Findings */}
                   {paper.key_findings && paper.key_findings.length > 0 && (
                     <div className="space-y-1.5 pt-1">
@@ -329,15 +354,26 @@ export const ResearchLibrary: React.FC = () => {
                       ))}
                     </div>
 
-                    <a
-                      href={paper.source_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
+                    <button
+                      onClick={() => handleDownload(paper)}
+                      disabled={downloadingId === paper.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-60 transition-colors"
+                      title={paper.fileAttachment ? `Download ${paper.fileAttachment.name}` : 'Download research repository record'}
                     >
-                      <span>Repository Reference</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                      <Download className="w-3.5 h-3.5" />
+                      <span>{downloadingId === paper.id ? 'Downloading...' : isCaseStudyPage ? 'Download Case Study' : 'Download Publication'}</span>
+                    </button>
+                    {!paper.fileAttachment && /^https?:\/\//i.test(paper.source_url || '') && (
+                      <a
+                        href={paper.source_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold hover:underline"
+                      >
+                        <span>Source Reference</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
                 </div>
               );
@@ -348,4 +384,3 @@ export const ResearchLibrary: React.FC = () => {
     </div>
   );
 };
-

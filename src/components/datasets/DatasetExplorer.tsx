@@ -25,6 +25,7 @@ export const DatasetExplorer: React.FC = () => {
   const [selectedFormat, setSelectedFormat] = useState('All');
   const [loading, setLoading] = useState(true);
   const [previewDataset, setPreviewDataset] = useState<Dataset | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   useEffect(() => {
     async function loadDatasets() {
@@ -60,6 +61,17 @@ export const DatasetExplorer: React.FC = () => {
       subtitle: dataset.publisher,
       data: dataset
     });
+  };
+
+  const handleDownload = async (dataset: Dataset) => {
+    try {
+      setDownloadingId(dataset.id);
+      await api.downloadDataset(dataset.id, dataset.title);
+    } catch (err: any) {
+      window.alert(err.message || 'The dataset could not be downloaded.');
+    } finally {
+      setDownloadingId(null);
+    }
   };
 
   return (
@@ -162,6 +174,16 @@ export const DatasetExplorer: React.FC = () => {
                   >
                     <Eye className="w-3.5 h-3.5" />
                     <span>Preview Data</span>
+                  </button>
+
+                  <button
+                    onClick={() => handleDownload(dataset)}
+                    disabled={downloadingId === dataset.id}
+                    className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-brand-600 text-white hover:bg-brand-700 disabled:opacity-60 transition-colors"
+                    title={`Download ${dataset.title} as CSV`}
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span>{downloadingId === dataset.id ? 'Downloading...' : 'Download Data'}</span>
                   </button>
 
                   <button

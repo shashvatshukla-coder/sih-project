@@ -48,16 +48,16 @@ export const LandRecordEditorModal: React.FC<LandRecordEditorModalProps> = ({ is
   useEffect(() => {
     if (currentRecord) {
       setFormData({
-        total_area_ha: currentRecord.total_area_ha || 307000,
-        agricultural_pct: currentRecord.agricultural_pct || 68.2,
-        forest_pct: currentRecord.forest_pct || 14.1,
-        builtup_pct: currentRecord.builtup_pct || 8.4,
-        waterbodies_pct: currentRecord.waterbodies_pct || 4.2,
-        barren_pct: currentRecord.barren_pct || 3.1,
-        other_pct: currentRecord.other_pct || 2.0,
-        irrigated_pct: currentRecord.irrigated_pct || 78.5,
-        degraded_pct: currentRecord.degraded_pct || 12.0,
-        notes: currentRecord.notes || 'Inspection Directorate calibrated figures'
+        total_area_ha: currentRecord.total_area_ha ?? 0,
+        agricultural_pct: currentRecord.agricultural_pct ?? 0,
+        forest_pct: currentRecord.forest_pct ?? 0,
+        builtup_pct: currentRecord.builtup_pct ?? 0,
+        waterbodies_pct: currentRecord.waterbodies_pct ?? 0,
+        barren_pct: currentRecord.barren_pct ?? 0,
+        other_pct: currentRecord.other_pct ?? 0,
+        irrigated_pct: currentRecord.irrigated_pct ?? 0,
+        degraded_pct: currentRecord.degraded_pct ?? 0,
+        notes: currentRecord.notes ?? ''
       });
     }
   }, [currentRecord, isOpen]);
@@ -105,8 +105,7 @@ export const LandRecordEditorModal: React.FC<LandRecordEditorModalProps> = ({ is
         other_area_ha: Math.round((othPct / 100) * totalHa),
         irrigated_pct: Number(formData.irrigated_pct),
         degraded_pct: Number(formData.degraded_pct),
-        notes: formData.notes,
-        confidence_score: 99.8
+        notes: formData.notes
       };
 
       await updateCurrentLandUseRecord(updates);
@@ -354,7 +353,7 @@ export const LandRecordEditorModal: React.FC<LandRecordEditorModalProps> = ({ is
               type="text"
               value={formData.notes}
               onChange={e => setFormData({ ...formData, notes: e.target.value })}
-              placeholder="e.g., UP Bhumi Sudhar Sodic Survey ground truth correction (2026)"
+              placeholder="Explain the source and reason for this correction"
               className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-xs"
             />
           </div>

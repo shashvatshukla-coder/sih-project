@@ -117,10 +117,10 @@ export interface AreaTarget {
   state_name: string;
   district_code?: string;
   district_name?: string;
-  target_year?: number;
-  regional_budget_cr?: number;
-  target_agricultural_pct?: number;
-  target_reclaim_ha?: number;
+  target_year?: number | string;
+  regional_budget_cr?: number | string | null;
+  target_agricultural_pct?: number | string;
+  target_reclaim_ha?: number | string;
   priority_tier: 'Critical Focus' | 'Active Monitoring' | 'Routine Sustenance';
   directives: string[];
   last_updated?: string;
@@ -149,9 +149,8 @@ export interface Policy {
   current_area_target?: AreaTarget;
   is_user_modified?: boolean;
   status?: 'Active' | 'Gazette Notified' | 'Under Revision' | 'Draft Amendment';
-  policyMakerId?: string;
   policyMakerName?: string;
-  allocated_budget_cr?: number;
+  allocated_budget_cr?: number | string | null;
   documentText?: string;
   fileAttachment?: {
     name: string;
@@ -171,7 +170,6 @@ export interface Policy {
 
 export interface UserRegistryRecord {
   id: string;
-  dedicatedFixedId: string;
   email: string;
   name: string;
   avatar?: string;
@@ -208,7 +206,6 @@ export interface InspectionStats {
 
 export interface UserProfile {
   id: string;
-  dedicatedFixedId: string; // Permanent Dedicated Researcher ID (e.g. BHU-RES-8763-9201)
   email: string;
   name: string;
   avatar?: string;
@@ -246,7 +243,6 @@ export interface ResearchPaper {
   related_dataset_ids: string[];
   related_policy_ids: string[];
   // Extended researcher authoring & upload fields
-  dedicatedResearcherId?: string;
   authorEmail?: string;
   contentMarkdown?: string;
   fileAttachment?: {
@@ -340,6 +336,7 @@ export interface FilterState {
 }
 
 export interface DashboardKPICard {
+  label: string;
   count: string;
   subtitle: string;
 }
@@ -398,4 +395,3 @@ export interface DashboardConfig {
   upcomingEvents: DashboardUpcomingEvent[];
   bannerSlides?: DashboardBannerSlide[];
 }
-

@@ -25,15 +25,27 @@ import {
   TrendingUp,
   FileText,
   Trash2,
-  Award,
-  Star
+  Star,
+  Download,
+  AlertCircle
 } from 'lucide-react';
 import { PolicyUploadModal } from './PolicyUploadModal';
 import { PolicyAreaUpdateModal } from './PolicyAreaUpdateModal';
 import { ResearchUploadModal } from '../research/ResearchUploadModal';
 
+const formatAreaValue = (
+  value: string | number | null | undefined,
+  numericFormatter?: (numericValue: number) => string
+): string => {
+  if (value == null || String(value).trim() === '') return 'Not specified';
+  const numericValue = Number(value);
+  return Number.isFinite(numericValue) && numericFormatter
+    ? numericFormatter(numericValue)
+    : String(value);
+};
+
 export const PolicyRepository: React.FC = () => {
-  const { states, selectedState, allDistricts, userProfile, dedicatedFixedId, setActivePage } = useApp();
+  const { states, selectedState, allDistricts, userProfile, setActivePage } = useApp();
 
   const [policies, setPolicies] = useState<Policy[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,6 +60,8 @@ export const PolicyRepository: React.FC = () => {
   const [isResearchUploadOpen, setIsResearchUploadOpen] = useState(false);
   const [selectedPolicyForArea, setSelectedPolicyForArea] = useState<Policy | null>(null);
   const [droppedPolicyFile, setDroppedPolicyFile] = useState<File | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [downloadError, setDownloadError] = useState('');
 
   // Drag-over container state
   const [isDraggingOverRepo, setIsDraggingOverRepo] = useState(false);
@@ -120,6 +134,21 @@ export const PolicyRepository: React.FC = () => {
     setIsAreaUpdateOpen(true);
   };
 
+  const handleDownload = async (policy: Policy) => {
+    try {
+      setDownloadingId(policy.id);
+      setDownloadError('');
+      await api.downloadPolicyDocument(
+        policy.id,
+        policy.fileAttachment?.name || `${policy.id}-policy.txt`
+      );
+    } catch (err: any) {
+      setDownloadError(err.message || 'The policy document could not be downloaded.');
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
   // Filter policies in memory
   const filteredPolicies = policies.filter(p => {
     if (statusFilter !== 'ALL' && p.status !== statusFilter) return false;
@@ -171,6 +200,13 @@ export const PolicyRepository: React.FC = () => {
         onPaperCreated={() => setActivePage('research')}
       />
 
+      {downloadError && (
+        <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{downloadError}</span>
+        </div>
+      )}
+
       {/* Drag & Drop Overlay Visual Cue when hovering */}
       {isDraggingOverRepo && (
         <div className="fixed inset-0 z-50 pointer-events-none bg-amber-900/40 backdrop-blur-xs flex items-center justify-center animate-fade-in">
@@ -205,11 +241,6 @@ export const PolicyRepository: React.FC = () => {
               </span>
             </div>
             <div className="flex items-center gap-2 text-[11px] text-slate-500 mt-0.5">
-              <span>Executive ID:</span>
-              <span className="font-mono font-bold text-amber-700 dark:text-amber-400">
-                {dedicatedFixedId || 'BHU-POL-8763-9201'}
-              </span>
-              <span>•</span>
               <span className="text-slate-600 dark:text-slate-400">
                 Central Directorate of Land Records & Cadastral Policy
               </span>
@@ -395,6 +426,9 @@ export const PolicyRepository: React.FC = () => {
           filteredPolicies.map((policy) => {
             // Check if there is an active area target for this policy
             const activeAreaTarget = policy.current_area_target || (policy.area_targets && policy.area_targets.length > 0 ? policy.area_targets[0] : null);
+            const displayBudget = activeAreaTarget
+              ? activeAreaTarget.regional_budget_cr
+              : policy.allocated_budget_cr;
 
             return (
               <div
@@ -497,25 +531,25 @@ export const PolicyRepository: React.FC = () => {
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Target Horizon</span>
                         <span className="text-xs font-black text-slate-900 dark:text-white">
-                          {activeAreaTarget.target_year || 2028}
+                          {formatAreaValue(activeAreaTarget.target_year ?? 2028)}
                         </span>
                       </div>
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Regional Budget</span>
                         <span className="text-xs font-black text-amber-600 dark:text-amber-400">
-                          ₹{activeAreaTarget.regional_budget_cr || policy.allocated_budget_cr || 450} Cr
+                          {formatAreaValue(displayBudget, value => `₹${value} Cr`)}
                         </span>
                       </div>
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Agri Preservation</span>
                         <span className="text-xs font-black text-emerald-600 dark:text-emerald-400">
-                          {activeAreaTarget.target_agricultural_pct || 66.0}%
+                          {formatAreaValue(activeAreaTarget.target_agricultural_pct, value => `${value}%`)}
                         </span>
                       </div>
                       <div className="p-2 rounded-xl bg-white dark:bg-slate-900 border border-amber-200/60 dark:border-slate-800">
                         <span className="block text-[9px] font-bold text-slate-400 uppercase">Sodic Reclamation</span>
                         <span className="text-xs font-black text-blue-600 dark:text-blue-400">
-                          {Number(activeAreaTarget.target_reclaim_ha || 8500).toLocaleString()} ha
+                          {formatAreaValue(activeAreaTarget.target_reclaim_ha, value => `${value.toLocaleString()} ha`)}
                         </span>
                       </div>
                     </div>
@@ -566,15 +600,26 @@ export const PolicyRepository: React.FC = () => {
                   </div>
 
                   <div className="flex items-center gap-3">
-                    <a
-                      href={policy.documents_url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold hover:underline"
+                    <button
+                      onClick={() => handleDownload(policy)}
+                      disabled={downloadingId === policy.id}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-semibold disabled:opacity-60 transition-colors"
+                      title={policy.fileAttachment ? `Download ${policy.fileAttachment.name}` : 'Download policy repository record'}
                     >
-                      <span>Official Guidelines / Gazette</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
+                      <Download className="w-3.5 h-3.5" />
+                      <span>{downloadingId === policy.id ? 'Downloading...' : 'Download Policy'}</span>
+                    </button>
+                    {!policy.fileAttachment && /^https?:\/\//i.test(policy.documents_url || '') && (
+                      <a
+                        href={policy.documents_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="flex items-center gap-1 text-amber-600 dark:text-amber-400 font-semibold hover:underline"
+                      >
+                        <span>Official Source</span>
+                        <ExternalLink className="w-3 h-3" />
+                      </a>
+                    )}
                   </div>
                 </div>
               </div>

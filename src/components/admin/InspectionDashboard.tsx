@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
-import { MASTER_ADMIN_EMAIL } from '../../lib/firebase';
+import { MASTER_ADMIN_EMAIL } from '../../lib/auth';
 import {
   UserRegistryRecord,
   InspectionStats,
@@ -77,7 +77,8 @@ export const InspectionDashboard: React.FC = () => {
     updateUpcomingEvent,
     addUpcomingEvent,
     deleteUpcomingEvent,
-    resetDashboardToBaseline
+    resetDashboardToBaseline,
+    states
   } = useApp();
 
   // State
@@ -109,7 +110,7 @@ export const InspectionDashboard: React.FC = () => {
     launch_year: new Date().getFullYear(),
     description: '',
     target_region: 'Pan-India',
-    allocated_budget_cr: 1200,
+    allocated_budget_cr: '',
     state_code: 'IN-UP',
     state_name: 'Uttar Pradesh',
     district_name: 'Amethi',
@@ -364,18 +365,30 @@ export const InspectionDashboard: React.FC = () => {
   // Direct Creation Handlers
   const handleCreatePolicySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newPolicy.name || !newPolicy.description) {
-      showMessage('Policy name and description are required', 'error');
+    if (!newPolicy.name || !newPolicy.description || !newPolicy.state_name.trim()) {
+      showMessage('Policy name, description, and target state are required', 'error');
       return;
     }
 
     try {
+      const normalizedStateName = newPolicy.state_name.trim();
+      const matchedState = states.find(
+        state => state.state_name.trim().toLowerCase() === normalizedStateName.toLowerCase()
+      );
+      const customStateCode = normalizedStateName
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const resolvedStateCode = matchedState?.state_code || `IN-${customStateCode}`;
+      const allocatedBudget = newPolicy.allocated_budget_cr.trim() === ''
+        ? null
+        : Number(newPolicy.allocated_budget_cr);
       const areaTargets = [{
-        state_code: newPolicy.state_code,
-        state_name: newPolicy.state_name,
+        state_code: resolvedStateCode,
+        state_name: normalizedStateName,
         district_name: newPolicy.district_name,
         target_year: 2028,
-        regional_budget_cr: newPolicy.allocated_budget_cr,
+        regional_budget_cr: allocatedBudget,
         target_agricultural_pct: newPolicy.target_agricultural_pct,
         priority_tier: 'Critical Focus' as const,
         directives: [
@@ -393,7 +406,7 @@ export const InspectionDashboard: React.FC = () => {
         launch_year: Number(newPolicy.launch_year),
         description: newPolicy.description,
         target_region: newPolicy.target_region,
-        allocated_budget_cr: Number(newPolicy.allocated_budget_cr),
+        allocated_budget_cr: allocatedBudget,
         area_targets: areaTargets,
         is_inspection_verified: true,
         is_starred: true,
@@ -427,8 +440,7 @@ export const InspectionDashboard: React.FC = () => {
         year: new Date().getFullYear(),
         is_inspection_verified: true,
         is_starred: true,
-        priority_order: 1,
-        dedicatedResearcherId: 'INSPECT-OMBUDS-01'
+        priority_order: 1
       });
 
       showMessage(`Research "${created.title}" published and certified!`);
@@ -444,8 +456,7 @@ export const InspectionDashboard: React.FC = () => {
   const filteredUsers = users.filter(u => {
     const matchesSearch =
       u.name.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.email.toLowerCase().includes(userSearch.toLowerCase()) ||
-      u.dedicatedFixedId.toLowerCase().includes(userSearch.toLowerCase());
+      u.email.toLowerCase().includes(userSearch.toLowerCase());
     const matchesRole = userRoleFilter === 'all' || u.role === userRoleFilter;
     return matchesSearch && matchesRole;
   });
@@ -887,7 +898,7 @@ export const InspectionDashboard: React.FC = () => {
                 type="text"
                 value={userSearch}
                 onChange={e => setUserSearch(e.target.value)}
-                placeholder="Search registered user by name, email, or Dedicated UID..."
+                placeholder="Search registered user by name or email..."
                 className="w-full pl-9 pr-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none"
               />
             </div>
@@ -945,9 +956,6 @@ export const InspectionDashboard: React.FC = () => {
                         </div>
                         <p className="text-xs text-slate-500 truncate">{user.email}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="font-mono text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded">
-                            UID: {user.dedicatedFixedId}
-                          </span>
                           <span className="text-[10px] text-slate-400">
                             Registered: {new Date(user.registeredAt).toLocaleDateString()}
                           </span>
@@ -1295,11 +1303,6 @@ export const InspectionDashboard: React.FC = () => {
                           </span>
                           <span>Year: {paper.year}</span>
                           <span>Region: {paper.geography}</span>
-                          {paper.dedicatedResearcherId && (
-                            <span className="font-mono text-emerald-600 dark:text-emerald-400">
-                              UID: {paper.dedicatedResearcherId}
-                            </span>
-                          )}
                         </div>
                       </div>
                     </div>
@@ -1475,7 +1478,8 @@ export const InspectionDashboard: React.FC = () => {
                 <input
                   type="number"
                   value={newPolicy.allocated_budget_cr}
-                  onChange={e => setNewPolicy(prev => ({ ...prev, allocated_budget_cr: Number(e.target.value) }))}
+                  onChange={e => setNewPolicy(prev => ({ ...prev, allocated_budget_cr: e.target.value }))}
+                  placeholder="Optional — saves as null"
                   className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none font-bold"
                 />
               </div>
@@ -1491,20 +1495,14 @@ export const InspectionDashboard: React.FC = () => {
                   <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
                     Target State
                   </label>
-                  <select
-                    value={newPolicy.state_code}
-                    onChange={e => {
-                      const code = e.target.value;
-                      const name = code === 'IN-UP' ? 'Uttar Pradesh' : code === 'IN-BR' ? 'Bihar' : code === 'IN-MP' ? 'Madhya Pradesh' : 'Maharashtra';
-                      setNewPolicy(prev => ({ ...prev, state_code: code, state_name: name }));
-                    }}
+                  <input
+                    type="text"
+                    value={newPolicy.state_name}
+                    onChange={e => setNewPolicy(prev => ({ ...prev, state_name: e.target.value }))}
+                    placeholder="e.g. Uttar Pradesh"
+                    required
                     className="w-full px-2.5 py-1.5 text-xs bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg focus:outline-none"
-                  >
-                    <option value="IN-UP">Uttar Pradesh (IN-UP)</option>
-                    <option value="IN-BR">Bihar (IN-BR)</option>
-                    <option value="IN-MP">Madhya Pradesh (IN-MP)</option>
-                    <option value="IN-MH">Maharashtra (IN-MH)</option>
-                  </select>
+                  />
                 </div>
 
                 <div>
@@ -1855,8 +1853,8 @@ export const InspectionDashboard: React.FC = () => {
                   onClick={() => {
                     const title = prompt('Enter Paper Title:');
                     const author = prompt('Enter Author / Institution:');
-                    if (title) {
-                      addDashboardPublication({ title, author: author || 'National Cadastral Directorate', year: '2025' });
+                    if (title && author) {
+                      addDashboardPublication({ title, author, year: new Date().getFullYear().toString() });
                       showMessage('Added research publication!');
                     }
                   }}

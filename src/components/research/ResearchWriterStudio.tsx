@@ -23,7 +23,6 @@ import {
   CheckCircle2,
   AlertCircle,
   ShieldCheck,
-  Fingerprint,
   RefreshCw,
   FileCheck2,
   Share2
@@ -38,7 +37,7 @@ export const ResearchWriterStudio: React.FC<ResearchWriterStudioProps> = ({
   onPaperPublished,
   onClose
 }) => {
-  const { userProfile, dedicatedFixedId, states, districts, selectedState } = useApp();
+  const { userProfile, states, districts, selectedState } = useApp();
 
   // Document Metadata
   const [title, setTitle] = useState(
@@ -62,7 +61,6 @@ export const ResearchWriterStudio: React.FC<ResearchWriterStudioProps> = ({
   const INITIAL_CONTENT = `# Decadal Spatio-Temporal Analysis of Sodic Land Reclamation & Irrigated Cropping Dynamics in Amethi (2005–2025)
 
 **Author:** ${userProfile?.name || 'Dr. Shashvat Shukla'}  
-**Institutional Researcher UID:** \`${dedicatedFixedId}\`  
 **Affiliation:** ${userProfile?.affiliation || 'National Land Records & Geospatial Intelligence Directorate'}  
 **Affiliated Body:** ICAR / Indian Council of Agricultural Research & MoA&FW  
 
@@ -160,7 +158,7 @@ Quantitative ground-truth audits across Gauriganj show significant shifts in the
 | **Waterbodies & Wetlands** | ${curRec?.waterbodies_area_ha?.toLocaleString() || '9,782'} ha | ${curRec?.waterbodies_pct || 4.2}% |
 | **Reserved & Social Forest Cover** | ${curRec?.forest_area_ha?.toLocaleString() || '9,316'} ha | ${curRec?.forest_pct || 4.0}% |
 
-*Data verified by Researcher UID: \`${dedicatedFixedId}\` on ${new Date().toLocaleDateString('en-IN')}.*
+*Data verified on ${new Date().toLocaleDateString('en-IN')}.*
 `;
 
       setContent((prev) => prev + tableMd);
@@ -181,7 +179,7 @@ Quantitative ground-truth audits across Gauriganj show significant shifts in the
       setAiWorking(true);
       setAiMessage('Synthesizing peer-reviewed abstract using Grounded AI Engine...');
       const res = await api.queryAI(
-        `Generate a rigorous academic abstract for a land-use study titled "${title}" focusing on ${geography} with researcher ID ${dedicatedFixedId}. Highlight 2005-2025 net sown area shifts, sodic land reclamation, and built-up sprawl.`
+        `Generate a rigorous academic abstract for a land-use study titled "${title}" focusing on ${geography}. Highlight 2005-2025 net sown area shifts, sodic land reclamation, and built-up sprawl.`
       );
 
       if (res?.summary) {
@@ -223,7 +221,6 @@ Quantitative ground-truth audits across Gauriganj show significant shifts in the
           'Irrigation intensity reached 90.2% under Sharda Canal expansion.'
         ],
         tags: tags,
-        dedicatedResearcherId: dedicatedFixedId,
         authorEmail: userProfile?.email || 'shashvatshukla81@gmail.com',
         contentMarkdown: content
       });
@@ -263,19 +260,18 @@ Quantitative ground-truth audits across Gauriganj show significant shifts in the
       doc.setFontSize(10);
       let y = 38 + splitTitle.length * 6;
       doc.text(`Lead Author: ${userProfile?.name || 'Dr. Shashvat Shukla'}`, 20, y);
-      doc.text(`Dedicated Researcher UID: ${dedicatedFixedId}`, 20, y + 5);
       doc.setFont('helvetica', 'normal');
-      doc.text(`Target Journal: ${journal}`, 20, y + 10);
-      doc.text(`Geography: ${geography} | Date: ${new Date().toLocaleDateString('en-IN')}`, 20, y + 15);
+      doc.text(`Target Journal: ${journal}`, 20, y + 5);
+      doc.text(`Geography: ${geography} | Date: ${new Date().toLocaleDateString('en-IN')}`, 20, y + 10);
 
-      doc.line(20, y + 18, 190, y + 18);
+      doc.line(20, y + 13, 190, y + 13);
 
       // Body text snippet
       doc.setFont('times', 'normal');
       doc.setFontSize(10);
       const cleanBody = content.replace(/#+/g, '').replace(/\|.*?\|/g, '').replace(/---/g, '');
       const splitBody = doc.splitTextToSize(cleanBody, 170);
-      doc.text(splitBody.slice(0, 70), 20, y + 25);
+      doc.text(splitBody.slice(0, 70), 20, y + 20);
 
       doc.save(`${title.substring(0, 30).replace(/[^a-zA-Z0-9]/g, '_')}_Research.pdf`);
     } catch (e) {
@@ -310,13 +306,11 @@ Quantitative ground-truth audits across Gauriganj show significant shifts in the
               </h2>
               <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
                 <ShieldCheck className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />
-                <span>Google Verified Scholar</span>
+                <span>Verified Scholar</span>
               </span>
             </div>
             <p className="text-[11px] text-slate-500 flex items-center gap-1.5">
               <span>Author: <strong className="text-slate-700 dark:text-slate-300">{userProfile?.name}</strong></span>
-              <span>•</span>
-              <span>Dedicated UID: <strong className="font-mono text-emerald-600 dark:text-emerald-400">{dedicatedFixedId}</strong></span>
             </p>
           </div>
         </div>
@@ -518,13 +512,10 @@ Quantitative ground-truth audits across Gauriganj show significant shifts in the
               viewMode === 'split' ? 'w-1/2' : 'w-full'
             }`}
           >
-            <div className="px-6 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center justify-between sticky top-0 z-10">
+            <div className="px-6 py-2 bg-slate-100 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-500 uppercase tracking-wider flex items-center sticky top-0 z-10">
               <span className="flex items-center gap-1.5">
                 <BookOpen className="w-3.5 h-3.5 text-emerald-600" />
                 Peer-Reviewed Article Layout Preview
-              </span>
-              <span className="font-mono text-emerald-600 dark:text-emerald-400">
-                UID: {dedicatedFixedId}
               </span>
             </div>
 
@@ -540,10 +531,6 @@ Quantitative ground-truth audits across Gauriganj show significant shifts in the
                 </h1>
                 <div className="pt-2 flex items-center justify-center gap-2 text-xs text-slate-600 dark:text-slate-400">
                   <span className="font-bold text-slate-900 dark:text-white">{userProfile?.name}</span>
-                  <span>•</span>
-                  <span className="font-mono text-emerald-600 dark:text-emerald-400 font-semibold">
-                    ID: {dedicatedFixedId}
-                  </span>
                   <span>•</span>
                   <span>{userProfile?.affiliation}</span>
                 </div>

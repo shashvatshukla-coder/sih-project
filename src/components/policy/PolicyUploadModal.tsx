@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { Policy } from '../../types';
+import { readFileAsDataUrl, validateUploadFile } from '../../lib/files';
 import {
   UploadCloud,
   FileText,
@@ -40,9 +41,9 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
   const [policyName, setPolicyName] = useState('');
   const [acronym, setAcronym] = useState('');
   const [ministry, setMinistry] = useState('Ministry of Agriculture & Farmers Welfare / Board of Revenue');
-  const [targetStateCode, setTargetStateCode] = useState(selectedState || 'IN-UP');
+  const [targetStateName, setTargetStateName] = useState('Uttar Pradesh');
   const [districtName, setDistrictName] = useState('Amethi (Gauriganj HQ)');
-  const [allocatedBudgetCr, setAllocatedBudgetCr] = useState('420');
+  const [allocatedBudgetCr, setAllocatedBudgetCr] = useState('');
   const [directives, setDirectives] = useState<string[]>([
     'Mandatory GIS cadastral geofencing before sanctioning any land classification change.',
     'Fast-track sodic soil reclamation with prioritized solar pump subsidies for smallholders.',
@@ -55,8 +56,6 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const currentStateObj = states.find(s => s.state_code === targetStateCode) || states[0];
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -71,6 +70,14 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
   };
 
   const processFile = (selectedFile: File) => {
+    const validationError = validateUploadFile(selectedFile);
+    if (validationError) {
+      setFile(null);
+      setFilePreview('');
+      setErrorMessage(validationError);
+      return;
+    }
+
     setFile(selectedFile);
     setErrorMessage('');
 
@@ -114,6 +121,12 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
     }
   }, [isOpen, initialFile]);
 
+  useEffect(() => {
+    if (!isOpen) return;
+    const selectedStateName = states.find(s => s.state_code === selectedState)?.state_name;
+    if (selectedStateName) setTargetStateName(selectedStateName);
+  }, [isOpen, selectedState, states]);
+
   if (!isOpen) return null;
 
   const handleDrop = (e: React.DragEvent) => {
@@ -145,28 +158,39 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!policyName.trim()) {
-      setErrorMessage('Please provide a policy title or upload a document.');
+    if (!policyName.trim() || !targetStateName.trim()) {
+      setErrorMessage('Please provide a policy title and target state.');
       return;
     }
 
     try {
       setUploading(true);
       setErrorMessage('');
+      const fileData = file ? await readFileAsDataUrl(file) : undefined;
+      const normalizedStateName = targetStateName.trim();
+      const matchedState = states.find(
+        state => state.state_name.trim().toLowerCase() === normalizedStateName.toLowerCase()
+      );
+      const customStateCode = normalizedStateName
+        .toUpperCase()
+        .replace(/[^A-Z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '');
+      const resolvedStateCode = matchedState?.state_code || `IN-${customStateCode}`;
 
       const payload = {
-        fileName: file?.name || 'Gazette_Notification_Directive.pdf',
-        fileSize: file?.size || 142000,
-        fileType: file?.type || 'application/pdf',
+        fileName: file?.name,
+        fileSize: file?.size,
+        fileType: file?.type,
         fileContent: filePreview,
+        fileData,
         name: policyName.trim(),
         acronym: acronym.trim() || policyName.substring(0, 6).toUpperCase(),
         ministry,
-        target_region: `${currentStateObj?.state_name || 'Uttar Pradesh'} (${districtName || 'All Districts'})`,
-        state_code: targetStateCode,
-        state_name: currentStateObj?.state_name || 'Uttar Pradesh',
+        target_region: `${normalizedStateName} (${districtName || 'All Districts'})`,
+        state_code: resolvedStateCode,
+        state_name: normalizedStateName,
         district_name: districtName,
-        allocated_budget_cr: Number(allocatedBudgetCr) || 450,
+        allocated_budget_cr: allocatedBudgetCr.trim() === '' ? null : Number(allocatedBudgetCr),
         directives,
         policyMakerName: userProfile?.name || 'Policy Maker'
       };
@@ -259,7 +283,7 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
                 </h4>
                 <div className="text-[11px] text-slate-500 flex flex-wrap gap-4 pt-1 border-t border-slate-200 dark:border-slate-700">
                   <span>Jurisdiction: <strong>{createdPolicy.target_region}</strong></span>
-                  {createdPolicy.allocated_budget_cr && (
+                  {createdPolicy.allocated_budget_cr != null && (
                     <span>Budget: <strong>₹{createdPolicy.allocated_budget_cr} Cr</strong></span>
                   )}
                   <span>Launch: <strong>{createdPolicy.launch_year}</strong></span>
@@ -408,17 +432,14 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
                       <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 mb-1 uppercase">
                         Target State
                       </label>
-                      <select
-                        value={targetStateCode}
-                        onChange={(e) => setTargetStateCode(e.target.value)}
+                      <input
+                        type="text"
+                        value={targetStateName}
+                        onChange={(e) => setTargetStateName(e.target.value)}
+                        placeholder="e.g. Uttar Pradesh"
+                        required
                         className="w-full px-3 py-1.5 text-xs rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
-                      >
-                        {states.map(s => (
-                          <option key={s.state_code} value={s.state_code}>
-                            {s.state_name}
-                          </option>
-                        ))}
-                      </select>
+                      />
                     </div>
 
                     <div>
@@ -442,7 +463,7 @@ export const PolicyUploadModal: React.FC<PolicyUploadModalProps> = ({
                         type="number"
                         value={allocatedBudgetCr}
                         onChange={(e) => setAllocatedBudgetCr(e.target.value)}
-                        placeholder="420"
+                        placeholder="Optional — saves as null"
                         className="w-full px-3 py-1.5 text-xs font-semibold rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white"
                       />
                     </div>
