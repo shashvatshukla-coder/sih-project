@@ -81,6 +81,7 @@ class Database {
   private seedPolicyIds = new Set<string>();
   private seedResearchIds = new Set<string>();
   private dashboardBannerSlides: any[] | undefined;
+  private dashboardKeyInsights: any[] | undefined;
   private lastSyncTime: string | null = null;
   private ready: Promise<void>;
 
@@ -618,7 +619,7 @@ class Database {
     await queryable.query(`
       ALTER TABLE bhu_content_store
       ADD CONSTRAINT bhu_content_store_content_type_check
-      CHECK (content_type IN ('policy', 'research', 'user', 'source'))
+      CHECK (content_type IN ('policy', 'research', 'user', 'source', 'dashboard'))
     `);
     this.contentStoreReady = true;
   }
@@ -659,8 +660,34 @@ class Database {
         row.content_type !== 'policy' &&
         row.content_type !== 'research' &&
         row.content_type !== 'user' &&
-        row.content_type !== 'source'
+        row.content_type !== 'source' &&
+        row.content_type !== 'dashboard'
       ) continue;
+
+      let payload = row.payload;
+      if (typeof payload === 'string') {
+        try {
+          payload = JSON.parse(payload);
+        } catch {
+          continue;
+        }
+      }
+      if (!payload || typeof payload !== 'object') continue;
+
+      if (row.content_type === 'dashboard') {
+        if (row.deleted) {
+          this.dashboardKeyInsights = undefined;
+          this.dashboardBannerSlides = undefined;
+        } else {
+          this.dashboardKeyInsights = Array.isArray(payload.keyInsights)
+            ? payload.keyInsights
+            : undefined;
+          this.dashboardBannerSlides = Array.isArray(payload.bannerSlides)
+            ? payload.bannerSlides
+            : undefined;
+        }
+        continue;
+      }
 
       const collection: any[] = row.content_type === 'policy'
         ? this.policies
@@ -675,16 +702,6 @@ class Database {
         if (index >= 0) collection.splice(index, 1);
         continue;
       }
-
-      let payload = row.payload;
-      if (typeof payload === 'string') {
-        try {
-          payload = JSON.parse(payload);
-        } catch {
-          continue;
-        }
-      }
-      if (!payload || typeof payload !== 'object') continue;
 
       const persistedItem = stripObsoleteIdentityFields({ ...payload, id: payload.id || row.content_id });
       if (index >= 0) {
@@ -728,9 +745,9 @@ class Database {
   }
 
   private async persistContent(
-    contentType: 'policy' | 'research' | 'user' | 'source',
+    contentType: 'policy' | 'research' | 'user' | 'source' | 'dashboard',
     contentId: string,
-    payload: Policy | ResearchPaper | UserRegistryRecord | DataSource,
+    payload: Policy | ResearchPaper | UserRegistryRecord | DataSource | Record<string, any>,
     deleted: boolean = false
   ): Promise<void> {
     await this.ready;
@@ -1745,22 +1762,22 @@ class Database {
     ).size;
     const latestYear = records.length > 0 ? Math.max(...records.map(record => record.year)) : null;
 
-    const keyInsights: any[] = [];
+    const generatedKeyInsights: any[] = [];
     if (records.length > 0) {
-      keyInsights.push({
+      generatedKeyInsights.push({
         id: 'live-records',
         metric: records.length.toLocaleString('en-IN'),
         description: 'Validated non-demo land-use records available for analysis',
         icon: 'Database'
       });
-      keyInsights.push({
+      generatedKeyInsights.push({
         id: 'live-coverage',
         metric: geographyCount.toLocaleString('en-IN'),
         description: 'Geographies represented by validated uploaded records',
         icon: 'MapPin'
       });
       if (latestYear !== null) {
-        keyInsights.push({
+        generatedKeyInsights.push({
           id: 'live-year',
           metric: String(latestYear),
           description: 'Latest reporting year in the validated record store',
@@ -1797,7 +1814,7 @@ class Database {
           subtitle: 'Persistent user registry not connected'
         }
       },
-      keyInsights,
+      keyInsights: this.dashboardKeyInsights ?? generatedKeyInsights,
       recentPublications: research
         .slice()
         .sort((a, b) => b.year - a.year)
@@ -1820,17 +1837,48 @@ class Database {
     };
   }
 
-  public updateDashboardData(updates: any): any {
-    if (Array.isArray(updates?.bannerSlides)) {
-      this.dashboardBannerSlides = updates.bannerSlides;
+  public async updateDashboardData(updates: any): Promise<any> {
+    const hasKeyInsights = Array.isArray(updates?.keyInsights);
+    const hasBannerSlides = Array.isArray(updates?.bannerSlides);
+
+    if (hasKeyInsights || hasBannerSlides) {
+      const nextKeyInsights = hasKeyInsights
+        ? updates.keyInsights.map((insight: any, index: number) => ({
+            id: typeof insight?.id === 'string' && insight.id.trim()
+              ? insight.id.trim().slice(0, 120)
+              : `ki-${Date.now()}-${index}`,
+            metric: String(insight?.metric ?? '').trim().slice(0, 120),
+            description: String(insight?.description ?? '').trim().slice(0, 1000),
+            icon: typeof insight?.icon === 'string' && insight.icon.trim()
+              ? insight.icon.trim().slice(0, 80)
+              : 'TrendingUp'
+          }))
+        : this.dashboardKeyInsights;
+      const nextBannerSlides = hasBannerSlides ? updates.bannerSlides : this.dashboardBannerSlides;
+
+      await this.persistContent('dashboard', 'dashboard-config', {
+        id: 'dashboard-config',
+        keyInsights: nextKeyInsights,
+        bannerSlides: nextBannerSlides
+      });
+
+      this.dashboardKeyInsights = nextKeyInsights;
+      this.dashboardBannerSlides = nextBannerSlides;
       this.logAudit('UPDATE_DASHBOARD_PRESENTATION', 'Inspection Directorate', {
-        bannerSlides: updates.bannerSlides.length
+        keyInsights: nextKeyInsights?.length ?? 0,
+        bannerSlides: nextBannerSlides?.length ?? 0
       });
     }
     return this.getDashboardData();
   }
 
-  public resetDashboardData(): any {
+  public async resetDashboardData(): Promise<any> {
+    await this.persistContent('dashboard', 'dashboard-config', {
+      id: 'dashboard-config',
+      keyInsights: this.dashboardKeyInsights,
+      bannerSlides: this.dashboardBannerSlides
+    }, true);
+    this.dashboardKeyInsights = undefined;
     this.dashboardBannerSlides = undefined;
     this.logAudit('RESET_DASHBOARD_DATA', 'Inspection Directorate', {});
     return this.getDashboardData();

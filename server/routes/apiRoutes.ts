@@ -1291,25 +1291,27 @@ router.post('/inspection/research/reorder', async (req: Request, res: Response) 
 router.get('/inspection/dashboard-data', async (req: Request, res: Response) => {
   try {
     await db.waitUntilReady();
+    await db.refreshPersistentContent();
     const data = db.getDashboardData();
+    res.set('Cache-Control', 'no-store');
     res.json({ success: true, data });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-router.post('/inspection/dashboard-data', (req: Request, res: Response) => {
+router.post('/inspection/dashboard-data', async (req: Request, res: Response) => {
   try {
-    const updated = db.updateDashboardData(req.body);
+    const updated = await db.updateDashboardData(req.body);
     res.json({ success: true, message: 'Dashboard configuration calibrated successfully', data: updated });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });
   }
 });
 
-router.post('/inspection/reset-dashboard-data', (req: Request, res: Response) => {
+router.post('/inspection/reset-dashboard-data', async (req: Request, res: Response) => {
   try {
-    const resetData = db.resetDashboardData();
+    const resetData = await db.resetDashboardData();
     res.json({ success: true, message: 'Dashboard restored to official national baseline', data: resetData });
   } catch (err: any) {
     res.status(500).json({ success: false, error: err.message });

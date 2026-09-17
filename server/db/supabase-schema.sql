@@ -170,10 +170,10 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- 10. Durable application content overrides
--- Stores complete policy, research, user registry, and submitted source objects so
+-- Stores complete policy, research, user registry, submitted source, and dashboard objects so
 -- uploads, edits, powers, ordering, inspection state, and deletion tombstones survive restarts.
 CREATE TABLE IF NOT EXISTS bhu_content_store (
-  content_type TEXT NOT NULL CHECK (content_type IN ('policy', 'research', 'user', 'source')),
+  content_type TEXT NOT NULL CHECK (content_type IN ('policy', 'research', 'user', 'source', 'dashboard')),
   content_id TEXT NOT NULL,
   payload JSONB NOT NULL DEFAULT '{}'::jsonb,
   deleted BOOLEAN NOT NULL DEFAULT FALSE,
@@ -185,7 +185,7 @@ ALTER TABLE bhu_content_store
   DROP CONSTRAINT IF EXISTS bhu_content_store_content_type_check;
 ALTER TABLE bhu_content_store
   ADD CONSTRAINT bhu_content_store_content_type_check
-  CHECK (content_type IN ('policy', 'research', 'user', 'source'));
+  CHECK (content_type IN ('policy', 'research', 'user', 'source', 'dashboard'));
 
 CREATE INDEX IF NOT EXISTS idx_bhu_content_store_updated
   ON bhu_content_store(content_type, updated_at DESC);
