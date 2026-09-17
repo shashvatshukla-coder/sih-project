@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useApp } from '../../context/AppContext';
 import { api } from '../../services/api';
 import { ResearchPaper } from '../../types';
@@ -22,16 +22,18 @@ interface ResearchUploadModalProps {
   isOpen: boolean;
   onClose: () => void;
   onPaperCreated?: (paper: ResearchPaper) => void;
-  requiredTag?: string;
+  documentType?: 'research-publication' | 'case-study';
 }
 
 export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   isOpen,
   onClose,
   onPaperCreated,
-  requiredTag
-}) => {
+  documentType = 'research-publication'
+}: ResearchUploadModalProps) => {
   const { userProfile, states, selectedState } = useApp();
+  const isCaseStudy = documentType === 'case-study';
+  const requiredTag = isCaseStudy ? 'Case Study' : undefined;
 
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -53,6 +55,15 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
   const [errorMessage, setErrorMessage] = useState('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    setTags((currentTags) => {
+      const tagsWithoutCaseStudy = currentTags.filter(
+        (tag) => tag.trim().toLowerCase() !== 'case study'
+      );
+      return requiredTag ? [...tagsWithoutCaseStudy, requiredTag] : tagsWithoutCaseStudy;
+    });
+  }, [requiredTag]);
 
   if (!isOpen) return null;
 
@@ -147,7 +158,8 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
         title: title.trim(),
         author: userProfile?.name || 'Dr. Shashvat Shukla',
         geography: geography,
-        tags: requiredTag && !tags.includes(requiredTag) ? [...tags, requiredTag] : tags
+        tags: requiredTag && !tags.includes(requiredTag) ? [...tags, requiredTag] : tags,
+        documentType
       });
       setCreatedPaper(paper);
       setSuccess(true);
@@ -176,9 +188,11 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
             </div>
             <div>
               <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                Upload & Ingest Cadastral Research Document
+                {isCaseStudy ? 'Upload & Ingest Case Study' : 'Upload & Ingest Cadastral Research Document'}
               </h3>
-              <p className="text-[11px] text-slate-500">Authenticated research submission</p>
+              <p className="text-[11px] text-slate-500">
+                {isCaseStudy ? 'Dedicated case study submission' : 'Authenticated research submission'}
+              </p>
             </div>
           </div>
           <button
@@ -198,17 +212,19 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
               </div>
               <div>
                 <h4 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Document Uploaded & Published Successfully!
+                  {isCaseStudy ? 'Case Study Uploaded Successfully!' : 'Document Uploaded & Published Successfully!'}
                 </h4>
                 <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-                  Your research paper is now queryable across the platform.
+                  {isCaseStudy
+                    ? 'Your case study is available only in the Case Studies section.'
+                    : 'Your research paper is now available in Research Publications.'}
                 </p>
               </div>
 
               {createdPaper && (
                 <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-left max-w-md mx-auto space-y-1.5">
                   <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
-                    Published Artifact
+                    {isCaseStudy ? 'Published Case Study' : 'Published Artifact'}
                   </span>
                   <h5 className="font-bold text-slate-900 dark:text-white">{createdPaper.title}</h5>
                   <p className="text-[11px] text-slate-500">{createdPaper.citation_apa}</p>
@@ -277,7 +293,9 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
                     </div>
                     <div>
                       <p className="text-sm font-bold text-slate-900 dark:text-white">
-                        Drag and drop your research paper or cadastral file here
+                        {isCaseStudy
+                          ? 'Drag and drop your case study here'
+                          : 'Drag and drop your research paper or cadastral file here'}
                       </p>
                       <p className="text-[11px] text-slate-500">
                         Or click to browse from your device • Maximum 25 MB

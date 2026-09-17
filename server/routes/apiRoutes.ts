@@ -861,6 +861,7 @@ router.post('/research', async (req: Request, res: Response) => {
 
     const newPaper = {
       id: paperId,
+      document_type: 'research-publication' as const,
       title: title.trim(),
       authors: cleanAuthors,
       year: currentYear,
@@ -897,9 +898,23 @@ router.post('/research', async (req: Request, res: Response) => {
 // Upload Document Endpoint
 router.post('/research/upload', async (req: Request, res: Response) => {
   try {
-    const { fileName, fileSize, fileType, fileContent, fileData, title, author, geography, tags } = req.body;
+    const { fileName, fileSize, fileType, fileContent, fileData, title, author, geography, tags, documentType } = req.body;
     if (!fileName) {
       return res.status(400).json({ success: false, error: 'File name is required.' });
+    }
+
+    const isCaseStudy = documentType === 'case-study';
+    const submittedTags = Array.isArray(tags)
+      ? tags.filter((tag): tag is string => typeof tag === 'string' && tag.trim().length > 0)
+      : [];
+    const normalizedTags = submittedTags.filter(
+      (tag) => tag.trim().toLowerCase() !== 'case study'
+    );
+    if (isCaseStudy) normalizedTags.unshift('Case Study');
+    if (normalizedTags.length === 0) {
+      normalizedTags.push(...(isCaseStudy
+        ? ['Case Study', 'Field Implementation']
+        : ['Uploaded Paper', 'Cadastral Maps', 'Field Survey']));
     }
 
     const paperId = 'PAP-UPL-' + Date.now().toString(36).toUpperCase();
@@ -911,13 +926,14 @@ router.post('/research/upload', async (req: Request, res: Response) => {
 
     const newPaper = {
       id: paperId,
+      document_type: isCaseStudy ? 'case-study' as const : 'research-publication' as const,
       title: paperTitle,
       authors: [author || 'Institutional Researcher'],
       year: new Date().getFullYear(),
-      publisher: 'Bhu-Drishti Ingested Document Archive',
-      journal: 'Institutional Field Surveys & Land Documents',
+      publisher: isCaseStudy ? 'Bhu-Drishti Case Study Repository' : 'Bhu-Drishti Ingested Document Archive',
+      journal: isCaseStudy ? 'Applied Land Governance Case Studies' : 'Institutional Field Surveys & Land Documents',
       abstract: `Ingested document: ${fileName} (${(fileSize ? Math.round(fileSize / 1024) : 0)} KB). Contains cadastral and land-use assessment observations uploaded by an authenticated researcher.`,
-      research_area: geography || 'Field Survey & Policy',
+      research_area: isCaseStudy ? `Case Study - ${geography || 'Field Implementation'}` : geography || 'Field Survey & Policy',
       geography: geography || 'India',
       methodology: 'Direct researcher document upload and automated cadastral indexing.',
       key_findings: [
@@ -926,7 +942,7 @@ router.post('/research/upload', async (req: Request, res: Response) => {
       ],
       citation_apa: `${author || 'Researcher'} (${new Date().getFullYear()}). ${paperTitle}. Bhu-Drishti Land Ingestion Portal. File: ${fileName}.`,
       source_url: `/research/${paperId}`,
-      tags: Array.isArray(tags) && tags.length > 0 ? tags : ['Uploaded Paper', 'Cadastral Maps', 'Field Survey'],
+      tags: normalizedTags,
       ai_summary: `Document analysis for ${fileName}. Uploaded with verified researcher credentials.`,
       related_dataset_ids: ['DS-DES-LUS'],
       related_policy_ids: ['POL-DILRMP-2008'],

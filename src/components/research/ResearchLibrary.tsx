@@ -50,10 +50,11 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
         setLoading(true);
         const data = await api.getResearchPapers(searchQuery, isCaseStudyPage ? undefined : selectedTag);
         const separatedPapers = (data || []).filter((paper) => {
-          const isCaseStudy =
-            paper.tags?.some(tag => tag.trim().toLowerCase().includes('case study')) ||
-            paper.research_area?.toLowerCase().includes('case study') ||
-            paper.title?.toLowerCase().includes('case study');
+          const isCaseStudy = paper.document_type
+            ? paper.document_type === 'case-study'
+            : paper.tags?.some(tag => tag.trim().toLowerCase().includes('case study')) ||
+              paper.research_area?.toLowerCase().includes('case study') ||
+              paper.title?.toLowerCase().includes('case study');
           return isCaseStudyPage ? isCaseStudy : !isCaseStudy;
         });
         setPapers(separatedPapers);
@@ -130,7 +131,7 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
         isOpen={isUploadModalOpen}
         onClose={() => setIsUploadModalOpen(false)}
         onPaperCreated={handlePaperCreated}
-        requiredTag={isCaseStudyPage ? 'Case Study' : undefined}
+        documentType={isCaseStudyPage ? 'case-study' : 'research-publication'}
       />
 
       {downloadError && (

@@ -226,6 +226,7 @@ export interface UserProfile {
 
 export interface ResearchPaper {
   id: string;
+  document_type?: 'research-publication' | 'case-study';
   title: string;
   authors: string[];
   year: number;

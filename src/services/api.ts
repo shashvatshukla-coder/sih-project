@@ -589,6 +589,7 @@ export const api = {
     author?: string;
     geography?: string;
     tags?: string[];
+    documentType: 'research-publication' | 'case-study';
   }): Promise<ResearchPaper> {
     const res = await fetch(`${API_BASE}/research/upload`, {
       method: 'POST',
