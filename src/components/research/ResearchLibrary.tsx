@@ -17,7 +17,8 @@ import {
   Layers,
   Star,
   Download,
-  AlertCircle
+  AlertCircle,
+  Trash2
 } from 'lucide-react';
 import { ResearchUploadModal } from './ResearchUploadModal';
 import { ResearchWriterStudio } from './ResearchWriterStudio';
@@ -27,7 +28,7 @@ interface ResearchLibraryProps {
 }
 
 export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'publications' }) => {
-  const { saveItem, isSaved, runAIQuery, userProfile, setIsAuthModalOpen } = useApp();
+  const { saveItem, removeItem, isSaved, runAIQuery, userProfile, setIsAuthModalOpen } = useApp();
   const isCaseStudyPage = mode === 'case-studies';
   const [papers, setPapers] = useState<ResearchPaper[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -36,6 +37,8 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
   const [loading, setLoading] = useState(true);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const [downloadError, setDownloadError] = useState('');
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteError, setDeleteError] = useState('');
 
   // Active view: 'catalog' | 'author' | 'upload'
   const [activeTab, setActiveTab] = useState<'catalog' | 'author' | 'upload'>('catalog');
@@ -101,6 +104,25 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
     }
   };
 
+  const handleDelete = async (paper: ResearchPaper) => {
+    const confirmed = window.confirm(
+      `Delete "${paper.title}" permanently? This publication and its uploaded file will be removed.`
+    );
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(paper.id);
+      setDeleteError('');
+      await api.deleteResearch(paper.id);
+      setPapers(prev => prev.filter(item => item.id !== paper.id));
+      removeItem(paper.id);
+    } catch (err: any) {
+      setDeleteError(err.message || 'The research publication could not be deleted.');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return (
     <div className="space-y-6 text-left">
       {/* Upload Drag & Drop Modal */}
@@ -115,6 +137,13 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
         <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
           <AlertCircle className="w-4 h-4 shrink-0" />
           <span>{downloadError}</span>
+        </div>
+      )}
+
+      {deleteError && (
+        <div className="p-3.5 rounded-xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900 text-rose-700 dark:text-rose-300 text-xs flex items-center gap-2">
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{deleteError}</span>
         </div>
       )}
 
@@ -354,15 +383,29 @@ export const ResearchLibrary: React.FC<ResearchLibraryProps> = ({ mode = 'public
                       ))}
                     </div>
 
-                    <button
-                      onClick={() => handleDownload(paper)}
-                      disabled={downloadingId === paper.id}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-60 transition-colors"
-                      title={paper.fileAttachment ? `Download ${paper.fileAttachment.name}` : 'Download research repository record'}
-                    >
-                      <Download className="w-3.5 h-3.5" />
-                      <span>{downloadingId === paper.id ? 'Downloading...' : isCaseStudyPage ? 'Download Case Study' : 'Download Publication'}</span>
-                    </button>
+                    <div className="flex items-center gap-2">
+                      {!isCaseStudyPage && (
+                        <button
+                          onClick={() => handleDelete(paper)}
+                          disabled={deletingId === paper.id}
+                          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-900 font-semibold disabled:opacity-60 transition-colors"
+                          title="Permanently delete publication"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>{deletingId === paper.id ? 'Deleting...' : 'Delete'}</span>
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleDownload(paper)}
+                        disabled={downloadingId === paper.id}
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold disabled:opacity-60 transition-colors"
+                        title={paper.fileAttachment ? `Download ${paper.fileAttachment.name}` : 'Download research repository record'}
+                      >
+                        <Download className="w-3.5 h-3.5" />
+                        <span>{downloadingId === paper.id ? 'Downloading...' : isCaseStudyPage ? 'Download Case Study' : 'Download Publication'}</span>
+                      </button>
+                    </div>
                     {!paper.fileAttachment && /^https?:\/\//i.test(paper.source_url || '') && (
                       <a
                         href={paper.source_url}

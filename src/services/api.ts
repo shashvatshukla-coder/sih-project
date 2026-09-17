@@ -561,8 +561,11 @@ export const api = {
     const res = await fetch(`${API_BASE}/research/${id}`, {
       method: 'DELETE'
     });
-    const json = await res.json();
-    return json.success === true;
+    const json = await res.json().catch(() => null);
+    if (!res.ok || json?.success !== true) {
+      throw new Error(json?.error || 'Failed to delete research publication');
+    }
+    return true;
   },
 
   async createResearchPaper(paper: Partial<ResearchPaper>): Promise<ResearchPaper> {
