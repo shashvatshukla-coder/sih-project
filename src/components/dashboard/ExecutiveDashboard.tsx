@@ -128,6 +128,7 @@ export const ExecutiveDashboard: React.FC = () => {
 
   const [selectedLayer, setSelectedLayer] = useState<string>('land-use');
   const [currentSlide, setCurrentSlide] = useState<number>(0);
+  const [evidenceJourneyStage, setEvidenceJourneyStage] = useState<'ingest' | 'validate' | 'visualize'>('ingest');
 
   // Inspection control modals
   const [isDashboardEditorOpen, setIsDashboardEditorOpen] = useState(false);
@@ -263,6 +264,46 @@ export const ExecutiveDashboard: React.FC = () => {
   const currentBarrenPct = hasVerifiedRecord ? currentRecord?.barren_pct ?? 0 : 0;
   const currentOtherPct = hasVerifiedRecord ? currentRecord?.other_pct ?? 0 : 0;
   const currentTotalHa = hasVerifiedRecord ? currentRecord?.total_area_ha ?? 0 : 0;
+  const evidenceJourney = [
+    {
+      id: 'ingest' as const,
+      label: 'Ingest',
+      icon: Database,
+      title: 'Connect permitted evidence',
+      description: 'Upload a CSV/JSON land-use record or connect an authorized source while retaining custodian, geography, year, licence, and version metadata.',
+      judgeLine: 'We begin with traceable evidence—not a generated answer or a pre-filled map.',
+      action: 'Open Ingestion Console',
+      page: 'admin' as const
+    },
+    {
+      id: 'validate' as const,
+      label: 'Validate',
+      icon: ShieldCheck,
+      title: 'Pass deterministic quality gates',
+      description: 'Schema mapping checks missing geography, invalid years, duplicate rows, negative areas, inconsistent units, and percentages outside 0–100.',
+      judgeLine: 'Bad or incomplete records are stopped for human review instead of being silently displayed.',
+      action: 'Review Dataset Evidence',
+      page: 'datasets' as const
+    },
+    {
+      id: 'visualize' as const,
+      label: 'Visualize',
+      icon: MapPin,
+      title: 'Publish a source-linked map layer',
+      description: 'Only validated records populate the selected geography and layer; every visible value remains linked to its source and reporting year.',
+      judgeLine: 'The map is an evidence interface: click geography, inspect the value, and trace it back to the record.',
+      action: 'Open GIS Explorer',
+      page: 'map' as const
+    }
+  ];
+  const activeEvidenceStep = evidenceJourney.find(step => step.id === evidenceJourneyStage) || evidenceJourney[0];
+  const ActiveEvidenceIcon = activeEvidenceStep.icon;
+  const selectedLayerLabel = {
+    'land-use': 'Land Use (9-Fold)',
+    forest: 'Forest Canopy',
+    urban: 'Urban Sprawl',
+    sodic: 'Sodic Reclamation'
+  }[selectedLayer] || 'Land Use';
 
   return (
     <div className="space-y-6 text-left pb-10">
@@ -832,14 +873,86 @@ export const ExecutiveDashboard: React.FC = () => {
                   </div>
                 </div>
               ) : (
-                <div className="p-8 text-center max-w-sm">
-                  <Database className="w-10 h-10 text-slate-300 dark:text-slate-700 mx-auto" />
-                  <p className="mt-3 text-sm font-bold text-slate-800 dark:text-slate-200">
-                    No validated record for these filters
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500 leading-relaxed">
-                    Prototype seed values are hidden. Upload and validate a dataset to populate this panel.
-                  </p>
+                <div className="w-full p-4 md:p-5 space-y-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="text-left">
+                      <div className="flex items-center gap-2">
+                        <span className="inline-flex items-center gap-1.5 px-2 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 text-[10px] font-bold text-amber-700 dark:text-amber-300">
+                          <ShieldCheck className="w-3 h-3" />
+                          Evidence gate active
+                        </span>
+                      </div>
+                      <p className="mt-2 text-sm font-bold text-slate-800 dark:text-slate-200">
+                        No validated record for these filters
+                      </p>
+                      <p className="mt-1 text-[11px] text-slate-500 leading-relaxed">
+                        Unverified seed values remain hidden. Explore how verified evidence becomes a map layer.
+                      </p>
+                    </div>
+                    <div className="text-right text-[10px] text-slate-500 leading-relaxed">
+                      <span className="block font-bold text-slate-700 dark:text-slate-300">
+                        {currentStateObj?.state_name || selectedState}
+                      </span>
+                      <span>{selectedLayerLabel}</span>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-3 gap-2" role="tablist" aria-label="Evidence-to-map journey">
+                    {evidenceJourney.map((step, index) => {
+                      const StepIcon = step.icon;
+                      const isActive = evidenceJourneyStage === step.id;
+                      return (
+                        <button
+                          key={step.id}
+                          type="button"
+                          role="tab"
+                          aria-selected={isActive}
+                          onClick={() => setEvidenceJourneyStage(step.id)}
+                          className={`p-2.5 rounded-xl border text-left transition-all ${
+                            isActive
+                              ? 'bg-emerald-600 border-emerald-600 text-white shadow-md'
+                              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-emerald-400 hover:-translate-y-0.5'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <span className={`w-5 h-5 rounded-md flex items-center justify-center text-[10px] font-black ${isActive ? 'bg-white/20' : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'}`}>
+                              {index + 1}
+                            </span>
+                            <StepIcon className="w-3.5 h-3.5" />
+                          </div>
+                          <span className="block mt-1.5 text-[11px] font-bold">{step.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-left space-y-2.5 shadow-2xs">
+                    <div className="flex items-start gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shrink-0">
+                        <ActiveEvidenceIcon className="w-4 h-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs font-bold text-slate-900 dark:text-white">{activeEvidenceStep.title}</p>
+                        <p className="mt-1 text-[10px] text-slate-500 leading-relaxed">{activeEvidenceStep.description}</p>
+                      </div>
+                    </div>
+
+                    <div className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/70 border border-slate-100 dark:border-slate-700">
+                      <span className="text-[9px] uppercase tracking-wider font-black text-emerald-700 dark:text-emerald-300">Judge talking point</span>
+                      <p className="mt-0.5 text-[10px] font-medium text-slate-600 dark:text-slate-300 leading-relaxed">
+                        “{activeEvidenceStep.judgeLine}”
+                      </p>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => setActivePage(activeEvidenceStep.page)}
+                      className="w-full px-3 py-2 rounded-lg bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-[11px] font-bold hover:bg-emerald-700 dark:hover:bg-emerald-100 transition-colors flex items-center justify-center gap-1.5"
+                    >
+                      <span>{activeEvidenceStep.action}</span>
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
