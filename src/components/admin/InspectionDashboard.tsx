@@ -95,6 +95,7 @@ export const InspectionDashboard: React.FC = () => {
 
   // Tabs
   const [activeTab, setActiveTab] = useState<'overview' | 'dashboard_data' | 'users' | 'policies' | 'research' | 'create_policy' | 'create_research'>('overview');
+  const [inspectionSessionConfirmed, setInspectionSessionConfirmed] = useState(false);
 
   // Filters & Search
   const [userSearch, setUserSearch] = useState('');
@@ -150,8 +151,10 @@ export const InspectionDashboard: React.FC = () => {
   };
 
   useEffect(() => {
-    loadData();
-  }, []);
+    if (isInspectionAuthorized && inspectionSessionConfirmed) {
+      loadData();
+    }
+  }, [isInspectionAuthorized, inspectionSessionConfirmed]);
 
   const showMessage = (text: string, type: 'success' | 'error' = 'success') => {
     setActionMessage({ text, type });
@@ -493,17 +496,61 @@ export const InspectionDashboard: React.FC = () => {
         </div>
         <div className="flex items-center gap-3 pt-2">
           <button
-            onClick={() => setUserRole('inspector')}
+            onClick={() => setActivePage('login')}
             className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-xs transition-all cursor-pointer flex items-center gap-2"
           >
-            <ShieldCheck className="w-4 h-4" />
-            <span>Switch to Inspector Role</span>
+            <Lock className="w-4 h-4" />
+            <span>Sign In with Authorized Account</span>
           </button>
           <button
             onClick={() => setActivePage('dashboard')}
             className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-all cursor-pointer"
           >
             Return to Dashboard
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!inspectionSessionConfirmed) {
+    return (
+      <div className="min-h-[500px] flex flex-col items-center justify-center p-8 text-center max-w-2xl mx-auto space-y-5">
+        <div className="w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300 flex items-center justify-center shadow-lg">
+          <ShieldCheck className="w-8 h-8" />
+        </div>
+        <div className="space-y-2">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+            <Unlock className="w-3 h-3" />
+            {isMasterUser ? 'Master Account Verified' : 'Inspection Clearance Verified'}
+          </div>
+          <h2 className="text-xl font-black text-slate-900 dark:text-white tracking-tight">
+            Switch to Inspection Directorate
+          </h2>
+          <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg">
+            Enter the protected Inspection Directorate workspace for user registry, policy moderation, research certification, and oversight controls.
+          </p>
+          <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs text-slate-500 text-left space-y-1">
+            <p><strong>Authorized Session:</strong> {userProfile?.name} ({userProfile?.email})</p>
+            <p><strong>Current Perspective:</strong> {userRole.toUpperCase()}</p>
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+          <button
+            onClick={() => {
+              setUserRole('inspector');
+              setInspectionSessionConfirmed(true);
+            }}
+            className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer flex items-center gap-2"
+          >
+            <ShieldCheck className="w-4 h-4" />
+            <span>Switch to Inspection Directorate</span>
+          </button>
+          <button
+            onClick={() => setActivePage('dashboard')}
+            className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-semibold text-xs transition-all cursor-pointer"
+          >
+            Cancel
           </button>
         </div>
       </div>

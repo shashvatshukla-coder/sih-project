@@ -225,7 +225,6 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const isMasterUser = isMasterAccount(userProfile?.email);
   const isInspectionAuthorized =
-    userRole === 'inspector' ||
     userProfile?.role === 'inspector' ||
     isMasterUser ||
     Boolean(userProfile?.is_inspection_verified) ||
