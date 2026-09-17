@@ -170,10 +170,10 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 
 -- 10. Durable application content overrides
--- Stores complete policy, research, and user registry objects so uploads, edits,
--- powers, ordering, inspection state, and deletion tombstones survive restarts.
+-- Stores complete policy, research, user registry, and submitted source objects so
+-- uploads, edits, powers, ordering, inspection state, and deletion tombstones survive restarts.
 CREATE TABLE IF NOT EXISTS bhu_content_store (
-  content_type TEXT NOT NULL CHECK (content_type IN ('policy', 'research', 'user')),
+  content_type TEXT NOT NULL CHECK (content_type IN ('policy', 'research', 'user', 'source')),
   content_id TEXT NOT NULL,
   payload JSONB NOT NULL DEFAULT '{}'::jsonb,
   deleted BOOLEAN NOT NULL DEFAULT FALSE,
@@ -181,13 +181,19 @@ CREATE TABLE IF NOT EXISTS bhu_content_store (
   PRIMARY KEY (content_type, content_id)
 );
 
+ALTER TABLE bhu_content_store
+  DROP CONSTRAINT IF EXISTS bhu_content_store_content_type_check;
+ALTER TABLE bhu_content_store
+  ADD CONSTRAINT bhu_content_store_content_type_check
+  CHECK (content_type IN ('policy', 'research', 'user', 'source'));
+
 CREATE INDEX IF NOT EXISTS idx_bhu_content_store_updated
   ON bhu_content_store(content_type, updated_at DESC);
 
 -- 11. Original uploaded document bytes
--- Kept separately so policy/research catalogue responses stay fast and small.
+-- Kept separately so policy/research/source catalogue responses stay fast and small.
 CREATE TABLE IF NOT EXISTS bhu_file_store (
-  owner_type TEXT NOT NULL CHECK (owner_type IN ('policy', 'research')),
+  owner_type TEXT NOT NULL CHECK (owner_type IN ('policy', 'research', 'source')),
   owner_id TEXT NOT NULL,
   file_name TEXT NOT NULL,
   mime_type TEXT NOT NULL DEFAULT 'application/octet-stream',
@@ -197,6 +203,12 @@ CREATE TABLE IF NOT EXISTS bhu_file_store (
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   PRIMARY KEY (owner_type, owner_id)
 );
+
+ALTER TABLE bhu_file_store
+  DROP CONSTRAINT IF EXISTS bhu_file_store_owner_type_check;
+ALTER TABLE bhu_file_store
+  ADD CONSTRAINT bhu_file_store_owner_type_check
+  CHECK (owner_type IN ('policy', 'research', 'source'));
 
 CREATE INDEX IF NOT EXISTS idx_bhu_file_store_owner
   ON bhu_file_store(owner_type, owner_id);

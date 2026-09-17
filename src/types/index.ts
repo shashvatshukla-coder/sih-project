@@ -109,6 +109,15 @@ export interface DataSource {
   error_status?: string;
   endpoint_url: string;
   adapter_type: string;
+  description?: string;
+  is_user_uploaded?: boolean;
+  uploaded_at?: string;
+  fileAttachment?: {
+    name: string;
+    size: number;
+    type: string;
+    url?: string;
+  };
 }
 
 export interface AreaTarget {

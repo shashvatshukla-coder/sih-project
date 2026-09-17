@@ -618,7 +618,7 @@ class Database {
     await queryable.query(`
       ALTER TABLE bhu_content_store
       ADD CONSTRAINT bhu_content_store_content_type_check
-      CHECK (content_type IN ('policy', 'research', 'user'))
+      CHECK (content_type IN ('policy', 'research', 'user', 'source'))
     `);
     this.contentStoreReady = true;
   }
@@ -630,7 +630,7 @@ class Database {
 
     await queryable.query(`
       CREATE TABLE IF NOT EXISTS bhu_file_store (
-        owner_type TEXT NOT NULL CHECK (owner_type IN ('policy', 'research')),
+        owner_type TEXT NOT NULL CHECK (owner_type IN ('policy', 'research', 'source')),
         owner_id TEXT NOT NULL,
         file_name TEXT NOT NULL,
         mime_type TEXT NOT NULL DEFAULT 'application/octet-stream',
@@ -641,18 +641,34 @@ class Database {
         PRIMARY KEY (owner_type, owner_id)
       )
     `);
+    await queryable.query(`
+      ALTER TABLE bhu_file_store
+      DROP CONSTRAINT IF EXISTS bhu_file_store_owner_type_check
+    `);
+    await queryable.query(`
+      ALTER TABLE bhu_file_store
+      ADD CONSTRAINT bhu_file_store_owner_type_check
+      CHECK (owner_type IN ('policy', 'research', 'source'))
+    `);
     this.fileStoreReady = true;
   }
 
   private mergePersistentContent(rows: any[]): void {
     for (const row of rows) {
-      if (row.content_type !== 'policy' && row.content_type !== 'research' && row.content_type !== 'user') continue;
+      if (
+        row.content_type !== 'policy' &&
+        row.content_type !== 'research' &&
+        row.content_type !== 'user' &&
+        row.content_type !== 'source'
+      ) continue;
 
       const collection: any[] = row.content_type === 'policy'
         ? this.policies
         : row.content_type === 'research'
           ? this.research
-          : this.users;
+          : row.content_type === 'source'
+            ? this.dataSources
+            : this.users;
       const index = collection.findIndex(item => item.id === row.content_id);
 
       if (row.deleted) {
@@ -712,9 +728,9 @@ class Database {
   }
 
   private async persistContent(
-    contentType: 'policy' | 'research' | 'user',
+    contentType: 'policy' | 'research' | 'user' | 'source',
     contentId: string,
-    payload: Policy | ResearchPaper | UserRegistryRecord,
+    payload: Policy | ResearchPaper | UserRegistryRecord | DataSource,
     deleted: boolean = false
   ): Promise<void> {
     await this.ready;
@@ -752,7 +768,7 @@ class Database {
   }
 
   public async saveFileAttachment(
-    ownerType: 'policy' | 'research',
+    ownerType: 'policy' | 'research' | 'source',
     ownerId: string,
     file: { name: string; type: string; size: number; dataBase64: string }
   ): Promise<void> {
@@ -800,7 +816,7 @@ class Database {
   }
 
   public async getFileAttachment(
-    ownerType: 'policy' | 'research',
+    ownerType: 'policy' | 'research' | 'source',
     ownerId: string
   ): Promise<{ name: string; type: string; size: number; dataBase64: string } | null> {
     await this.ready;
@@ -844,7 +860,7 @@ class Database {
     return null;
   }
 
-  public async deleteFileAttachment(ownerType: 'policy' | 'research', ownerId: string): Promise<void> {
+  public async deleteFileAttachment(ownerType: 'policy' | 'research' | 'source', ownerId: string): Promise<void> {
     await this.ready;
 
     if (this.pgPool) {
@@ -1161,12 +1177,32 @@ class Database {
     return this.dataSources;
   }
 
-  public syncDataSource(id: string): DataSource | undefined {
+  public async addDataSource(source: DataSource): Promise<DataSource> {
+    await this.persistContent('source', source.id, source);
+    const existingIndex = this.dataSources.findIndex(item => item.id === source.id);
+    if (existingIndex >= 0) {
+      this.dataSources[existingIndex] = source;
+    } else {
+      this.dataSources.unshift(source);
+    }
+    this.logAudit('ADD_DATA_SOURCE', 'Source Registry', {
+      source_id: source.id,
+      has_link: Boolean(source.endpoint_url),
+      has_file: Boolean(source.fileAttachment)
+    });
+    return source;
+  }
+
+  public async syncDataSource(id: string): Promise<DataSource | undefined> {
     const src = this.dataSources.find(s => s.id === id);
     if (src) {
       src.status = 'Connected';
       src.last_synced = new Date().toISOString().replace('T', ' ').substring(0, 19) + ' IST';
       this.logAudit('SYNC_DATA_SOURCE', 'Admin', { source_id: id, records_now: src.records_imported });
+
+      if (src.is_user_uploaded) {
+        await this.persistContent('source', src.id, src);
+      }
 
       if (this.prisma) {
         this.prisma.dataSource.update({
@@ -1180,6 +1216,17 @@ class Database {
       }
     }
     return src;
+  }
+
+  public async deleteDataSource(id: string): Promise<DataSource | undefined> {
+    const index = this.dataSources.findIndex(source => source.id === id && source.is_user_uploaded);
+    if (index < 0) return undefined;
+
+    const removed = this.dataSources[index];
+    await this.persistContent('source', removed.id, removed, true);
+    this.dataSources.splice(index, 1);
+    this.logAudit('DELETE_DATA_SOURCE', 'Source Registry', { source_id: removed.id });
+    return removed;
   }
 
   public getPolicies(stateCode?: string, districtCode?: string, includeHidden: boolean = false): Policy[] {

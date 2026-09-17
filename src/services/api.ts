@@ -437,7 +437,7 @@ export const api = {
 
   async getDataSources(): Promise<DataSource[]> {
     try {
-      const res = await fetch(`${API_BASE}/data-sources`);
+      const res = await fetch(`${API_BASE}/data-sources`, { cache: 'no-store' });
       if (res.ok) {
         const json = await res.json();
         return json.data;
@@ -448,10 +448,49 @@ export const api = {
     return [];
   },
 
+  async uploadDataSource(payload: {
+    name: string;
+    category?: string;
+    description?: string;
+    endpointUrl?: string;
+    fileName?: string;
+    fileType?: string;
+    fileData?: string;
+  }): Promise<DataSource> {
+    const res = await fetch(`${API_BASE}/data-sources/upload`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || json?.success !== true) {
+      throw new Error(json?.error || 'Failed to upload data source');
+    }
+    return json.data;
+  },
+
   async syncDataSource(id: string): Promise<DataSource> {
     const res = await fetch(`${API_BASE}/data-sources/${id}/sync`, { method: 'POST' });
-    const json = await res.json();
+    const json = await res.json().catch(() => null);
+    if (!res.ok || json?.success !== true) {
+      throw new Error(json?.error || 'Failed to connect data source');
+    }
     return json.data;
+  },
+
+  async downloadDataSourceDocument(id: string, fileName: string): Promise<void> {
+    await downloadApiFile(`/data-sources/${encodeURIComponent(id)}/download`, fileName);
+  },
+
+  async deleteDataSource(id: string): Promise<boolean> {
+    const res = await fetch(`${API_BASE}/data-sources/${encodeURIComponent(id)}`, {
+      method: 'DELETE'
+    });
+    const json = await res.json().catch(() => null);
+    if (!res.ok || json?.success !== true) {
+      throw new Error(json?.error || 'Failed to remove data source');
+    }
+    return true;
   },
 
   async getPolicies(stateCode?: string, districtCode?: string, includeHidden: boolean = false): Promise<Policy[]> {

@@ -89,6 +89,20 @@ function safeFileStem(value: unknown, fallback: string): string {
   return stem || fallback;
 }
 
+function normalizeSourceUrl(value: unknown): string {
+  if (typeof value !== 'string' || !value.trim()) return '';
+  try {
+    const parsed = new URL(value.trim());
+    if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') {
+      throw new Error('Only HTTP and HTTPS source links are allowed.');
+    }
+    return parsed.toString();
+  } catch (error) {
+    if (error instanceof Error && error.message.includes('Only HTTP')) throw error;
+    throw new Error('Please enter a complete and valid source link.');
+  }
+}
+
 function numberedLines(values: unknown): string[] {
   if (!Array.isArray(values) || values.length === 0) return ['Not provided'];
   return values.map((value, index) => `${index + 1}. ${String(value)}`);
@@ -449,14 +463,114 @@ router.get('/datasets/:id/download', (req: Request, res: Response) => {
 });
 
 // Data Sources
-router.get('/data-sources', (req: Request, res: Response) => {
-  res.json({ success: true, data: db.getDataSources() });
+router.get('/data-sources', async (_req: Request, res: Response) => {
+  try {
+    await db.waitUntilReady();
+    await db.refreshPersistentContent();
+    res.set('Cache-Control', 'no-store');
+    res.json({ success: true, data: db.getDataSources() });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to load data sources' });
+  }
 });
 
-router.post('/data-sources/:id/sync', (req: Request, res: Response) => {
-  const synced = db.syncDataSource(req.params.id);
-  if (!synced) return res.status(404).json({ success: false, error: 'Data source not found' });
-  res.json({ success: true, message: `Data source ${synced.name} synchronized successfully`, data: synced });
+router.post('/data-sources/upload', async (req: Request, res: Response) => {
+  try {
+    const { name, category, description, endpointUrl, fileName, fileType, fileData } = req.body || {};
+    if (typeof name !== 'string' || !name.trim()) {
+      return res.status(400).json({ success: false, error: 'Source name is required.' });
+    }
+
+    const cleanUrl = normalizeSourceUrl(endpointUrl);
+    const decodedFile = decodeUploadedFile(fileData, fileType);
+    if (!cleanUrl && !decodedFile) {
+      return res.status(400).json({ success: false, error: 'Add a source link, a supporting file, or both.' });
+    }
+    if (decodedFile && (typeof fileName !== 'string' || !fileName.trim())) {
+      return res.status(400).json({ success: false, error: 'The uploaded file name is missing.' });
+    }
+
+    const sourceId = 'SRC-UPL-' + Date.now().toString(36).toUpperCase() + '-' + Math.random().toString(36).substring(2, 5).toUpperCase();
+    const source = {
+      id: sourceId,
+      name: name.trim(),
+      category: typeof category === 'string' && category.trim() ? category.trim() : 'Submitted Source',
+      status: 'Pending Configuration' as const,
+      last_synced: 'Awaiting validation',
+      datasets_count: 0,
+      records_imported: 0,
+      endpoint_url: cleanUrl,
+      adapter_type: decodedFile && cleanUrl ? 'LINK + FILE' : decodedFile ? 'FILE UPLOAD' : 'SOURCE LINK',
+      description: typeof description === 'string' ? description.trim().slice(0, 1000) : '',
+      is_user_uploaded: true,
+      uploaded_at: new Date().toISOString(),
+      fileAttachment: decodedFile ? {
+        name: fileName.trim(),
+        size: decodedFile.size,
+        type: decodedFile.mimeType,
+        url: `/api/data-sources/${sourceId}/download`
+      } : undefined
+    };
+
+    if (decodedFile) {
+      await db.saveFileAttachment('source', sourceId, {
+        name: fileName.trim(),
+        type: decodedFile.mimeType,
+        size: decodedFile.size,
+        dataBase64: decodedFile.dataBase64
+      });
+    }
+
+    try {
+      const saved = await db.addDataSource(source);
+      res.status(201).json({
+        success: true,
+        message: 'Source submitted successfully and added to the validation queue.',
+        data: saved
+      });
+    } catch (error) {
+      if (decodedFile) await db.deleteFileAttachment('source', sourceId).catch(() => undefined);
+      throw error;
+    }
+  } catch (err: any) {
+    const status = /required|valid|allowed|empty|limit|Add a source/i.test(err.message || '') ? 400 : 500;
+    res.status(status).json({ success: false, error: err.message || 'Failed to save data source' });
+  }
+});
+
+router.get('/data-sources/:id/download', async (req: Request, res: Response) => {
+  try {
+    const source = db.getDataSources().find(item => item.id === req.params.id);
+    if (!source) return res.status(404).json({ success: false, error: 'Data source not found' });
+    const file = await db.getFileAttachment('source', req.params.id);
+    if (!file) return res.status(404).json({ success: false, error: 'This source has no uploaded file.' });
+    sendAttachment(res, file);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to download source file' });
+  }
+});
+
+router.post('/data-sources/:id/sync', async (req: Request, res: Response) => {
+  try {
+    const synced = await db.syncDataSource(req.params.id);
+    if (!synced) return res.status(404).json({ success: false, error: 'Data source not found' });
+    res.json({ success: true, message: `Data source ${synced.name} connected successfully`, data: synced });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to connect data source' });
+  }
+});
+
+router.delete('/data-sources/:id', async (req: Request, res: Response) => {
+  try {
+    const deleted = await db.deleteDataSource(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, error: 'Uploaded data source not found.' });
+    }
+    await db.deleteFileAttachment('source', req.params.id).catch(() => undefined);
+    res.json({ success: true, message: 'Source removed successfully.' });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to remove data source' });
+  }
 });
 
 // Policies

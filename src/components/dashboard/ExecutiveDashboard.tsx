@@ -676,7 +676,7 @@ export const ExecutiveDashboard: React.FC = () => {
         {/* Card 4: Geospatial Layers */}
         <div
           onClick={() => {
-            if (!editingCard) setActivePage('map');
+            if (!editingCard) setActivePage('integration');
           }}
           className="relative p-4 rounded-2xl bg-[#f6effa] dark:bg-purple-950/30 border border-[#edd9f6] dark:border-purple-900/40 flex items-center gap-3.5 cursor-pointer hover:shadow-sm transition-all group"
         >
