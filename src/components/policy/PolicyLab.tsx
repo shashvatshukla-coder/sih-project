@@ -15,6 +15,16 @@ import {
   Trees,
   Waves,
 } from 'lucide-react';
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { policyLabApi, PolicyLabScenarioRequest } from '../../services/policyLabApi';
 import { interpretPolicyQuestion, PolicyInterpretation } from './policyQuestionInterpreter';
 
@@ -88,7 +98,6 @@ export const PolicyLab: React.FC = () => {
     setError(null);
     setStage('prediction');
     try {
-      // Interpret the latest text first so Run never uses stale slider values.
       const interpreted = interpretPolicyQuestion(prompt, policy);
       setInterpretation(interpreted);
       const nextPolicy = interpreted.recognized ? interpreted.policy : policy;
@@ -252,7 +261,44 @@ export const PolicyLab: React.FC = () => {
             </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid gap-6 xl:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+              <h3 className="text-sm font-bold">Built-up and agriculture</h3>
+              <p className="mt-1 text-[11px] text-slate-500">Projected 2030 area in km².</p>
+              <div className="mt-4 h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={totals} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(value: any) => `${formatNumber(Number(value))} km²`} />
+                    <Legend />
+                    <Bar dataKey="built" name="Built-up" />
+                    <Bar dataKey="agriculture" name="Agriculture" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+              <h3 className="text-sm font-bold">Water / wetland</h3>
+              <p className="mt-1 text-[11px] text-slate-500">Projected 2030 water/wetland area in km².</p>
+              <div className="mt-4 h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={totals} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(value: any) => `${formatNumber(Number(value))} km²`} />
+                    <Legend />
+                    <Bar dataKey="water" name="Water / Wetland" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-4">
             {totals.map((row: any) => {
               const maxBuilt = Math.max(...totals.map((item: any) => item.built), 1);
               return (
