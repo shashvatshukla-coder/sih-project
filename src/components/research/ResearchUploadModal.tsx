@@ -56,6 +56,33 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const resetUploadForm = () => {
+    setIsDragging(false);
+    setFile(null);
+    setFilePreview('');
+    setTitle('');
+    setAbstract('');
+    setGeography('Uttar Pradesh (Central)');
+    setTags([
+      'Cadastral Survey',
+      'Land Use Dynamics',
+      'Field Telemetry',
+      ...(requiredTag ? [requiredTag] : [])
+    ]);
+    setTagInput('');
+    setJournal('Bhu-Drishti Ingested Research Archives');
+    setUploading(false);
+    setSuccess(false);
+    setCreatedPaper(null);
+    setErrorMessage('');
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
+  const handleClose = () => {
+    resetUploadForm();
+    onClose();
+  };
+
   useEffect(() => {
     setTags((currentTags) => {
       const tagsWithoutCaseStudy = currentTags.filter(
@@ -64,6 +91,10 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
       return requiredTag ? [...tagsWithoutCaseStudy, requiredTag] : tagsWithoutCaseStudy;
     });
   }, [requiredTag]);
+
+  useEffect(() => {
+    if (!isOpen) resetUploadForm();
+  }, [isOpen, documentType]);
 
   if (!isOpen) return null;
 
@@ -196,7 +227,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
             </div>
           </div>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <X className="w-4 h-4" />
@@ -233,10 +264,16 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
 
               <div className="pt-2 flex justify-center gap-3">
                 <button
-                  onClick={onClose}
+                  onClick={resetUploadForm}
+                  className="px-5 py-2.5 rounded-xl bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 font-bold text-xs transition-all cursor-pointer"
+                >
+                  {isCaseStudy ? 'Upload Another Case Study' : 'Upload Another Publication'}
+                </button>
+                <button
+                  onClick={handleClose}
                   className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md transition-all cursor-pointer"
                 >
-                  Return to Research Library
+                  Done
                 </button>
               </div>
             </div>
@@ -420,7 +457,7 @@ export const ResearchUploadModal: React.FC<ResearchUploadModalProps> = ({
         {!success && (
           <div className="flex items-center justify-between px-6 py-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
             <button
-              onClick={onClose}
+              onClick={handleClose}
               className="px-4 py-2 rounded-xl text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 text-xs font-semibold"
             >
               Cancel
