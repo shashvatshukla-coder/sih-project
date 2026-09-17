@@ -61,14 +61,31 @@ def _output_for(base: Path, model: Path) -> Path:
     return base / "lulc_2030_prediction.tif"
 
 
+def _pixel_area(transform: Any) -> float:
+    """Return the area of one raster pixel in square kilometres."""
+    return abs(float(transform.a) * float(transform.e)) / 1_000_000.0
+
+
+def _area_summary(array: np.ndarray, pixel_area: float) -> dict[str, float]:
+    return {
+        name: round(int(np.sum(array == code)) * pixel_area, 4)
+        for code, name in CLASSES.items()
+    }
+
+
+def _counts(array: np.ndarray) -> dict[str, int]:
+    return {name: int(np.sum(array == code)) for code, name in CLASSES.items()}
+
+
 def _summary(prediction: np.ndarray, transform: Any, output: Path, model: Path, cached: bool) -> dict[str, Any]:
-    pixel_area = abs(transform.a * transform.e) / 1_000_000
-    counts = {name: int(np.sum(prediction == code)) for code, name in CLASSES.items()}
+    pixel_area = _pixel_area(transform)
+    counts = _counts(prediction)
     mode = "full" if model.name == FULL_MODEL.name else "optimized"
     return {
         "output": str(output),
         "shape": list(prediction.shape),
         "pixel_area_km2": pixel_area,
+        "pixel_size_m": [abs(float(transform.a)), abs(float(transform.e))],
         "pixel_counts": counts,
         "area_km2": {name: round(count * pixel_area, 4) for name, count in counts.items()},
         "model": str(model),
@@ -235,7 +252,8 @@ def apply_scenarios(
             dst.write(raster.astype(np.uint8), 1)
         paths[name] = str(path)
 
-    pixel_area = abs(transform.a * transform.e) / 1_000_000
+    pixel_area = _pixel_area(transform)
+    source_area = _area_summary(source, pixel_area)
     summary = []
     for scenario, raster in scenarios.items():
         for code, land_use in CLASSES.items():
@@ -244,6 +262,15 @@ def apply_scenarios(
     comparison = {}
     for row in summary:
         comparison.setdefault(row["land_use"], {})[row["scenario"]] = row["area_km2"]
+
+    comparison_2015_2030 = {
+        land_use: {
+            "2015": source_area.get(land_use, 0),
+            "2030_BAU": comparison.get(land_use, {}).get("BAU", 0),
+            "change": round(comparison.get(land_use, {}).get("BAU", 0) - source_area.get(land_use, 0), 4),
+        }
+        for land_use in CLASSES.values()
+    }
 
     summary_file = out / "policy_scenario_area_summary.csv"
     comparison_file = out / "policy_scenario_comparison.csv"
@@ -270,6 +297,15 @@ def apply_scenarios(
         "scenario_rasters": paths,
         "area_summary": summary,
         "comparison": comparison,
+        "comparison_2015_2030": comparison_2015_2030,
+        "source_2015": {
+            "pixel_area_km2": pixel_area,
+            "pixel_size_m": [abs(float(transform.a)), abs(float(transform.e))],
+            "pixel_counts": _counts(source),
+            "area_km2": source_area,
+        },
+        "pixel_area_km2": pixel_area,
+        "pixel_size_m": [abs(float(transform.a)), abs(float(transform.e))],
         "policy": policy,
         "model": str(model_path),
         "model_mode": "full" if model_path.name == FULL_MODEL.name else "optimized",
