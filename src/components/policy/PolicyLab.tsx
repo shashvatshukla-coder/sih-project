@@ -15,8 +15,14 @@ const QUICK_POLICIES = [
   { label: 'Protect water', text: 'What if 90% of water and wetland areas are protected?', agriculture: 0, water: 90, forest: 0 },
   { label: 'Green growth', text: 'What if agricultural, water and forest conversion are strongly restricted?', agriculture: 80, water: 80, forest: 70 },
 ];
-const LULC_COLORS: Record<number, string> = { 0: '#f1f5f9', 1: '#64748b', 2: '#eab308', 3: '#16a34a', 4: '#84cc16', 5: '#a16207', 6: '#0ea5e9', 7: '#cbd5e1' };
-const TRANSITION_COLORS: Record<number, string> = { 0: '#f8fafc', 1: '#ef4444', 2: '#06b6d4', 3: '#22c55e', 4: '#f59e0b' };
+
+const LULC_COLORS: Record<number, string> = {
+  0: '#f1f5f9', 1: '#64748b', 2: '#eab308', 3: '#16a34a',
+  4: '#84cc16', 5: '#a16207', 6: '#0ea5e9', 7: '#cbd5e1',
+};
+const TRANSITION_COLORS: Record<number, string> = {
+  0: '#f8fafc', 1: '#ef4444', 2: '#06b6d4', 3: '#22c55e', 4: '#f59e0b',
+};
 const LULC_LEGEND = [
   [1, 'Built-up'], [2, 'Agriculture'], [3, 'Forest'], [4, 'Grass'],
   [5, 'Barren/Wasteland'], [6, 'Water/Wetland'], [7, 'Other'],
@@ -30,12 +36,14 @@ const POLICY_LEGEND = [
   [3, 'Forest protected'], [4, 'Other policy-driven change'],
 ] as const;
 
+type RasterLegendItem = readonly [number, string];
+
 function formatNumber(value: number) {
   return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value);
 }
-function formatPixelArea(value: number) {
+function formatPixelArea(value: number | undefined) {
   if (!Number.isFinite(value)) return '—';
-  return `${value < 0.01 ? value.toFixed(4) : value.toFixed(2)} km²`;
+  return `${(value as number) < 0.01 ? (value as number).toFixed(4) : (value as number).toFixed(2)} km²`;
 }
 function extractPercent(text: string) {
   const match = text.match(/(\d+(?:\.\d+)?)\s*%/);
@@ -50,8 +58,6 @@ function parsePolicyText(text: string, current: PolicyLabScenarioRequest) {
   if (lower.includes('forest') || lower.includes('green cover') || lower.includes('woodland')) next.forest_protection = protection;
   return next;
 }
-
-type RasterLegendItem = readonly [number, string];
 
 function InteractiveRasterCanvas({
   map,
@@ -90,7 +96,7 @@ function InteractiveRasterCanvas({
     const bytes = Uint8Array.from(atob(map.data), (c) => c.charCodeAt(0));
     const image = ctx.createImageData(map.width, map.height);
     for (let i = 0; i < bytes.length; i++) {
-      const hex = palette[bytes[i]] || '#fff';
+      const hex = palette[bytes[i]] || '#ffffff';
       const rgb = hex.match(/[a-f\d]{2}/gi)?.map((v) => parseInt(v, 16)) || [255, 255, 255];
       image.data.set([rgb[0], rgb[1], rgb[2], 255], i * 4);
     }
@@ -131,7 +137,7 @@ function InteractiveRasterCanvas({
       <div className="flex items-center justify-between gap-3 border-b border-slate-200 dark:border-slate-700 px-3 py-2">
         <div>
           <div className="text-xs font-bold">{title}</div>
-          <div className="text-[10px] text-slate-500">Scroll to zoom · drag to pan · move over a cell for details</div>
+          <div className="text-[10px] text-slate-500">Scroll to zoom · drag to pan · hover a cell for details</div>
         </div>
         <div className="flex gap-1">
           <button type="button" onClick={() => zoomBy(0.25)} className="rounded-md border p-1.5 hover:bg-slate-100" title="Zoom in"><ZoomIn className="w-3.5 h-3.5" /></button>
@@ -140,20 +146,25 @@ function InteractiveRasterCanvas({
         </div>
       </div>
       <div
-        className="relative h-[430px] overflow-hidden bg-slate-100 cursor-grab active:cursor-grabbing"
+        className="relative h-[390px] overflow-hidden bg-slate-100 cursor-grab active:cursor-grabbing"
         onWheel={handleWheel}
         onPointerDown={handlePointerDown}
-        onPointerUp={(event) => { setDragging(false); event.currentTarget.releasePointerCapture(event.pointerId); }}
+        onPointerUp={(event) => { setDragging(false); if (event.currentTarget.hasPointerCapture(event.pointerId)) event.currentTarget.releasePointerCapture(event.pointerId); }}
         onPointerCancel={() => setDragging(false)}
         onPointerMove={handlePointerMove}
         onPointerLeave={() => setTooltip(null)}
       >
         <canvas
           ref={ref}
-          className="absolute left-1/2 top-1/2 max-w-none origin-center image-pixelated"
-          style={{ transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`, imageRendering: 'pixelated' }}
+          className="absolute left-1/2 top-1/2 max-w-none origin-center"
+          style={{
+            width: 'min(560px, 88%)',
+            height: 'auto',
+            transform: `translate(calc(-50% + ${pan.x}px), calc(-50% + ${pan.y}px)) scale(${zoom})`,
+            imageRendering: 'pixelated',
+          }}
         />
-        <div className="absolute left-3 top-3 max-w-[230px] rounded-lg border border-white/70 bg-white/90 p-2.5 shadow-sm backdrop-blur-sm">
+        <div className="absolute left-3 top-3 max-w-[235px] rounded-lg border border-white/70 bg-white/92 p-2.5 shadow-sm backdrop-blur-sm">
           <div className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-slate-500">Map legend</div>
           <div className="space-y-1">
             {legend.map(([code, name]) => (
@@ -168,7 +179,7 @@ function InteractiveRasterCanvas({
           <div className="pointer-events-none absolute right-3 bottom-3 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-[10px] shadow-sm">
             <div className="font-bold">{label}</div>
             <div className="text-slate-500">Raster cell: {tooltip.x}, {tooltip.y}</div>
-            {pixelArea !== undefined && !transition && <div className="text-slate-500">Source pixel area: {formatPixelArea(pixelArea)}</div>}
+            {!transition && pixelArea !== undefined && <div className="text-slate-500">Source pixel area: {formatPixelArea(pixelArea)}</div>}
           </div>
         )}
       </div>
@@ -184,7 +195,6 @@ export const PolicyLab: React.FC = () => {
   const [prompt, setPrompt] = useState('What if agricultural land conversion is restricted to 20%?');
   const [policy, setPolicy] = useState<PolicyLabScenarioRequest>(DEFAULT_POLICY);
   const [modelMode, setModelMode] = useState<PolicyLabModelMode>('optimized');
-  const [selectedMap, setSelectedMap] = useState('lulc_2015');
 
   const totals = useMemo(() => {
     if (!result?.area_summary) return [];
@@ -195,33 +205,58 @@ export const PolicyLab: React.FC = () => {
         scenario,
         built: rows.find((r: any) => r.land_use === 'Built-up')?.area_km2 ?? 0,
         agriculture: rows.find((r: any) => r.land_use === 'Agriculture')?.area_km2 ?? 0,
+        forest: rows.find((r: any) => r.land_use === 'Forest')?.area_km2 ?? 0,
         water: rows.find((r: any) => r.land_use === 'Water/Wetland')?.area_km2 ?? 0,
       };
     }).filter(Boolean) as any[];
   }, [result]);
+
   const bau = totals.find((r) => r.scenario === 'BAU');
   const custom = totals.find((r) => r.scenario === 'Custom Policy');
   const builtUpSaved = bau && custom ? bau.built - custom.built : 0;
   const transitions = result?.transition_summary || [];
   const ai = result?.ai_insights;
-  const pixelArea = result?.pixel_area_km2 ?? result?.source_2015?.pixel_area_km2 ?? result?.prediction?.pixel_area_km2;
+
+  const pixelArea = useMemo(() => {
+    const direct = Number(result?.pixel_area_km2 ?? result?.source_2015?.pixel_area_km2 ?? result?.prediction?.pixel_area_km2);
+    if (Number.isFinite(direct) && direct > 0) return direct;
+    const size = result?.pixel_size_m ?? result?.source_2015?.pixel_size_m;
+    if (Array.isArray(size) && size.length >= 2 && Number(size[0]) > 0 && Number(size[1]) > 0) {
+      return (Number(size[0]) * Number(size[1])) / 1_000_000;
+    }
+    return undefined;
+  }, [result]);
+
+  const get2015Area = (landUse: string) => {
+    const comparisonValue = result?.comparison_2015_2030?.[landUse]?.['2015'];
+    const sourceValue = result?.source_2015?.area_km2?.[landUse];
+    const value = comparisonValue ?? sourceValue;
+    return Number.isFinite(Number(value)) ? Number(value) : 0;
+  };
+  const get2030Area = (landUse: string) => {
+    const comparisonValue = result?.comparison_2015_2030?.[landUse]?.['2030_BAU'];
+    if (comparisonValue !== undefined) return Number(comparisonValue);
+    if (landUse === 'Built-up') return Number(bau?.built ?? 0);
+    if (landUse === 'Agriculture') return Number(bau?.agriculture ?? 0);
+    if (landUse === 'Forest') return Number(bau?.forest ?? 0);
+    if (landUse === 'Water/Wetland') return Number(bau?.water ?? 0);
+    return 0;
+  };
 
   const chart2015vs2030 = useMemo(() => {
-    const source = result?.source_2015?.area_km2 || {};
-    const bauAreas = totals.find((r) => r.scenario === 'BAU');
-    if (!source || !bauAreas) return [];
     return ['Built-up', 'Agriculture', 'Forest', 'Water/Wetland'].map((landUse) => ({
       landUse,
-      '2015': Number(source[landUse] || 0),
-      '2030 BAU': Number(result.comparison_2015_2030?.[landUse]?.['2030_BAU'] ?? bauAreas[landUse === 'Built-up' ? 'built' : landUse === 'Agriculture' ? 'agriculture' : landUse === 'Water/Wetland' ? 'water' : 'forest'] ?? 0),
+      '2015': get2015Area(landUse),
+      '2030 BAU': get2030Area(landUse),
     }));
   }, [result, totals]);
 
   const changeChart = useMemo(() => {
-    return (result?.comparison_2015_2030 ? Object.entries(result.comparison_2015_2030) : [])
-      .filter(([landUse]) => ['Built-up', 'Agriculture', 'Forest', 'Water/Wetland'].includes(landUse))
-      .map(([landUse, value]: any) => ({ landUse, change: Number(value.change || 0) }));
-  }, [result]);
+    return ['Built-up', 'Agriculture', 'Forest', 'Water/Wetland'].map((landUse) => {
+      const change = result?.comparison_2015_2030?.[landUse]?.change;
+      return { landUse, change: Number(change ?? (get2030Area(landUse) - get2015Area(landUse))) };
+    });
+  }, [result, totals]);
 
   const scenarioChart = totals.map((row) => ({ scenario: row.scenario, builtUp: row.built }));
 
@@ -230,17 +265,11 @@ export const PolicyLab: React.FC = () => {
     prediction_2030: { title: '2030 Random Forest baseline', transition: false, legend: LULC_LEGEND },
     transition_hotspots: { title: '2030 transition hotspots', transition: true, legend: TRANSITION_LEGEND },
     custom_policy: { title: 'Custom policy scenario', transition: false, legend: LULC_LEGEND },
+    policy_difference: { title: 'Policy intervention footprint', transition: true, legend: POLICY_LEGEND },
     controlled_growth: { title: 'Controlled urban growth', transition: false, legend: LULC_LEGEND },
     sustainable_development: { title: 'Sustainable development', transition: false, legend: LULC_LEGEND },
-    policy_difference: { title: 'Policy intervention footprint', transition: true, legend: POLICY_LEGEND },
   };
-  const activeMap = result?.visuals?.maps?.[selectedMap];
-  const activeMapInfo = mapInfo[selectedMap] || mapInfo.lulc_2015;
-
-  useEffect(() => {
-    if (result?.visuals?.maps?.[selectedMap]) return;
-    if (result?.visuals?.maps?.lulc_2015) setSelectedMap('lulc_2015');
-  }, [result, selectedMap]);
+  const mapKeys = ['lulc_2015', 'prediction_2030', 'transition_hotspots', 'custom_policy', 'policy_difference'];
 
   const runLab = async () => {
     setLoading(true);
@@ -251,7 +280,6 @@ export const PolicyLab: React.FC = () => {
       setStage('simulation');
       const scenarios = await policyLabApi.scenarios({ ...policy, model_mode: modelMode });
       setResult(scenarios.data || null);
-      setSelectedMap('lulc_2015');
       setStage('done');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -267,17 +295,15 @@ export const PolicyLab: React.FC = () => {
     setResult(null);
     setError(null);
     setStage('idle');
-    setSelectedMap('lulc_2015');
   };
   const applyPrompt = () => setPolicy(parsePolicyText(prompt, policy));
 
   const reportHtml = () => {
-    const maps = result?.visuals?.maps || {};
     const rows = totals.map((r) => `<tr><td>${r.scenario}</td><td>${formatNumber(r.built)}</td><td>${formatNumber(r.agriculture)}</td><td>${formatNumber(r.water)}</td></tr>`).join('');
     const insightList = (ai?.insights || []).map((x: string) => `<li>${x}</li>`).join('');
     const actionList = (ai?.suggested_actions || []).map((x: string) => `<li>${x}</li>`).join('');
     const transitionRows = transitions.slice(0, 10).map((x: any) => `<tr><td>${x.from}</td><td>${x.to}</td><td>${formatNumber(x.area_km2)}</td></tr>`).join('');
-    return `<!doctype html><html><head><meta charset="utf-8"><title>BHU-DRISHTI Ghaziabad 2030 Policy Report</title><style>body{font-family:Arial,sans-serif;color:#0f172a;margin:40px;line-height:1.5}h1{font-size:30px}h2{margin-top:34px;border-bottom:2px solid #10b981;padding-bottom:8px}.hero{background:#0f172a;color:#fff;padding:28px;border-radius:16px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{border:1px solid #ddd;border-radius:12px;padding:16px}.note{background:#fffbeb;border:1px solid #f59e0b;padding:14px;border-radius:10px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px;text-align:left}.small{color:#64748b;font-size:12px}</style></head><body><div class="hero"><h1>BHUMI UDYOG / BHU-DRISHTI</h1><p>Ghaziabad 2030 Land Governance Decision Report</p><p>From Land Data to Smarter Decisions</p></div><h2>1. Executive Summary</h2><p><b>Policy question:</b> ${policy.policy_text || prompt}</p><div class="grid"><div class="card"><b>Model</b><br/>Random Forest (${modelMode})</div><div class="card"><b>Built-up change vs BAU</b><br/>${formatNumber(builtUpSaved)} km²</div><div class="card"><b>Pixel area</b><br/>${formatPixelArea(pixelArea)}</div></div><h2>2. 2015 vs 2030 Baseline</h2><table><tr><th>Land use</th><th>2015 km²</th><th>2030 BAU km²</th><th>Change km²</th></tr>${changeChart.map((x: any) => `<tr><td>${x.landUse}</td><td>${formatNumber(result.source_2015.area_km2[x.landUse] || 0)}</td><td>${formatNumber(result.comparison_2015_2030[x.landUse]?.['2030_BAU'] || 0)}</td><td>${formatNumber(x.change)}</td></tr>`).join('')}</table><h2>3. Scenario Comparison</h2><table><tr><th>Scenario</th><th>Built-up km²</th><th>Agriculture km²</th><th>Water/Wetland km²</th></tr>${rows}</table><h2>4. Spatial Evidence</h2><p>Interactive maps in the application use the same downsampled raster classes as the simulation output and include legends for the represented cells.</p><h2>5. AI-Assisted Evidence Interpretation</h2><ul>${insightList}</ul><h3>Suggested investigation actions</h3><ul>${actionList}</ul><h2>6. Major Transition Pathways</h2><table><tr><th>From</th><th>To</th><th>Area km²</th></tr>${transitionRows}</table><h2>7. Policy Assumptions</h2><p>Agriculture protection: ${policy.agriculture_protection}%. Water/Wetland protection: ${policy.water_protection}%. Forest protection: ${policy.forest_protection}%.</p><div class="note"><b>Interpretation note:</b> Policy simulations are explicit what-if assumptions applied to the Random Forest baseline, not certain future facts. The residual “Other” class requires additional validation before being interpreted as a specific land-use process.</div><h2>8. Evidence & Method</h2><p>Inputs: 2015 LULC, terrain slope and road distance. The model output is a 2030 baseline extrapolation. Spatial differences are intended to support GIS inspection, research and policy discussion.</p><p class="small">Generated by BHU-DRISHTI PolicyLab · Research Edition</p></body></html>`;
+    return `<!doctype html><html><head><meta charset="utf-8"><title>BHU-DRISHTI Ghaziabad 2030 Policy Report</title><style>body{font-family:Arial,sans-serif;color:#0f172a;margin:40px;line-height:1.5}h1{font-size:30px}h2{margin-top:34px;border-bottom:2px solid #10b981;padding-bottom:8px}.hero{background:#0f172a;color:#fff;padding:28px;border-radius:16px}.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}.card{border:1px solid #ddd;border-radius:12px;padding:16px}.note{background:#fffbeb;border:1px solid #f59e0b;padding:14px;border-radius:10px}table{width:100%;border-collapse:collapse}td,th{border:1px solid #ddd;padding:8px;text-align:left}.small{color:#64748b;font-size:12px}</style></head><body><div class="hero"><h1>BHUMI UDYOG / BHU-DRISHTI</h1><p>Ghaziabad 2030 Land Governance Decision Report</p><p>From Land Data to Smarter Decisions</p></div><h2>1. Executive Summary</h2><p><b>Policy question:</b> ${policy.policy_text || prompt}</p><div class="grid"><div class="card"><b>Model</b><br/>Random Forest (${modelMode})</div><div class="card"><b>Built-up change vs BAU</b><br/>${formatNumber(builtUpSaved)} km²</div><div class="card"><b>Pixel area</b><br/>${formatPixelArea(pixelArea)}</div></div><h2>2. 2015 vs 2030 Baseline</h2><table><tr><th>Land use</th><th>2015 km²</th><th>2030 BAU km²</th><th>Change km²</th></tr>${changeChart.map((x: any) => `<tr><td>${x.landUse}</td><td>${formatNumber(get2015Area(x.landUse))}</td><td>${formatNumber(get2030Area(x.landUse))}</td><td>${formatNumber(x.change)}</td></tr>`).join('')}</table><h2>3. Scenario Comparison</h2><table><tr><th>Scenario</th><th>Built-up km²</th><th>Agriculture km²</th><th>Water/Wetland km²</th></tr>${rows}</table><h2>4. Spatial Evidence</h2><p>The application shows five spatial evidence maps with in-map legends, zoom, pan and hover inspection.</p><h2>5. AI-Assisted Evidence Interpretation</h2><ul>${insightList}</ul><h3>Suggested investigation actions</h3><ul>${actionList}</ul><h2>6. Major Transition Pathways</h2><table><tr><th>From</th><th>To</th><th>Area km²</th></tr>${transitionRows}</table><h2>7. Policy Assumptions</h2><p>Agriculture protection: ${policy.agriculture_protection}%. Water/Wetland protection: ${policy.water_protection}%. Forest protection: ${policy.forest_protection}%.</p><div class="note"><b>Interpretation note:</b> Policy simulations are explicit what-if assumptions applied to the Random Forest baseline, not certain future facts. The residual “Other” class requires additional validation before being interpreted as a specific land-use process.</div><h2>8. Evidence & Method</h2><p>Inputs: 2015 LULC, terrain slope and road distance. The model output is a 2030 baseline extrapolation. Spatial differences are intended to support GIS inspection, research and policy discussion.</p><p class="small">Generated by BHU-DRISHTI PolicyLab · Research Edition</p></body></html>`;
   };
   const downloadReport = () => {
     if (!result) return;
@@ -311,13 +337,13 @@ export const PolicyLab: React.FC = () => {
     {error && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
     {result && <>
-      <section className="rounded-2xl border bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm"><div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"><div><div className="text-xs uppercase tracking-widest text-emerald-600 font-bold">Executive summary</div><h2 className="mt-1 text-2xl font-bold">2030 Land Governance Evidence Brief</h2><p className="mt-2 text-sm text-slate-500">{policy.policy_text || prompt}</p></div><div className="flex flex-wrap gap-2"><button onClick={downloadReport} className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white"><Download className="w-4 h-4"/> Download report</button><button onClick={printReport} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-bold"><Printer className="w-4 h-4"/> Print / Save PDF</button><button onClick={downloadCsv} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-bold"><Download className="w-4 h-4"/> CSV evidence</button></div></div><div className="grid gap-3 md:grid-cols-4 mt-6"><div className="rounded-xl bg-slate-950 text-white p-4"><div className="text-[10px] uppercase text-slate-400">Model</div><div className="mt-1 font-bold">{result.model_mode} RF</div></div><div className="rounded-xl bg-emerald-50 p-4"><div className="text-[10px] uppercase text-emerald-700">Built-up change vs BAU</div><div className="mt-1 text-xl font-bold text-emerald-700">{formatNumber(builtUpSaved)} km²</div></div><div className="rounded-xl bg-slate-50 p-4"><div className="text-[10px] uppercase text-slate-500">Pixel area</div><div className="mt-1 font-bold">{formatPixelArea(pixelArea)}</div><div className="mt-1 text-[10px] text-slate-500">Actual raster-cell area, not rounded to 0</div></div><div className="rounded-xl bg-slate-50 p-4"><div className="text-[10px] uppercase text-slate-500">Policy protection</div><div className="mt-1 font-bold">A {policy.agriculture_protection}% · W {policy.water_protection}% · F {policy.forest_protection}%</div></div></div></section>
+      <section className="rounded-2xl border bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm"><div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4"><div><div className="text-xs uppercase tracking-widest text-emerald-600 font-bold">Executive summary</div><h2 className="mt-1 text-2xl font-bold">2030 Land Governance Evidence Brief</h2><p className="mt-2 text-sm text-slate-500">{policy.policy_text || prompt}</p></div><div className="flex flex-wrap gap-2"><button onClick={downloadReport} className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white"><Download className="w-4 h-4"/> Download report</button><button onClick={printReport} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-bold"><Printer className="w-4 h-4"/> Print / Save PDF</button><button onClick={downloadCsv} className="inline-flex items-center gap-2 rounded-lg border px-4 py-2 text-xs font-bold"><Download className="w-4 h-4"/> CSV evidence</button></div></div><div className="grid gap-3 md:grid-cols-4 mt-6"><div className="rounded-xl bg-slate-950 text-white p-4"><div className="text-[10px] uppercase text-slate-400">Model</div><div className="mt-1 font-bold">{result.model_mode} RF</div></div><div className="rounded-xl bg-emerald-50 p-4"><div className="text-[10px] uppercase text-emerald-700">Built-up change vs BAU</div><div className="mt-1 text-xl font-bold text-emerald-700">{formatNumber(builtUpSaved)} km²</div></div><div className="rounded-xl bg-slate-50 p-4"><div className="text-[10px] uppercase text-slate-500">Pixel area</div><div className="mt-1 font-bold">{formatPixelArea(pixelArea)}</div><div className="mt-1 text-[10px] text-slate-500">Actual raster-cell area</div></div><div className="rounded-xl bg-slate-50 p-4"><div className="text-[10px] uppercase text-slate-500">Policy protection</div><div className="mt-1 font-bold">A {policy.agriculture_protection}% · W {policy.water_protection}% · F {policy.forest_protection}%</div></div></div></section>
 
       <section className="rounded-2xl border bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm"><div className="flex items-center gap-2"><BarChart3 className="w-5 h-5 text-emerald-600"/><h2 className="text-lg font-bold">2015 → 2030 land-use change</h2></div><p className="mt-1 text-xs text-slate-500">Direct comparison of the observed 2015 classified raster and the 2030 Random Forest BAU baseline. Areas are km².</p><div className="mt-5 h-[320px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={chart2015vs2030} margin={{ top: 8, right: 20, left: 8, bottom: 8 }}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="landUse" tick={{ fontSize: 11 }}/><YAxis tick={{ fontSize: 11 }}/><Tooltip/><Legend/><Bar dataKey="2015" fill="#94a3b8" name="2015" radius={[4,4,0,0]}/><Bar dataKey="2030 BAU" fill="#10b981" name="2030 BAU" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></div><div className="mt-4 grid gap-4 lg:grid-cols-2"><div className="h-[260px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={changeChart} layout="vertical" margin={{ top: 8, right: 20, left: 60, bottom: 8 }}><CartesianGrid strokeDasharray="3 3"/><XAxis type="number" tick={{ fontSize: 11 }}/><YAxis type="category" dataKey="landUse" tick={{ fontSize: 10 }}/><Tooltip/><Bar dataKey="change" fill="#0ea5e9" name="Change vs 2015 (km²)" radius={[0,4,4,0]}/></BarChart></ResponsiveContainer></div><div className="h-[260px]"><ResponsiveContainer width="100%" height="100%"><BarChart data={scenarioChart} margin={{ top: 8, right: 20, left: 8, bottom: 8 }}><CartesianGrid strokeDasharray="3 3"/><XAxis dataKey="scenario" tick={{ fontSize: 9 }} interval={0}/><YAxis tick={{ fontSize: 11 }}/><Tooltip/><Bar dataKey="builtUp" fill="#64748b" name="2030 built-up (km²)" radius={[4,4,0,0]}/></BarChart></ResponsiveContainer></div></div></section>
 
-      <section className="rounded-2xl border bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm"><div className="flex items-center gap-2"><Map className="w-5 h-5 text-emerald-600"/><h2 className="text-lg font-bold">Interactive spatial evidence</h2></div><p className="mt-1 text-xs text-slate-500">The colored cells are downsampled raster cells from the PolicyLab output. Use the selector, zoom, pan and hover to inspect what each color represents.</p><div className="mt-4 flex flex-wrap gap-2">{Object.entries(mapInfo).map(([key, info]) => <button key={key} type="button" onClick={() => setSelectedMap(key)} className={`rounded-full border px-3 py-1.5 text-xs font-medium ${selectedMap === key ? 'border-emerald-500 bg-emerald-50 text-emerald-800' : 'hover:border-emerald-400'}`}>{info.title}</button>)}</div><div className="mt-4"><InteractiveRasterCanvas map={activeMap} title={activeMapInfo.title} transition={activeMapInfo.transition} legend={activeMapInfo.legend} pixelArea={pixelArea}/></div></section>
+      <section className="rounded-2xl border bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm"><div className="flex items-center gap-2"><Map className="w-5 h-5 text-emerald-600"/><h2 className="text-lg font-bold">Interactive spatial evidence — 5 maps</h2></div><p className="mt-1 text-xs text-slate-500">All five core spatial outputs are shown together. Each map has its own legend, zoom, pan and hover inspection. The raster image is displayed larger for easier visual inspection.</p><div className="mt-5 grid gap-5 xl:grid-cols-2">{mapKeys.map((key) => { const info = mapInfo[key]; return <InteractiveRasterCanvas key={key} map={result?.visuals?.maps?.[key]} title={info.title} transition={info.transition} legend={info.legend} pixelArea={pixelArea}/>; })}</div></section>
 
-      <section className="rounded-2xl border bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm"><div className="flex items-center gap-2"><BarChart3 className="w-5 h-5 text-emerald-600"/><h2 className="text-lg font-bold">Scenario impact dashboard</h2></div><p className="mt-1 text-xs text-slate-500">Spatial simulation results in km². Values are scenario outputs, not certainty claims.</p><div className="overflow-x-auto mt-4"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="py-3">Scenario</th><th>Built-up km²</th><th>Agriculture km²</th><th>Water/Wetland km²</th></tr></thead><tbody>{totals.map((r) => <tr key={r.scenario} className="border-b last:border-0"><td className="py-3 font-semibold">{r.scenario}</td><td>{formatNumber(r.built)}</td><td>{formatNumber(r.agriculture)}</td><td>{formatNumber(r.water)}</td></tr>)}</tbody></table></div></section>
+      <section className="rounded-2xl border bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm"><div className="flex items-center gap-2"><BarChart3 className="w-5 h-5 text-emerald-600"/><h2 className="text-lg font-bold">Scenario impact dashboard</h2></div><p className="mt-1 text-xs text-slate-500">Spatial simulation results in km². Values are scenario outputs, not certainty claims.</p><div className="overflow-x-auto mt-4"><table className="w-full text-sm"><thead><tr className="border-b text-left"><th className="py-3">Scenario</th><th>Built-up km²</th><th>Agriculture km²</th><th>Forest km²</th><th>Water/Wetland km²</th></tr></thead><tbody>{totals.map((r) => <tr key={r.scenario} className="border-b last:border-0"><td className="py-3 font-semibold">{r.scenario}</td><td>{formatNumber(r.built)}</td><td>{formatNumber(r.agriculture)}</td><td>{formatNumber(r.forest)}</td><td>{formatNumber(r.water)}</td></tr>)}</tbody></table></div></section>
 
       <section className="grid gap-6 lg:grid-cols-[1.2fr_0.8fr]"><div className="rounded-2xl border bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm"><div className="flex items-center gap-2"><BrainCircuit className="w-5 h-5 text-emerald-600"/><h2 className="text-lg font-bold">AI-assisted evidence interpretation</h2></div><p className="mt-1 text-xs text-slate-500">Generated from the simulation outputs and framed for research and planning review.</p><ul className="mt-5 space-y-3">{(ai?.insights || []).map((x: string, i: number) => <li key={i} className="flex gap-3 text-sm leading-6"><span className="mt-2 h-2 w-2 rounded-full bg-emerald-500 shrink-0"/>{x}</li>)}</ul><div className="mt-6 rounded-xl bg-emerald-50 p-4"><div className="font-bold text-sm text-emerald-900">Suggested investigation actions</div><ol className="mt-3 space-y-2 text-xs leading-5 text-emerald-900">{(ai?.suggested_actions || []).map((x: string, i: number) => <li key={i}>{i + 1}. {x}</li>)}</ol></div></div><div className="rounded-2xl border bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm"><div className="font-bold text-sm">Top transition pathways</div><div className="mt-4 space-y-3">{transitions.slice(0, 7).map((x: any) => <div key={`${x.from}-${x.to}`} className="flex justify-between gap-3 text-xs"><span>{x.from} → {x.to}</span><b>{formatNumber(x.area_km2)} km²</b></div>)}</div></div></section>
 
