@@ -914,12 +914,9 @@ export const ExecutiveDashboard: React.FC = () => {
                     <Plus className="w-3.5 h-3.5" />
                   </button>
                 )}
-                <button
-                  onClick={() => setActivePage('trends')}
-                  className="text-xs font-bold text-[#1b5e3a] hover:underline"
-                >
-                  View All
-                </button>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Dashboard Summary
+                </span>
               </div>
             </div>
 
