@@ -218,7 +218,11 @@ def apply_scenarios(
     if not prediction_path.exists():
         predict(model_path=model_path, base=base)
 
-    with rasterio.open(base / "lulc/lulc_2015_classified.tif") as src:
+    # Resolve the exact same 2015 raster used by prediction, including the
+    # supported fallback filename. This keeps 2015 statistics and pixel area
+    # tied to the actual source raster instead of a hard-coded path.
+    source_path = _inputs(base)["lulc"]
+    with rasterio.open(source_path) as src:
         source = src.read(1)
         profile = src.profile.copy()
         transform = src.transform
@@ -299,6 +303,7 @@ def apply_scenarios(
         "comparison": comparison,
         "comparison_2015_2030": comparison_2015_2030,
         "source_2015": {
+            "source_raster": str(source_path),
             "pixel_area_km2": pixel_area,
             "pixel_size_m": [abs(float(transform.a)), abs(float(transform.e))],
             "pixel_counts": _counts(source),
