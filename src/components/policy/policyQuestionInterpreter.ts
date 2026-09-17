@@ -124,7 +124,17 @@ export function interpretPolicyQuestion(
     details.push('Urbanisation is treated as built-up conversion pressure, consistent with the current scenario model.');
   }
 
-  policy[`${landUse}_protection`] = protectionValue;
+  switch (landUse) {
+    case 'agriculture':
+      policy.agriculture_protection = protectionValue;
+      break;
+    case 'water':
+      policy.water_protection = protectionValue;
+      break;
+    case 'forest':
+      policy.forest_protection = protectionValue;
+      break;
+  }
 
   const label = landUse === 'water' ? 'water/wetland' : landUse;
   const action = conversion ? `${bounded}% conversion` : `${bounded}% protection`;
