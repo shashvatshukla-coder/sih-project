@@ -15,7 +15,18 @@ import {
   Trees,
   Waves,
 } from 'lucide-react';
+import {
+  Bar,
+  CartesianGrid,
+  ComposedChart,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
 import { policyLabApi, PolicyLabScenarioRequest } from '../../services/policyLabApi';
+import { interpretPolicyQuestion, PolicyInterpretation } from './policyQuestionInterpreter';
 
 const DEFAULT_POLICY: PolicyLabScenarioRequest = {
   agriculture_protection: 80,
@@ -34,39 +45,13 @@ const scenarioColors: Record<string, string> = {
   'Custom Policy': 'bg-emerald-600',
 };
 
-function formatNumber(value: number) {
-  return new Intl.NumberFormat('en-IN', { maximumFractionDigits: 2 }).format(value);
+function formatNumber(value: number, digits = 2) {
+  return new Intl.NumberFormat('en-IN', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(value);
 }
 
-function extractPercent(text: string): number | null {
-  const match = text.match(/(\d+(?:\.\d+)?)\s*%/);
-  return match ? Number(match[1]) : null;
-}
-
-function parsePolicyText(text: string, current: PolicyLabScenarioRequest) {
-  const lower = text.toLowerCase();
-  const percent = extractPercent(text);
-  const next = { ...current, policy_text: text };
-
-  if (percent === null) return next;
-
-  const clampedPercent = Math.max(0, Math.min(100, percent));
-  const describesConversion =
-    lower.includes('conversion') ||
-    lower.includes('convert') ||
-    lower.includes('converted');
-  const protection = describesConversion ? 100 - clampedPercent : clampedPercent;
-
-  if (lower.includes('agricultur') || lower.includes('farm') || lower.includes('cropland')) {
-    next.agriculture_protection = protection;
-  }
-  if (lower.includes('water') || lower.includes('wetland') || lower.includes('lake')) {
-    next.water_protection = protection;
-  }
-  if (lower.includes('forest') || lower.includes('green cover') || lower.includes('woodland')) {
-    next.forest_protection = protection;
-  }
-  return next;
+function formatSigned(value: number) {
+  if (Math.abs(value) < 0.005) return '0.00';
+  return `${value > 0 ? '+' : ''}${formatNumber(value)}`;
 }
 
 export const PolicyLab: React.FC = () => {
@@ -76,6 +61,7 @@ export const PolicyLab: React.FC = () => {
   const [result, setResult] = useState<any>(null);
   const [prompt, setPrompt] = useState('What if agricultural land conversion is restricted to 20%?');
   const [policy, setPolicy] = useState<PolicyLabScenarioRequest>(DEFAULT_POLICY);
+  const [interpretation, setInterpretation] = useState<PolicyInterpretation | null>(null);
 
   const totals = useMemo(() => {
     if (!result?.area_summary) return [];
@@ -94,10 +80,17 @@ export const PolicyLab: React.FC = () => {
 
   const bau = totals.find((row: any) => row.scenario === 'BAU');
   const custom = totals.find((row: any) => row.scenario === 'Custom Policy');
-  const builtUpSaved = bau && custom ? bau.built - custom.built : 0;
+  const builtUpChange = bau && custom ? custom.built - bau.built : 0;
+  const agricultureChange = bau && custom ? custom.agriculture - bau.agriculture : 0;
+  const waterChange = bau && custom ? custom.water - bau.water : 0;
 
   const applyPrompt = () => {
-    setPolicy(parsePolicyText(prompt, policy));
+    const interpreted = interpretPolicyQuestion(prompt, policy);
+    setInterpretation(interpreted);
+    if (interpreted.recognized) {
+      setPolicy(interpreted.policy);
+      setError(null);
+    }
   };
 
   const runLab = async () => {
@@ -105,9 +98,19 @@ export const PolicyLab: React.FC = () => {
     setError(null);
     setStage('prediction');
     try {
+      const interpreted = interpretPolicyQuestion(prompt, policy);
+      setInterpretation(interpreted);
+      const nextPolicy = interpreted.recognized ? interpreted.policy : policy;
+      if (!interpreted.recognized) {
+        setStage('idle');
+        setError(interpreted.summary);
+        return;
+      }
+      setPolicy(nextPolicy);
+
       await policyLabApi.predict();
       setStage('simulation');
-      const scenarios = await policyLabApi.scenarios(policy);
+      const scenarios = await policyLabApi.scenarios(nextPolicy);
       setResult(scenarios.data || null);
       setStage('done');
     } catch (e) {
@@ -121,6 +124,7 @@ export const PolicyLab: React.FC = () => {
   const reset = () => {
     setPolicy(DEFAULT_POLICY);
     setPrompt('What if agricultural land conversion is restricted to 20%?');
+    setInterpretation(null);
     setResult(null);
     setError(null);
     setStage('idle');
@@ -136,7 +140,7 @@ export const PolicyLab: React.FC = () => {
             </div>
             <h1 className="mt-4 text-3xl md:text-4xl font-bold tracking-tight">PolicyLab: Ask “What if?”</h1>
             <p className="mt-3 text-sm md:text-base leading-6 text-slate-300">
-              Test a land-policy idea against the 2030 Random Forest baseline, quantify the land-use impact, and turn the result into an evidence-backed decision.
+              Ask a land-policy question in plain language. PolicyLab interprets the question, converts it into explicit assumptions, and compares the result with the 2030 baseline.
             </p>
           </div>
           <div className="flex items-center gap-2 text-xs text-slate-300 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
@@ -149,8 +153,8 @@ export const PolicyLab: React.FC = () => {
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm">
           <div className="flex items-start justify-between gap-4">
             <div>
-              <div className="flex items-center gap-2 text-sm font-bold"><Sparkles className="w-4 h-4 text-emerald-600" /> Describe your policy</div>
-              <p className="mt-1 text-xs text-slate-500">Use plain language. Example: “Restrict agricultural land conversion to 20%.”</p>
+              <div className="flex items-center gap-2 text-sm font-bold"><Sparkles className="w-4 h-4 text-emerald-600" /> Ask a policy question</div>
+              <p className="mt-1 text-xs text-slate-500">Try natural language: “What happens if I convert half of agricultural land to urbanisation?”</p>
             </div>
             <button onClick={reset} className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800" title="Reset">
               <RotateCcw className="w-4 h-4" />
@@ -165,19 +169,31 @@ export const PolicyLab: React.FC = () => {
               placeholder="What policy do you want to test?"
             />
             <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-              <span className="text-[11px] text-slate-500 flex items-center gap-1"><Info className="w-3.5 h-3.5" /> Policy text is translated into explicit simulation parameters.</span>
+              <span className="text-[11px] text-slate-500 flex items-center gap-1"><Info className="w-3.5 h-3.5" /> Natural language is translated into measurable simulation parameters.</span>
               <button onClick={applyPrompt} className="inline-flex items-center gap-2 rounded-lg bg-emerald-600 px-4 py-2 text-xs font-bold text-white hover:bg-emerald-700">
-                Interpret policy <ArrowRight className="w-3.5 h-3.5" />
+                Interpret question <ArrowRight className="w-3.5 h-3.5" />
               </button>
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
             {QUICK_POLICIES.map((item) => (
-              <button key={item.label} onClick={() => { setPrompt(item.text); setPolicy({ agriculture_protection: item.agriculture, water_protection: item.water, forest_protection: item.forest, policy_text: item.text }); }} className="rounded-full border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium hover:border-emerald-400 hover:text-emerald-700">
+              <button key={item.label} onClick={() => { setPrompt(item.text); setPolicy({ agriculture_protection: item.agriculture, water_protection: item.water, forest_protection: item.forest, policy_text: item.text }); setInterpretation({ policy: { agriculture_protection: item.agriculture, water_protection: item.water, forest_protection: item.forest, policy_text: item.text }, recognized: true, summary: `Quick policy selected: ${item.label}.`, details: [], warnings: [] }); }} className="rounded-full border border-slate-200 dark:border-slate-700 px-3 py-1.5 text-xs font-medium hover:border-emerald-400 hover:text-emerald-700">
                 {item.label}
               </button>
             ))}
           </div>
+          {interpretation && (
+            <div className={`mt-4 rounded-xl border p-4 ${interpretation.recognized ? 'border-emerald-200 bg-emerald-50/60 dark:border-emerald-900/50 dark:bg-emerald-950/20' : 'border-amber-200 bg-amber-50/60 dark:border-amber-900/50 dark:bg-amber-950/20'}`}>
+              <div className="flex items-start gap-2">
+                <CheckCircle2 className={`w-4 h-4 mt-0.5 ${interpretation.recognized ? 'text-emerald-600' : 'text-amber-600'}`} />
+                <div className="min-w-0">
+                  <div className="text-xs font-bold">{interpretation.summary}</div>
+                  {interpretation.details.map((detail) => <div key={detail} className="mt-1 text-[11px] text-slate-600 dark:text-slate-300">{detail}</div>)}
+                  {interpretation.warnings.map((warning) => <div key={warning} className="mt-2 text-[11px] text-amber-700 dark:text-amber-300">{warning}</div>)}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 md:p-6 shadow-sm">
@@ -237,12 +253,52 @@ export const PolicyLab: React.FC = () => {
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-6">
             <div>
               <div className="flex items-center gap-2"><BarChart3 className="w-5 h-5 text-emerald-600" /><h2 className="font-bold text-lg">2030 impact comparison</h2></div>
-              <p className="text-xs text-slate-500 mt-1">BAU is compared with the policy parameters selected above.</p>
+              <p className="text-xs text-slate-500 mt-1">Compare projected land-use area across the baseline and policy scenarios.</p>
             </div>
-            {builtUpSaved > 0 && <div className="rounded-xl bg-emerald-50 dark:bg-emerald-950/30 px-4 py-3 text-right"><div className="text-[10px] uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Built-up area avoided</div><div className="text-xl font-bold text-emerald-700 dark:text-emerald-300">{formatNumber(builtUpSaved)} km²</div></div>}
+            <div className="rounded-xl border border-slate-200 dark:border-slate-700 px-4 py-3 text-right">
+              <div className="text-[10px] uppercase tracking-wider text-slate-500">Built-up change vs BAU</div>
+              <div className={`text-xl font-bold ${builtUpChange < 0 ? 'text-emerald-700 dark:text-emerald-300' : builtUpChange > 0 ? 'text-amber-700 dark:text-amber-300' : 'text-slate-700 dark:text-slate-200'}`}>{formatSigned(builtUpChange)} km²</div>
+            </div>
           </div>
 
-          <div className="space-y-4">
+          <div className="grid gap-6 xl:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+              <h3 className="text-sm font-bold">Built-up and agriculture</h3>
+              <p className="mt-1 text-[11px] text-slate-500">Projected 2030 area in km².</p>
+              <div className="mt-4 h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={totals} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(value: any) => `${formatNumber(Number(value))} km²`} />
+                    <Legend />
+                    <Bar dataKey="built" name="Built-up" />
+                    <Bar dataKey="agriculture" name="Agriculture" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            <div className="rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+              <h3 className="text-sm font-bold">Water / wetland</h3>
+              <p className="mt-1 text-[11px] text-slate-500">Projected 2030 water/wetland area in km².</p>
+              <div className="mt-4 h-72">
+                <ResponsiveContainer width="100%" height="100%">
+                  <ComposedChart data={totals} margin={{ top: 8, right: 8, left: 0, bottom: 8 }}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="scenario" tick={{ fontSize: 11 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <Tooltip formatter={(value: any) => `${formatNumber(Number(value))} km²`} />
+                    <Legend />
+                    <Bar dataKey="water" name="Water / Wetland" />
+                  </ComposedChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-6 space-y-4">
             {totals.map((row: any) => {
               const maxBuilt = Math.max(...totals.map((item: any) => item.built), 1);
               return (
@@ -253,6 +309,26 @@ export const PolicyLab: React.FC = () => {
                 </div>
               );
             })}
+          </div>
+
+          <div className="mt-6 rounded-xl border border-slate-200 dark:border-slate-800 p-4">
+            <div className="flex items-center gap-2"><BarChart3 className="w-4 h-4 text-emerald-600" /><h3 className="text-sm font-bold">Custom policy change from BAU</h3></div>
+            <p className="mt-1 text-[11px] text-slate-500">Positive values mean more projected area under the custom policy; negative values mean less.</p>
+            <div className="mt-4 grid gap-3 md:grid-cols-3">
+              {[
+                ['Built-up', builtUpChange],
+                ['Agriculture', agricultureChange],
+                ['Water / Wetland', waterChange],
+              ].map(([label, value]: any) => (
+                <div key={label} className="rounded-lg bg-slate-50 dark:bg-slate-800/60 p-3">
+                  <div className="text-[10px] uppercase tracking-wider text-slate-400">{label}</div>
+                  <div className="mt-1 text-lg font-bold">{formatSigned(value)} km²</div>
+                  <div className="mt-2 h-2 rounded-full bg-slate-200 dark:bg-slate-700 overflow-hidden">
+                    <div className={`h-full rounded-full ${value < 0 ? 'bg-emerald-600' : value > 0 ? 'bg-amber-500' : 'bg-slate-400'}`} style={{ width: `${Math.min(100, Math.max(3, Math.abs(value) * 10))}%` }} />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
       )}
