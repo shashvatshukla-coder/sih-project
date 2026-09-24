@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { lazy, Suspense, useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { DashboardEditorModal } from './DashboardEditorModal';
 import { LandRecordEditorModal } from './LandRecordEditorModal';
@@ -31,6 +31,8 @@ import {
   Save,
   Clock
 } from 'lucide-react';
+
+const DashboardEarthSection = lazy(() => import('./DashboardEarthSection'));
 
 interface BannerSlide {
   id: string;
@@ -795,7 +797,20 @@ export const ExecutiveDashboard: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          3. MAIN 3-COLUMN GRID
+          3. LIVE CESIUM EARTH — LAZY-LOADED DASHBOARD EXPERIENCE
+      ========================================================================= */}
+      <Suspense
+        fallback={(
+          <section className="flex min-h-[28rem] items-center justify-center rounded-3xl border border-slate-200 bg-slate-950 text-center text-sm font-semibold text-slate-300 shadow-sm dark:border-slate-800">
+            Preparing the interactive 3D Earth…
+          </section>
+        )}
+      >
+        <DashboardEarthSection />
+      </Suspense>
+
+      {/* =========================================================================
+          4. MAIN 3-COLUMN GRID
       ========================================================================= */}
       <div className="grid grid-cols-12 gap-6 items-start">
         {/* =======================================================================
@@ -1383,7 +1398,7 @@ export const ExecutiveDashboard: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          4. BOTTOM ROW: QUICK ACCESS & UPCOMING EVENTS
+          5. BOTTOM ROW: QUICK ACCESS & UPCOMING EVENTS
       ========================================================================= */}
       <div className="grid grid-cols-12 gap-6 items-start">
         {/* Quick Access Action Tiles (Col-span 8) */}
@@ -1544,7 +1559,7 @@ export const ExecutiveDashboard: React.FC = () => {
       </div>
 
       {/* =========================================================================
-          5. INSPECTION MODALS
+          6. INSPECTION MODALS
       ========================================================================= */}
       <DashboardEditorModal
         isOpen={isDashboardEditorOpen}

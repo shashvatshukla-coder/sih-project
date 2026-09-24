@@ -164,6 +164,11 @@
   to { transform: rotate(360deg); }
 }
 
+.earth-globe-dashboard .earth-globe-canvas {
+  height: clamp(28rem, 58vh, 38rem);
+  min-height: 28rem;
+}
+
 @media (max-width: 767px) {
   .earth-globe-canvas {
     height: 68vh;
@@ -186,6 +191,11 @@
     right: 0.7rem;
     bottom: 2.4rem;
     width: calc(100% - 1.4rem);
+  }
+
+  .earth-globe-dashboard .earth-globe-canvas {
+    height: 38rem;
+    min-height: 38rem;
   }
 }
 

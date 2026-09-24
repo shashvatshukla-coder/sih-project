@@ -45,6 +45,7 @@ export const EarthGlobe: React.FC<EarthGlobeProps> = ({
   const interactingRef = useRef(false);
   const autoRotateRef = useRef(true);
   const resumeTimerRef = useRef<number | null>(null);
+  const initialCameraAppliedRef = useRef(false);
   const [internalSelectedId, setInternalSelectedId] = useState(initialLocationId);
   const [viewerReady, setViewerReady] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -286,8 +287,13 @@ export const EarthGlobe: React.FC<EarthGlobeProps> = ({
 
   useEffect(() => {
     if (!viewerReady || !selectedLocation) return;
+    if (!initialCameraAppliedRef.current && selectedLocation.id === initialLocationId) {
+      initialCameraAppliedRef.current = true;
+      return;
+    }
+    initialCameraAppliedRef.current = true;
     focusLocation(selectedLocation);
-  }, [focusLocation, selectedLocation, viewerReady]);
+  }, [focusLocation, initialLocationId, selectedLocation, viewerReady]);
 
   const zoom = (direction: 'in' | 'out') => {
     const viewer = viewerRef.current;
