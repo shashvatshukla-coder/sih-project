@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { Suspense, lazy, useState } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { AppSidebar } from './components/layout/AppSidebar';
 import { TopHeader } from './components/layout/TopHeader';
@@ -31,8 +31,10 @@ import { ShieldCheck } from 'lucide-react';
 import { BrandLogo } from './components/common/BrandLogo';
 import { LoadingSplash } from './components/common/LoadingSplash';
 
+const IndiaEarthExplorer = lazy(() => import('./components/maps/IndiaEarthExplorer'));
+
 const AppContent: React.FC = () => {
-  const { activePage } = useApp();
+  const { activePage, setActivePage } = useApp();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [showSplash, setShowSplash] = useState(false);
@@ -77,16 +79,17 @@ const AppContent: React.FC = () => {
           {activePage === 'statistics' && <LandStatisticsView />}
           {activePage === 'map' && (
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-left">
-                <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                  Interactive Geospatial Map Explorer
-                </h2>
-                <p className="text-xs text-slate-500">
-                  Select layers, play 2005–2025 timeline, and click any state to inspect district breakdowns.
-                </p>
+              <div className="flex flex-col gap-3 rounded-xl border border-slate-200 bg-white p-4 text-left dark:border-slate-800 dark:bg-slate-900 sm:flex-row sm:items-center sm:justify-between">
+                <div><h2 className="text-base font-bold text-slate-900 dark:text-white">Analyze detailed geographic data</h2><p className="text-xs text-slate-500">Select layers, play 2005–2025 timeline, and click any state to inspect district breakdowns.</p></div>
+                <button type="button" onClick={() => setActivePage('earth')} className="min-h-10 shrink-0 rounded-xl border border-emerald-200 bg-emerald-50 px-4 text-xs font-bold text-emerald-800 transition-colors hover:bg-emerald-100 dark:border-emerald-900 dark:bg-emerald-950/50 dark:text-emerald-300">Explore India in 3D</button>
               </div>
               <IndiaMapExplorer />
             </div>
+          )}
+          {activePage === 'earth' && (
+            <Suspense fallback={<div className="flex min-h-[32rem] items-center justify-center rounded-2xl border border-slate-200 bg-white text-sm font-semibold text-slate-500 dark:border-slate-800 dark:bg-slate-900">Loading 3D Earth workspace…</div>}>
+              <IndiaEarthExplorer />
+            </Suspense>
           )}
           {activePage === 'datasets' && <DatasetExplorer />}
           {activePage === 'trends' && <TrendAnalysisView />}

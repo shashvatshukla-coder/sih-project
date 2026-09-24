@@ -9,6 +9,7 @@ Bhu-Drishti unites multi-decadal land statistics, government datasets (MoA&FW, N
 ## 🚀 Key Features
 
 - 🗺️ **Interactive India Geospatial Map Explorer**: SVG/Vector choropleth map across 16+ States and key districts with multi-year time-lapse animation playback (**2005 → 2025**).
+- 🌍 **Explore India in 3D**: A lazy-loaded CesiumJS globe with India-first navigation, state and district reference markers, accessible camera controls, automatic rotation, and optional Cesium ion satellite imagery and terrain.
 - 🤖 **Evidence-Backed Land AI Assistant**: Multi-lingual intent parser supporting **English, Hindi, and Hinglish** (e.g., *"UP mein agricultural land-use ka trend kya hai?"*) with structured cards and mathematical explainability modals (**"Why am I seeing this?"**).
 - ⚠️ **Statistical Anomaly Detection**: Automated Z-Score deviation engine ($|Z| > 2.0$) flagging unprecedented land shifts (e.g. *Jewar / Gautam Buddha Nagar urban expansion*, *Bengaluru Urban peri-urban agriculture loss*, *Gorakhpur wetland changes*).
 - 📊 **Historical Trend & Land Conversion Dynamics**: Multi-period categorical balance sheets, compound annual growth rate (CAGR), and transition flow diagrams.
@@ -22,7 +23,7 @@ Bhu-Drishti unites multi-decadal land statistics, government datasets (MoA&FW, N
 
 ## 🛠️ Tech Stack
 
-- **Frontend**: React 18, TypeScript, Vite, Tailwind CSS, Recharts, Lucide React, Leaflet, jsPDF, html2canvas
+- **Frontend**: React 19, TypeScript, Vite, Tailwind CSS, Recharts, CesiumJS, Lucide React, jsPDF
 - **Backend**: Node.js, Express, TypeScript (`tsx`), CORS, Dotenv, Multer
 - **Database Layer**: PostgreSQL (with PostGIS support), Prisma ORM, and resilient zero-latency in-memory cache
 - **Containerization**: Docker & Docker Compose (multi-stage production builds)
@@ -112,12 +113,22 @@ npm run dev:server   # Starts Express API on http://localhost:5000
 npm run dev:client   # Starts Vite Dev Server on http://localhost:5173
 ```
 
-### 4. Building for Production
+### 4. Optional 3D Earth Satellite Imagery and Terrain
+
+The 3D Earth works without a token using Cesium's bundled Natural Earth imagery. To enable Cesium World Imagery and World Terrain, copy `.env.example` to `.env` and add a restricted browser token from your Cesium ion account:
+
+```env
+VITE_CESIUM_ION_TOKEN="your_restricted_browser_token"
+```
+
+Never commit the real token. The globe's state and district markers use the existing `/api/states` and `/api/districts` location catalogue; they are reference points, not administrative boundaries.
+
+### 5. Building for Production
 ```bash
 npm run build
 ```
 
-### 5. Deploying on Vercel & Render
+### 6. Deploying on Vercel & Render
 
 The repository is configured for dual deployment:
 - **Frontend on Vercel**: Connect repo, set root directory to `./`, build command `npm run build`, output directory `dist`.
@@ -125,7 +136,10 @@ The repository is configured for dual deployment:
 - **Set Environment Variable on Vercel**:
   ```bash
   VITE_API_BASE_URL=https://YOUR-RENDER-SERVICE.onrender.com/api
+  VITE_CESIUM_ION_TOKEN=YOUR_RESTRICTED_BROWSER_TOKEN
   ```
+
+`VITE_CESIUM_ION_TOKEN` is optional. Add it to the frontend deployment only when satellite imagery and world terrain are required.
 
 ---
 

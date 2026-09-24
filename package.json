@@ -19,6 +19,7 @@
     "@supabase/supabase-js": "^2.116.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "cesium": "^1.145.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "esbuild": "^0.25.0",
@@ -39,8 +40,9 @@
     "@types/pg": "^8.23.1",
     "autoprefixer": "^10.4.21",
     "tailwindcss": "^4.1.14",
-    "typescript": "~5.8.2",
     "tsx": "^4.21.0",
-    "vite": "^6.2.3"
+    "typescript": "~5.8.2",
+    "vite": "^6.2.3",
+    "vite-plugin-static-copy": "^4.1.1"
   }
 }

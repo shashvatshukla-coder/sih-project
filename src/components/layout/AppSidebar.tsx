@@ -17,7 +17,8 @@ import {
   Sparkles,
   Sprout,
   ShieldCheck,
-  KeyRound
+  KeyRound,
+  Globe2
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -49,6 +50,7 @@ export const AppSidebar: React.FC<SidebarProps> = ({
     { id: 'research', label: 'Research Publications', icon: FileText },
     { id: 'policy', label: 'Policy Repository', icon: Shield },
     { id: 'map', label: 'GIS & Maps', icon: Map },
+    { id: 'earth', label: 'Explore India in 3D', icon: Globe2, badge: '3D' },
     { id: 'case-studies', label: 'Case Studies', icon: BookOpen },
     { id: 'trends', label: 'Analytics Tools', icon: TrendingUp },
     { id: 'decision-support', label: 'Policy Innovation Lab', icon: Lightbulb },

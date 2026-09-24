@@ -7,6 +7,7 @@ export type PageId =
   | 'dashboard'
   | 'statistics'
   | 'map'
+  | 'earth'
   | 'datasets'
   | 'trends'
   | 'ai-query'
