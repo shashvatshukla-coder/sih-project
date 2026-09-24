@@ -4,6 +4,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer as createViteServer } from 'vite';
 import apiRoutes from './server/routes/apiRoutes.ts';
+import authRoutes from './server/routes/authRoutes.ts';
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ async function startServer() {
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
   // Mount API routes first
+  app.use('/api/auth', authRoutes);
   app.use('/api', apiRoutes);
 
   // Health check endpoint

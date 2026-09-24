@@ -154,6 +154,53 @@ function getCustomRecordsFromStorage(): LandUseRecord[] {
 }
 
 export const api = {
+  async requestAuthOtp(payload: { email: string; password: string; name?: string; role?: string; mode: 'signup' | 'login' }) {
+    const res = await fetch(`${API_BASE}/auth/request-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Could not send OTP');
+    return json;
+  },
+
+  async verifyAuthOtp(email: string, otp: string) {
+    const res = await fetch(`${API_BASE}/auth/verify-otp`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, otp }) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'OTP verification failed');
+    return json;
+  },
+
+  async adminLogin(email: string, password: string) {
+    const res = await fetch(`${API_BASE}/auth/admin-login`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email, password }) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Administrator login failed');
+    return json;
+  },
+
+  async updateMyAccount(updates: Record<string, string>) {
+    const res = await fetch(`${API_BASE}/auth/me`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('bhu_auth_token') || ''}` }, body: JSON.stringify(updates) });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Account update failed');
+    return json.user;
+  },
+
+  async deleteMyAccount() {
+    const res = await fetch(`${API_BASE}/auth/me`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('bhu_auth_token') || ''}` } });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Account deletion failed');
+  },
+
+  async getAdminUsers() {
+    const res = await fetch(`${API_BASE}/auth/admin/users`, { headers: { Authorization: `Bearer ${localStorage.getItem('bhu_auth_token') || ''}` }, cache: 'no-store' });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Could not load users');
+    return json;
+  },
+
+  async suspendAdminUser(id: string) {
+    const res = await fetch(`${API_BASE}/auth/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE', headers: { Authorization: `Bearer ${localStorage.getItem('bhu_auth_token') || ''}` } });
+    const json = await res.json();
+    if (!res.ok) throw new Error(json.error || 'Could not suspend user');
+    return json;
+  },
   async getStates(): Promise<State[]> {
     try {
       const res = await fetch(`${API_BASE}/states`);
@@ -459,7 +506,7 @@ export const api = {
   }): Promise<DataSource> {
     const res = await fetch(`${API_BASE}/data-sources/upload`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('bhu_auth_token') || ''}` },
       body: JSON.stringify(payload)
     });
     const json = await res.json().catch(() => null);
@@ -546,7 +593,7 @@ export const api = {
   async uploadPolicyFile(payload: any): Promise<{ success: boolean; data: Policy; message: string }> {
     const res = await fetch(`${API_BASE}/policies/upload`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('bhu_auth_token') || ''}` },
       body: JSON.stringify(payload)
     });
     const json = await res.json();
@@ -632,7 +679,7 @@ export const api = {
   }): Promise<ResearchPaper> {
     const res = await fetch(`${API_BASE}/research/upload`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem('bhu_auth_token') || ''}` },
       body: JSON.stringify(payload)
     });
     const json = await res.json();

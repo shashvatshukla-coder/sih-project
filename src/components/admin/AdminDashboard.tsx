@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../services/api';
-import { ShieldCheck, Upload, Database, Layers, Clock, AlertTriangle, FileText, CheckCircle2, RefreshCw, Copy, Check, Server } from 'lucide-react';
+import { ShieldCheck, Upload, Database, Layers, Clock, AlertTriangle, FileText, CheckCircle2, RefreshCw, Copy, Check, Server, Users, Trash2 } from 'lucide-react';
 import { DataUploadPipeline } from './DataUploadPipeline';
 
 export const AdminDashboard: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'overview' | 'upload' | 'database' | 'audit'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'upload' | 'database' | 'audit'>('overview');
+  const [registeredUsers, setRegisteredUsers] = useState<any[]>([]);
+  const [userError, setUserError] = useState('');
   const [auditLogs, setAuditLogs] = useState<any[]>([]);
   const [sources, setSources] = useState<any[]>([]);
   const [dbStatus, setDbStatus] = useState<any>(null);
@@ -31,7 +33,16 @@ export const AdminDashboard: React.FC = () => {
       }
     }
     loadAdminData();
+    api.getAdminUsers().then(result => setRegisteredUsers(result.users || [])).catch(error => setUserError(error.message));
   }, []);
+
+  const suspendUser = async (id: string) => {
+    if (!confirm('Suspend this user and send the suspension email?')) return;
+    try {
+      await api.suspendAdminUser(id);
+      setRegisteredUsers(users => users.map(user => user.id === id ? { ...user, status: 'suspended' } : user));
+    } catch (error: any) { setUserError(error.message); }
+  };
 
   const handleSeedSupabase = async () => {
     setIsSeeding(true);
@@ -82,6 +93,10 @@ export const AdminDashboard: React.FC = () => {
             System Metrics
           </button>
           <button
+            onClick={() => setActiveTab('users')}
+            className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${activeTab === 'users' ? 'bg-white dark:bg-slate-900 text-slate-900 dark:text-white shadow-xs' : 'text-slate-500 hover:text-slate-800'}`}
+          ><Users className="w-3.5 h-3.5"/><span>Users ({registeredUsers.length})</span></button>
+          <button
             onClick={() => setActiveTab('database')}
             className={`px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all ${
               activeTab === 'database'
@@ -115,6 +130,14 @@ export const AdminDashboard: React.FC = () => {
           </button>
         </div>
       </div>
+
+      {activeTab === 'users' && <div className="space-y-4">
+        {userError && <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">{userError}</div>}
+        <div className="rounded-2xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-slate-900"><div className="mb-4 flex items-center justify-between"><div><h3 className="font-bold text-slate-900 dark:text-white">Registered users</h3><p className="text-xs text-slate-500">Real verified accounts and everything they uploaded.</p></div><span className="rounded-full bg-emerald-100 px-3 py-1 text-sm font-bold text-emerald-700">{registeredUsers.length} total</span></div>
+          <div className="space-y-3">{registeredUsers.length === 0 ? <p className="py-8 text-center text-sm text-slate-400">No verified users yet.</p> : registeredUsers.map(user => { const work = user.uploadedWork || {}; const count = (work.policies?.length || 0) + (work.research?.length || 0) + (work.sources?.length || 0); return <article key={user.id} className="rounded-xl border border-slate-200 p-4 dark:border-slate-700"><div className="flex flex-wrap items-start justify-between gap-3"><div className="flex gap-3"><img src={user.avatar || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(user.name)}`} className="h-11 w-11 rounded-full" alt=""/><div><p className="font-semibold text-slate-900 dark:text-white">{user.name}</p><p className="text-xs text-slate-500">{user.email} · <span className="capitalize">{user.role}</span></p><p className="mt-1 text-xs text-slate-400">{user.affiliation || 'No affiliation'} · {count} uploaded items</p></div></div><div className="flex items-center gap-2"><span className={`rounded-full px-2 py-1 text-xs font-semibold ${user.status === 'active' ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'}`}>{user.status}</span>{user.status === 'active' && <button onClick={() => suspendUser(user.id)} className="rounded-lg border border-red-200 p-2 text-red-600" title="Suspend user"><Trash2 className="h-4 w-4"/></button>}</div></div>
+            {count > 0 && <details className="mt-3 text-xs"><summary className="cursor-pointer font-semibold text-emerald-700">View uploaded work</summary><div className="mt-2 space-y-1 text-slate-500">{[...(work.policies || []), ...(work.research || []), ...(work.sources || [])].map((item: any) => <div key={item.id} className="rounded bg-slate-50 px-2 py-1 dark:bg-slate-800">{item.name || item.title}</div>)}</div></details>}</article>; })}</div>
+        </div>
+      </div>}
 
       {activeTab === 'database' && (
         <div className="space-y-6">

@@ -10,6 +10,18 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      - key: ADMIN_EMAIL
+        value: bhudristi@admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: AUTH_SECRET
+        generateValue: true
+      - key: RESEND_API_KEY
+        sync: false
+      - key: RESEND_FROM_EMAIL
+        value: BHU-DRISHTI <noreply@bhudristi.in>
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
       - key: POLICYLAB_URL
         fromService:
           name: bhu-drishti-policylab

@@ -6,6 +6,7 @@ import { PolicyService } from '../services/policyService.ts';
 import { IngestionService } from '../services/ingestionService.ts';
 import { GeminiService } from '../services/geminiService.ts';
 import { PolicyLabService } from '../services/policyLabService.ts';
+import { requireAuth } from './authRoutes.ts';
 
 const router = express.Router();
 const MAX_DOCUMENT_BYTES = 25 * 1024 * 1024;
@@ -474,7 +475,7 @@ router.get('/data-sources', async (_req: Request, res: Response) => {
   }
 });
 
-router.post('/data-sources/upload', async (req: Request, res: Response) => {
+router.post('/data-sources/upload', requireAuth, async (req: Request, res: Response) => {
   try {
     const { name, category, description, endpointUrl, fileName, fileType, fileData } = req.body || {};
     if (typeof name !== 'string' || !name.trim()) {
@@ -504,6 +505,7 @@ router.post('/data-sources/upload', async (req: Request, res: Response) => {
       description: typeof description === 'string' ? description.trim().slice(0, 1000) : '',
       is_user_uploaded: true,
       uploaded_at: new Date().toISOString(),
+      ownerEmail: (req as any).authUser?.email,
       fileAttachment: decodedFile ? {
         name: fileName.trim(),
         size: decodedFile.size,
@@ -760,7 +762,7 @@ router.post('/policies/:id/area', async (req: Request, res: Response) => {
 });
 
 // Drag & Drop Ingestion for Policies / Gazette Notifications
-router.post('/policies/upload', async (req: Request, res: Response) => {
+router.post('/policies/upload', requireAuth, async (req: Request, res: Response) => {
   try {
     const {
       fileName,
@@ -841,6 +843,7 @@ router.post('/policies/upload', async (req: Request, res: Response) => {
         ? null
         : Number(allocated_budget_cr),
       policyMakerName: policyMakerName || 'Policy Maker',
+      ownerEmail: (req as any).authUser?.email,
       documentText: typeof fileContent === 'string' ? fileContent.substring(0, 2000) : '',
       fileAttachment: fileName ? {
         name: fileName,
@@ -1010,7 +1013,7 @@ router.post('/research', async (req: Request, res: Response) => {
 });
 
 // Upload Document Endpoint
-router.post('/research/upload', async (req: Request, res: Response) => {
+router.post('/research/upload', requireAuth, async (req: Request, res: Response) => {
   try {
     const { fileName, fileSize, fileType, fileContent, fileData, title, author, geography, tags, documentType } = req.body;
     if (!fileName) {
@@ -1069,6 +1072,7 @@ router.post('/research/upload', async (req: Request, res: Response) => {
         uploadedAt: new Date().toISOString()
       },
       isUserAuthored: true,
+      authorEmail: (req as any).authUser?.email,
       status: 'published' as const
     };
 

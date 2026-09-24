@@ -3,6 +3,7 @@ import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
 import apiRoutes from './routes/apiRoutes.ts';
+import authRoutes from './routes/authRoutes.ts';
 
 dotenv.config();
 
@@ -50,6 +51,7 @@ app.get('/', (req, res) => {
 });
 
 // API routing
+app.use('/api/auth', authRoutes);
 app.use('/api', apiRoutes);
 
 // Health check for Render / Cloud monitors

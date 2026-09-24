@@ -55,6 +55,7 @@ export const AppSidebar: React.FC<SidebarProps> = ({
     { id: 'collaboration', label: 'Collaboration Hub', icon: Users },
     { id: 'news-events', label: 'News & Events', icon: Newspaper },
     { id: 'inspection', label: 'Inspection Directorate', icon: ShieldCheck, badge: isMasterUser ? 'Master' : 'Protected' },
+    ...(userRole === 'admin' ? [{ id: 'admin' as const, label: 'Admin Panel', icon: ShieldCheck, badge: 'Admin' }] : []),
     { id: 'login', label: 'Login Page', icon: KeyRound }
   ];
 

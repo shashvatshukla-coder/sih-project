@@ -43,7 +43,7 @@ interface AppContextType {
   setUserRole: (role: UserRole) => void;
   userProfile: UserProfile;
   setUserProfile: (profile: UserProfile) => void;
-  login: (credentials: { name: string; email: string }, requestedRole?: UserRole) => Promise<UserProfile>;
+  login: (profile: UserProfile, token: string) => Promise<UserProfile>;
   logout: () => Promise<void>;
   changeUserRole: (role: UserRole) => void;
   isAuthModalOpen: boolean;
@@ -524,57 +524,11 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     await api.updateDashboardData(toSave);
   };
 
-  const login = async (
-    credentials: { name: string; email: string },
-    requestedRole: UserRole = 'researcher'
-  ): Promise<UserProfile> => {
-    const name = credentials.name.trim();
-    const email = credentials.email.trim().toLowerCase();
-    if (!name) throw new Error('Please enter your name.');
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error('Please enter a valid email address.');
-
-    const isMaster = isMasterAccount(email);
-    if ((requestedRole === 'inspector' || requestedRole === 'admin') && !isMaster) {
-      throw new Error('Inspector access is restricted to the authorized account.');
-    }
-
-    const profile: UserProfile = {
-      id: `usr_${email.replace(/[^a-z0-9]/g, '_')}`,
-      email,
-      name,
-      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(name)}&backgroundColor=${isMaster ? '059669' : '1e40af'}`,
-      role: requestedRole,
-      affiliation: isMaster
-        ? 'National Land Records & Geospatial Intelligence Directorate'
-        : requestedRole === 'policymaker'
-          ? 'Land Policy & Planning Institution'
-          : requestedRole === 'public'
-            ? 'Public Citizen Explorer'
-            : 'Cadastral Research Community',
-      designation: isMaster
-        ? 'Chief Director of Inspection & Cadastral Research'
-        : requestedRole === 'policymaker'
-          ? 'Policy Maker'
-          : requestedRole === 'public'
-            ? 'Citizen Observer'
-            : 'Cadastral Researcher',
-      isGoogleVerified: true,
-      issuedAt: new Date().toISOString(),
-      authProvider: 'institutional',
-      isMasterSuperAdmin: isMaster,
-      is_inspection_verified: isMaster,
-      features_granted: isMaster
-        ? ['full_inspection', 'policy_moderation', 'research_curation', 'user_rights_calibration', 'all_roles_switch']
-        : requestedRole === 'policymaker'
-          ? ['policy_authoring', 'target_setting', 'draft_submission']
-          : requestedRole === 'researcher'
-            ? ['research_authoring', 'document_upload', 'dataset_analytics']
-            : []
-    };
-
+  const login = async (profile: UserProfile, token: string): Promise<UserProfile> => {
     setUserProfile(profile);
     setUserRole(profile.role);
     localStorage.setItem('bhu_user_profile', JSON.stringify(profile));
+    localStorage.setItem('bhu_auth_token', token);
     return profile;
   };
 
@@ -595,6 +549,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setUserProfile(guest);
     setUserRole('public');
     localStorage.removeItem('bhu_user_profile');
+    localStorage.removeItem('bhu_auth_token');
   };
 
   const changeUserRole = (newRole: UserRole) => {

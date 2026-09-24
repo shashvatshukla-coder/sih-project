@@ -225,7 +225,9 @@ export interface UserProfile {
   orcid?: string;
   isGoogleVerified: boolean;
   issuedAt: string;
-  authProvider: 'google' | 'institutional' | 'guest';
+  authProvider: 'google' | 'institutional' | 'email-otp' | 'guest';
+  emailVerified?: boolean;
+  status?: 'active' | 'suspended';
   isMasterSuperAdmin?: boolean;
   is_starred?: boolean;
   is_inspection_verified?: boolean;

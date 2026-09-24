@@ -213,6 +213,13 @@ ALTER TABLE bhu_file_store
 CREATE INDEX IF NOT EXISTS idx_bhu_file_store_owner
   ON bhu_file_store(owner_type, owner_id);
 
+-- Private authentication records. Only the backend service-role key may access this table.
+CREATE TABLE IF NOT EXISTS bhu_auth_store (
+  email TEXT PRIMARY KEY,
+  payload JSONB NOT NULL DEFAULT '{}'::jsonb,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
 -- RLS Configuration
 ALTER TABLE states ENABLE ROW LEVEL SECURITY;
 ALTER TABLE districts ENABLE ROW LEVEL SECURITY;
@@ -225,6 +232,7 @@ ALTER TABLE anomalies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE audit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bhu_content_store ENABLE ROW LEVEL SECURITY;
 ALTER TABLE bhu_file_store ENABLE ROW LEVEL SECURITY;
+ALTER TABLE bhu_auth_store ENABLE ROW LEVEL SECURITY;
 
 -- Anonymous and Authenticated Read Policies
 DO $$
@@ -256,7 +264,6 @@ BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public read audit_logs') THEN
     CREATE POLICY "Allow public read audit_logs" ON audit_logs FOR SELECT USING (true);
   END IF;
-  IF NOT EXISTS (SELECT 1 FROM pg_policies WHERE policyname = 'Allow public read content store') THEN
-    CREATE POLICY "Allow public read content store" ON bhu_content_store FOR SELECT USING (true);
-  END IF;
+  DROP POLICY IF EXISTS "Allow public read content store" ON bhu_content_store;
+  CREATE POLICY "Allow public read content store" ON bhu_content_store FOR SELECT USING (content_type <> 'user');
 END $$;
